@@ -6,7 +6,7 @@ public class Admin extends User {
     }
     @Override
     public String getDisplayInfo() {
-        return "Quản trị viên: " + username + " (Quyền cao nhất)";
+        return "Quản tri viên: " + username + " (Quyền cao nhất)";
     }
     @Override
     public void showMenu() {

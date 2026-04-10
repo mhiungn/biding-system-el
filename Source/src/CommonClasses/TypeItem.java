@@ -5,7 +5,7 @@ public class TypeItem {
         switch (type.toUpperCase()) {
             case "ELECTRONICS": return new Electronics(price, name, desc);
             case "ART":         return new Art(price, name, desc);
-            case "VEHICLE":     return new Vehicle(price, name, desc);
+            case "VEHICLE ":     return new Vehicle(price, name, desc);
             default:            return new Item(price, name, desc);
         }
     }

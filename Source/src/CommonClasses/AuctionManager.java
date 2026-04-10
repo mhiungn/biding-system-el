@@ -13,7 +13,7 @@ public class AuctionManager {
         if (instance == null) {
             instance = new AuctionManager();
         }
-        return instance;
+        return instance ;
     }
 
 }

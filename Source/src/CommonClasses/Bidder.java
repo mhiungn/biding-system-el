@@ -6,7 +6,7 @@ public class Bidder extends User {
     }
     @Override
     public String getDisplayInfo() {
-        return "Người mua: " + username + " (ID: " + id + ")";
+        return "Người  mua: " + username + " (ID: " + id + ")";
     }
     @Override
     public void showMenu() {

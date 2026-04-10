@@ -11,7 +11,7 @@ public class Seller extends User {
     }
     @Override
     public void showMenu() {
-        System.out.println("=== MENU SELLER ===");
+        System.out.println("===  MENU SELLER ===");
         System.out.println("1. Đăng sản phẩm mới");
         System.out.println("2. Quản lý danh sách hàng đang bán");
         System.out.println("3. Kết thúc phiên đấu giá sớm");

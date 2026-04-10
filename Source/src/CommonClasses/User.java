@@ -21,7 +21,7 @@ public abstract class User extends Entity {
     	return password;
     }
     public String getEmail() {
-    	return email; 
+    	return email ; 
     }
     public String getRole() {
     	return role; 
