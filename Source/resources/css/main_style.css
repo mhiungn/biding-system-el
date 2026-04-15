@@ -1,0 +1,10 @@
+.root {
+        -fx-background-color: #2a475e;
+}
+
+#titleLabel {
+    -fx-font-family: SVN-Canopee;
+    -fx-font-size: 95;
+    -fx-text-fill: #c7d5e0;
+    -fx-alignment: center;
+}
