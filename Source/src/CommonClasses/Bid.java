@@ -1,8 +1,3 @@
-//Donat Salihu
-//Nikolaos Lintas
-//Memli Restelica
-//Philippos Kalatzis
-
 package CommonClasses;
 
 import java.io.Serializable;
@@ -14,25 +9,27 @@ import java.util.Objects;
  * <p>
  * A {@code Bid} records three pieces of information:
  * <ul>
- *   <li><b>createdAt</b> — the timestamp when the bid was placed.</li>
- *   <li><b>bid</b> — the monetary value of the bid (as a float).</li>
- *   <li><b>bidderUsername</b> — the username of the client who placed this bid,
- *       used to uniquely identify the bidder.</li>
+ * <li><b>createdAt</b> — the timestamp when the bid was placed.</li>
+ * <li><b>bid</b> — the monetary value of the bid (as a float).</li>
+ * <li><b>bidderUsername</b> — the username of the client who placed this bid,
+ * used to uniquely identify the bidder.</li>
  * </ul>
- * Bids are stored in a {@link java.util.LinkedList} inside each {@link Auction},
+ * Bids are stored in a {@link java.util.LinkedList} inside each
+ * {@link Auction},
  * ordered from highest (first) to lowest (last). This class implements
  * {@link Serializable} so it can be transmitted over the network inside
- * {@link Packets.PacketMessage} payloads.
+ * packet payloads.
  * </p>
  *
  * <h3>Usage example:</h3>
+ * 
  * <pre>{@code
- *   Bid bid = new Bid(new Date(), 250.0f, "john_doe");
- *   float amount = bid.getBid();              // 250.0
- *   String who   = bid.getBidderUsername();    // "john_doe"
+ * Bid bid = new Bid(new Date(), 250.0f, "john_doe");
+ * float amount = bid.getBid(); // 250.0
+ * String who = bid.getBidderUsername(); // "john_doe"
  * }</pre>
  *
- * @see Auction#addBid(Bid, Server.Client)
+ * @see Auction#placeBid(Bid, String)
  * @see Auction#findHighestBid()
  */
 public class Bid implements Serializable {
@@ -47,18 +44,22 @@ public class Bid implements Serializable {
 
     /**
      * The username of the client who placed this bid.
-     * Used as a unique identifier since each authenticated user has a distinct username.
+     * Used as a unique identifier since each authenticated user has a distinct
+     * username.
      */
     private String bidderUsername;
 
     // ========================== Constructors ==========================
 
     /**
-     * Constructs a new {@code Bid} with the specified timestamp, amount, and bidder username.
+     * Constructs a new {@code Bid} with the specified timestamp, amount, and bidder
+     * username.
      *
-     * @param createdAt the date/time the bid was placed (can be {@code null} for a "no bid" sentinel)
-     * @param bid       the monetary value of the bid
-     * @param bidderUsername  the username of the bidder (can be {@code null} for a sentinel bid)
+     * @param createdAt      the date/time the bid was placed (can be {@code null}
+     *                       for a "no bid" sentinel)
+     * @param bid            the monetary value of the bid
+     * @param bidderUsername the username of the bidder (can be {@code null} for a
+     *                       sentinel bid)
      */
     public Bid(Date createdAt, float bid, String bidderUsername) {
         this.createdAt = createdAt;
@@ -107,7 +108,8 @@ public class Bid implements Serializable {
     /**
      * Returns the username of the client who placed this bid.
      *
-     * @return the bidder's username string, or {@code null} for a sentinel "empty" bid
+     * @return the bidder's username string, or {@code null} for a sentinel "empty"
+     *         bid
      */
     public String getBidderUsername() {
         return bidderUsername;
@@ -127,7 +129,7 @@ public class Bid implements Serializable {
     /**
      * Returns a human-readable string representation of this bid.
      *
-     * @return formatted string with createdAt, bid amount, and bidder IP
+     * @return formatted string with createdAt, bid amount, and bidder username
      */
     @Override
     public String toString() {
@@ -140,15 +142,18 @@ public class Bid implements Serializable {
 
     /**
      * Compares this bid with another object for equality.
-     * Two bids are equal if their creation date, bid amount, and bidder IP all match.
+     * Two bids are equal if their creation date, bid amount, and bidder username
+     * all match.
      *
      * @param o the object to compare against
      * @return {@code true} if the bids are equal, {@code false} otherwise
      */
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Bid bid1 = (Bid) o;
         return Float.compare(bid1.bid, bid) == 0 &&
                 Objects.equals(createdAt, bid1.createdAt) &&
@@ -156,7 +161,7 @@ public class Bid implements Serializable {
     }
 
     /**
-     * Returns a hash code based on createdAt, bid value, and bidder IP.
+     * Returns a hash code based on createdAt, bid value, and bidder username.
      *
      * @return the hash code
      */
