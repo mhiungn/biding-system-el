@@ -9,18 +9,18 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * Represents an item that is being auctioned in the auction system.
+ * Đại diện cho một sản phẩm đang được đấu giá trong hệ thống.
  * <p>
- * Each {@code Item} holds the basic metadata about the product/service being sold:
- * its display name, a textual description, and the minimum starting price that
- * the seller is willing to accept. This class is embedded inside an {@link Auction}
- * and is transmitted over the network as part of various payload objects, hence it
- * implements {@link Serializable}.
+ * Mỗi {@code Item} chứa các siêu dữ liệu cơ bản về sản phẩm/dịch vụ được bán:
+ * tên hiển thị, mô tả văn bản, và giá khởi điểm tối thiểu mà
+ * người bán chấp nhận. Lớp này được nhúng bên trong một {@link Auction}
+ * và được truyền qua mạng như một phần của các đối tượng payload khác nhau,
+ * do đó nó implement {@link Serializable}.
  * </p>
  *
- * <h3>Usage example:</h3>
+ * <h3>Ví dụ sử dụng:</h3>
  * <pre>{@code
- *   Item laptop = new Item(500.0f, "Gaming Laptop", "High-end RTX laptop, barely used.");
+ *   Item laptop = new Item(500.0f, "Gaming Laptop", "Laptop RTX cấu hình cao, ít sử dụng.");
  *   System.out.println(laptop.getName());           // "Gaming Laptop"
  *   System.out.println(laptop.getStartingPrice());   // 500.0
  * }</pre>
@@ -30,25 +30,25 @@ import java.util.Objects;
  */
 public class Item implements Serializable {
 
-    // ========================== Attributes ==========================
+    // ========================== Thuộc tính ==========================
 
-    /** The minimum price at which bidding starts for this item. */
+    /** Giá tối thiểu để bắt đầu phiên đấu giá cho sản phẩm này. */
     private float startingPrice;
 
-    /** The display name of the item (e.g. "Vintage Watch", "Gaming Laptop"). */
+    /** Tên hiển thị của sản phẩm (VD: "Đồng hồ cổ điển", "Laptop Gaming"). */
     private String name;
 
-    /** A longer textual description of the item providing additional details. */
+    /** Mô tả chi tiết bằng văn bản của sản phẩm. */
     private String description;
 
-    // ========================== Constructors ==========================
+    // ========================== Constructor ==========================
 
     /**
-     * Constructs a new {@code Item} with the given starting price, name, and description.
+     * Khởi tạo một {@code Item} mới với giá khởi điểm, tên và mô tả cho trước.
      *
-     * @param startingPrice the minimum price at which bidding begins (must be positive)
-     * @param name          the display name of the item
-     * @param description   a detailed description of the item
+     * @param startingPrice giá tối thiểu để bắt đầu đặt mức giá (phải là số dương)
+     * @param name          tên hiển thị của sản phẩm
+     * @param description   mô tả chi tiết về sản phẩm
      */
     public Item(float startingPrice, String name, String description) {
         this.startingPrice = startingPrice;
@@ -56,69 +56,69 @@ public class Item implements Serializable {
         this.description = description;
     }
 
-    // ========================== Getters & Setters ==========================
+    // ========================== Getter & Setter ==========================
 
     /**
-     * Returns the starting price of this item.
+     * Trả về giá khởi điểm của sản phẩm này.
      *
-     * @return the minimum bid price as a float
+     * @return giá bắt đầu dưới dạng số thực (float)
      */
     public float getStartingPrice() {
         return startingPrice;
     }
 
     /**
-     * Sets the starting price of this item.
+     * Cập nhật giá khởi điểm của sản phẩm này.
      *
-     * @param startingPrice the new starting price
+     * @param startingPrice giá khởi điểm mới
      */
     public void setStartingPrice(float startingPrice) {
         this.startingPrice = startingPrice;
     }
 
     /**
-     * Returns the display name of this item.
+     * Trả về tên hiển thị của sản phẩm này.
      *
-     * @return the item's name
+     * @return tên sản phẩm
      */
     public String getName() {
         return name;
     }
 
     /**
-     * Sets the display name of this item.
+     * Cập nhật tên hiển thị của sản phẩm này.
      *
-     * @param name the new name
+     * @param name tên mới
      */
     public void setName(String name) {
         this.name = name;
     }
 
     /**
-     * Returns the description of this item.
+     * Trả về mô tả của sản phẩm này.
      *
-     * @return the item's description string
+     * @return chuỗi mô tả sản phẩm
      */
     public String getDescription() {
         return description;
     }
 
     /**
-     * Sets the description of this item.
+     * Cập nhật mô tả cho sản phẩm này.
      *
-     * @param description the new description
+     * @param description mô tả mới
      */
     public void setDescription(String description) {
         this.description = description;
     }
 
-    // ========================== Methods ==========================
+    // ========================== Phương thức Tiện ích ==========================
 
     /**
-     * Returns a human-readable string representation of this item,
-     * including its starting price, name, and description.
+     * Trả về chuỗi đại diện dễ đọc cho sản phẩm này,
+     * bao gồm giá khởi điểm, tên và mô tả.
      *
-     * @return a formatted string describing this item
+     * @return chuỗi định dạng mô tả sản phẩm
      */
     @Override
     public String toString() {
@@ -130,12 +130,12 @@ public class Item implements Serializable {
     }
 
     /**
-     * Compares this item to another object for equality.
-     * Two items are considered equal if they have the same starting price,
-     * name, and description.
+     * So sánh sản phẩm này với một đối tượng khác để xem có bằng nhau không.
+     * Hai sản phẩm được coi là bằng nhau nếu chúng có cùng giá khởi điểm,
+     * tên, và mô tả.
      *
-     * @param o the object to compare with
-     * @return {@code true} if the objects are equal, {@code false} otherwise
+     * @param o đối tượng cần so sánh
+     * @return {@code true} nếu hai đối tượng bằng nhau, ngược lại là {@code false}
      */
     @Override
     public boolean equals(Object o) {
@@ -148,10 +148,10 @@ public class Item implements Serializable {
     }
 
     /**
-     * Returns a hash code value for this item based on its starting price,
-     * name, and description.
+     * Trả về giá trị mã băm (hash code) cho sản phẩm này dựa vào giá khởi điểm,
+     * tên, và mô tả.
      *
-     * @return the hash code
+     * @return mã băm
      */
     @Override
     public int hashCode() {
