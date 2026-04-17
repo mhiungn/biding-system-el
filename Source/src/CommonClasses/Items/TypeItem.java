@@ -1,11 +1,9 @@
-package CommonClasses;
+package CommonClasses.Items;
 
 /**
  * Factory class for creating {@link Item} instances based on a type string.
  * <p>
- * This class delegates to the appropriate concrete subclass constructor.
- * Uses the same item types defined in the separate class files:
- * {@link Electronics}, {@link Art}, {@link Vehicle}.
+ * Delegates to {@link ItemFactory#createItem(String, float, String, String)}.
  * </p>
  *
  * @see Item
@@ -15,8 +13,6 @@ public class TypeItem {
 
     /**
      * Creates an {@link Item} subclass instance based on the given type string.
-     * <p>
-     * Delegates to {@link ItemFactory#createItem(String, float, String, String)}.
      *
      * @param type  the item category (case-insensitive): "ELECTRONICS", "ART", or "VEHICLE"
      * @param price the starting price of the item
