@@ -5,6 +5,7 @@ import CommonClasses.Items.*;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -397,20 +398,30 @@ public class Auction implements Serializable {
         this.item = item;
     }
 
+    /**
+     * Returns an unmodifiable view of the bid list.
+     * <p>
+     * The returned list cannot be modified; attempts to do so will throw
+     * {@link UnsupportedOperationException}. All mutations must go through
+     * {@link #placeBid(Bid, String)}.
+     *
+     * @return an unmodifiable view of the bids, ordered highest-first
+     */
     public List<Bid> getBidList() {
-        return bidList;
+        return Collections.unmodifiableList(bidList);
     }
 
-    public void setBidList(List<Bid> bidList) {
-        this.bidList = bidList;
-    }
-
+    /**
+     * Returns an unmodifiable view of the participants set.
+     * <p>
+     * The returned set cannot be modified; attempts to do so will throw
+     * {@link UnsupportedOperationException}. All mutations must go through
+     * {@link #addParticipant(String)} and {@link #removeParticipant(String)}.
+     *
+     * @return an unmodifiable view of the participant usernames
+     */
     public Set<String> getParticipants() {
-        return participants;
-    }
-
-    public void setParticipants(Set<String> participants) {
-        this.participants = participants;
+        return Collections.unmodifiableSet(participants);
     }
 
     public Date getCreatedAt() {

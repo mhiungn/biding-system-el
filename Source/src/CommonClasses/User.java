@@ -32,5 +32,4 @@ public abstract class User extends Entity {
         return String.format("[%s] ID: %s | User: %s | Email: %s", role, id, username, email);
     }
 
-    public abstract void showMenu();
 }

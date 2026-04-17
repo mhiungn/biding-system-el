@@ -3,6 +3,7 @@ package CommonClasses;
 import CommonClasses.Items.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,8 +96,8 @@ public class AuctionManager {
      *
      * @return an unmodifiable view of the auctions map
      */
-    public Map<Integer, Auction> getAllAuctions() {
-        return auctions;
+    public synchronized Map<Integer, Auction> getAllAuctions() {
+        return Collections.unmodifiableMap(auctions);
     }
 
     // ========================== User Management ==========================
@@ -113,9 +114,9 @@ public class AuctionManager {
     /**
      * Returns all registered users.
      *
-     * @return the list of users
+     * @return an unmodifiable view of the users list
      */
-    public List<User> getUsers() {
-        return users;
+    public synchronized List<User> getUsers() {
+        return Collections.unmodifiableList(users);
     }
 }

@@ -8,11 +8,4 @@ public class Admin extends User {
     public String getDisplayInfo() {
         return "Quản tri viên: " + username + " (Quyền cao nhất)";
     }
-    @Override
-    public void showMenu() {
-        System.out.println("=== MENU ADMIN ===");
-        System.out.println("1. Kiểm duyệt người dùng");
-        System.out.println("2. Xóa các phiên đấu giá vi phạm");
-        System.out.println("3. Thống kê doanh thu sàn");
-    }
 }
