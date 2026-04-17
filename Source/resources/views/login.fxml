@@ -1,20 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400" prefWidth="600" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.controllers.LoginController">
-   <children>
-      <Button layoutX="273.0" layoutY="272.0" mnemonicParsing="false" onAction="#switchToDashboard" prefHeight="25.0" prefWidth="53.0" text="Login" />
-      <Label fx:id="titleLabel" alignment="CENTER" contentDisplay="CENTER" layoutY="33.0" prefHeight="17.0" prefWidth="600.0" text="Auction System">
-         <font>
-            <Font size="50.0" />
-         </font></Label>
-      <Label fx:id="titleText" alignment="CENTER" contentDisplay="CENTER" layoutY="125.0" prefHeight="17.0" prefWidth="600.0" text="Login">
-         <font>
-            <Font size="18.0" />
-         </font></Label>
-   </children>
-</AnchorPane>
+<GridPane alignment="CENTER" hgap="10" prefHeight="396.0" prefWidth="396.0" style="-fx-padding: 40;" vgap="15" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.controllers.LoginController">
+
+   <Label styleClass="normalText" text="Username:" GridPane.rowIndex="1" />
+   <TextField fx:id="usernameField" prefWidth="250" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+   <Label styleClass="normalText" text="Password:" GridPane.rowIndex="2" />
+   <StackPane GridPane.columnIndex="1" GridPane.rowIndex="2">
+      <PasswordField fx:id="hiddenPasswordField" prefWidth="250" />
+      <TextField fx:id="visiblePasswordField" prefWidth="250" />
+   </StackPane>
+
+   <CheckBox fx:id="showPasswordCheckBox" styleClass="normalText" text="Show Password" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+
+   <Label fx:id="errorLabel" style="-fx-text-fill: red;" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+
+   <Button fx:id="loginButton" onAction="#switchToDashboard" style="-fx-min-width: 100px;" text="Login" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+   <AnchorPane prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="1">
+      <children>
+         <Label layoutX="-109.0" layoutY="18.0" prefHeight="58.0" prefWidth="396.0" styleClass="loginTitle" text="Auction System">
+            <font>
+               <Font size="50.0" />
+            </font></Label>
+      </children>
+   </AnchorPane>
+   <columnConstraints>
+      <ColumnConstraints maxWidth="82.0" minWidth="49.99997965494791" prefWidth="58.66668701171875" />
+      <ColumnConstraints maxWidth="256.66668701171875" minWidth="223.3333333333333" prefWidth="246.66664632161454" />
+   </columnConstraints>
+   <rowConstraints>
+      <RowConstraints />
+      <RowConstraints />
+      <RowConstraints />
+      <RowConstraints />
+      <RowConstraints />
+      <RowConstraints />
+   </rowConstraints>
+</GridPane>

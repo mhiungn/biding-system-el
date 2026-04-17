@@ -2,14 +2,14 @@
         -fx-background-color: #2a475e;
 }
 
-#titleLabel {
-    -fx-font-family: SVN-Canopee;
+.normalText {
+    -fx-font-family: "Space Mono";
     -fx-text-fill: #c7d5e0;
-    -fx-alignment: center;
+    -fx-font-size: 10;
 }
 
-#titleText {
-    -fx-font-family: "Space Mono";
+.loginTitle {
+    -fx-font-family: SVN-Canopee;
     -fx-text-fill: #c7d5e0;
     -fx-alignment: center;
 }

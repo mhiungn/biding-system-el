@@ -31,8 +31,9 @@ public class ItemFactory {
      */
     public static Item createItem(String type, float price, String name, String desc) {
         switch (type.toUpperCase()) {
-            case "ELECTRONICS":
-                return new Electronics(price, name, desc);
+            // need to fix this!!!
+//            case "ELECTRONICS":
+//                return new Electronics(price, name, desc);
             case "ART":
                 return new Art(price, name, desc);
             case "VEHICLE":

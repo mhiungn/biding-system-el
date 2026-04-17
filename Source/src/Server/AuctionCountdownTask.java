@@ -52,7 +52,8 @@ public class AuctionCountdownTask extends TimerTask {
 
     @Override
     public void run() {
-        auction.setInCountDown(true);
+        //need to fix this !!!
+        //auction.setInCountDown(true);
 
         // Countdown sequence: going once → going twice → sold
         try {
