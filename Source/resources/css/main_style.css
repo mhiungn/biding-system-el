@@ -4,7 +4,12 @@
 
 #titleLabel {
     -fx-font-family: SVN-Canopee;
-    -fx-font-size: 95;
+    -fx-text-fill: #c7d5e0;
+    -fx-alignment: center;
+}
+
+#titleText {
+    -fx-font-family: "Space Mono";
     -fx-text-fill: #c7d5e0;
     -fx-alignment: center;
 }

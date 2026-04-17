@@ -7,9 +7,6 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import javafx.scene.image.Image;
 
-import javax.swing.*;
-import java.awt.*;
-
 public class ClientApp extends Application {
     public static void main (String[] args) {
         launch(args);
@@ -18,7 +15,7 @@ public class ClientApp extends Application {
     @Override
     public void start(Stage stage) {
         try {
-            Parent root = FXMLLoader.load(getClass().getResource("/views/main_view.fxml"));
+            Parent root = FXMLLoader.load(getClass().getResource("/views/login.fxml"));
             Scene scene = new Scene(root);
 //          scene.getStylesheets().add(getClass().getResource("/css/main_style.css").toExternalForm());
             String css = this.getClass().getResource("/css/main_style.css").toExternalForm();
@@ -30,6 +27,7 @@ public class ClientApp extends Application {
             stage.setTitle("Giấu đá trực tuyến");
 
             stage.setScene(scene);
+            stage.centerOnScreen();
             stage.show();
         } catch (Exception e) {
             e.printStackTrace();
