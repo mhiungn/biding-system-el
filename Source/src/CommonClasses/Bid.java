@@ -1,8 +1,3 @@
-//Donat Salihu
-//Nikolaos Lintas
-//Memli Restelica
-//Philippos Kalatzis
-
 package CommonClasses;
 
 import java.io.Serializable;
@@ -10,55 +5,61 @@ import java.util.Date;
 import java.util.Objects;
 
 /**
- * Đại diện cho một lượt đặt giá (bid) của một người dùng trong phiên đấu giá.
+ * Represents a single bid placed by a client on an auction.
  * <p>
- * Một {@code Bid} ghi nhận ba phần thông tin:
+ * A {@code Bid} records three pieces of information:
  * <ul>
- *   <li><b>createdAt</b> — thời điểm khi giá thầu được đặt.</li>
- *   <li><b>bid</b> — giá trị tiền tệ của giá thầu (số thực - float).</li>
- *   <li><b>bidderUsername</b> — tên đăng nhập của người dùng đã đặt mức giá này,
- *       nhằm định danh duy nhất người đặt.</li>
+ * <li><b>createdAt</b> — the timestamp when the bid was placed.</li>
+ * <li><b>bid</b> — the monetary value of the bid (as a float).</li>
+ * <li><b>bidderUsername</b> — the username of the client who placed this bid,
+ * used to uniquely identify the bidder.</li>
  * </ul>
- * Các bid được lưu trong một {@link java.util.LinkedList} bên trong mỗi {@link Auction},
- * sắp xếp từ cao nhất (đầu tiên) đến thấp nhất (cuối cùng). Lớp này implement
- * {@link Serializable} để có thể truyền tải qua mạng bên trong
- * các payload {@link Packets.PacketMessage}.
+ * Bids are stored in a {@link java.util.LinkedList} inside each
+ * {@link Auction},
+ * ordered from highest (first) to lowest (last). This class implements
+ * {@link Serializable} so it can be transmitted over the network inside
+ * packet payloads.
  * </p>
  *
- * <h3>Ví dụ sử dụng:</h3>
+ * <h3>Usage example:</h3>
+ * 
  * <pre>{@code
- *   Bid bid = new Bid(new Date(), 250.0f, "john_doe");
- *   float amount = bid.getBid();              // 250.0
- *   String who   = bid.getBidderUsername();    // "john_doe"
+ * Bid bid = new Bid(new Date(), 250.0f, "john_doe");
+ * float amount = bid.getBid(); // 250.0
+ * String who = bid.getBidderUsername(); // "john_doe"
  * }</pre>
  *
- * @see Auction#addBid(Bid, Server.Client)
+ * @see Auction#placeBid(Bid, String)
  * @see Auction#findHighestBid()
  */
 public class Bid implements Serializable {
 
-    // ========================== Thuộc tính ==========================
+    // ========================== Attributes ==========================
 
-    /** Ngày/giờ lúc giá thầu này được tạo. */
+    /** The date/time at which this bid was created. */
     private Date createdAt;
 
-    /** Giá trị tiền tệ của mức giá được đưa ra. */
+    /** The monetary value of the bid. */
     private float bid;
 
     /**
-     * Tên đăng nhập của người dùng (client) đã đặt mức giá này.
-     * Dùng làm mã định danh duy nhất vì mỗi tài khoản đều có username khác biệt.
+     * The username of the client who placed this bid.
+     * Used as a unique identifier since each authenticated user has a distinct
+     * username.
      */
     private String bidderUsername;
 
-    // ========================== Constructor ==========================
+    // ========================== Constructors ==========================
 
     /**
-     * Khởi tạo một {@code Bid} mới với thời gian, số tiền và tên người dùng tương ứng.
+     * Constructs a new {@code Bid} with the specified timestamp, amount, and bidder
+     * username.
      *
-     * @param createdAt ngày/giờ thiết lập lượt đặt giá (có thể truyền {@code null} nếu là giá thầu "ảo"/sentinel)
-     * @param bid       giá trị tiền mặt của lượt đặt
-     * @param bidderUsername  username của người đấu giá (có thể {@code null} khi tạo sentinel bid)
+     * @param createdAt      the date/time the bid was placed (can be {@code null}
+     *                       for a "no bid" sentinel)
+     * @param bid            the monetary value of the bid
+     * @param bidderUsername the username of the bidder (can be {@code null} for a
+     *                       sentinel bid)
      */
     public Bid(Date createdAt, float bid, String bidderUsername) {
         this.createdAt = createdAt;
@@ -66,68 +67,69 @@ public class Bid implements Serializable {
         this.bidderUsername = bidderUsername;
     }
 
-    // ========================== Getter & Setter ==========================
+    // ========================== Getters & Setters ==========================
 
     /**
-     * Trả về thời điểm mà giá thầu này được sinh ra.
+     * Returns the timestamp when this bid was created.
      *
-     * @return ngày và giờ khởi tạo (Date)
+     * @return the creation date of this bid
      */
     public Date getCreatedAt() {
         return createdAt;
     }
 
     /**
-     * Cập nhật thời điểm khởi tạo của giá thầu này.
+     * Sets the creation timestamp of this bid.
      *
-     * @param createdAt thời gian tạo mới
+     * @param createdAt the new creation date
      */
     public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
     }
 
     /**
-     * Trả về giá trị của mức giá thầu.
+     * Returns the monetary value of this bid.
      *
-     * @return số tiền đặt cược (số thực - float)
+     * @return the bid amount as a float
      */
     public float getBid() {
         return bid;
     }
 
     /**
-     * Cập nhật số tiền đặt giá.
+     * Sets the monetary value of this bid.
      *
-     * @param bid số tiền thầu mới
+     * @param bid the new bid amount
      */
     public void setBid(float bid) {
         this.bid = bid;
     }
 
     /**
-     * Trả về tên đăng nhập của người dùng đã đặt mức giá này.
+     * Returns the username of the client who placed this bid.
      *
-     * @return username của bidder, hoặc {@code null} nếu đây là bid rỗng (sentinel bid)
+     * @return the bidder's username string, or {@code null} for a sentinel "empty"
+     *         bid
      */
     public String getBidderUsername() {
         return bidderUsername;
     }
 
     /**
-     * Cập nhật username của người đặt giá.
+     * Sets the username of the bidder.
      *
-     * @param bidderUsername username mới
+     * @param bidderUsername the new bidder username
      */
     public void setBidderUsername(String bidderUsername) {
         this.bidderUsername = bidderUsername;
     }
 
-    // ========================== Phương thức Định dạng / Tiện ích ==========================
+    // ========================== Methods ==========================
 
     /**
-     * Trả về chuỗi đại diện thân thiện cho giá thầu này.
+     * Returns a human-readable string representation of this bid.
      *
-     * @return chuỗi định dạng hiển thị thời gian, số tiền và username
+     * @return formatted string with createdAt, bid amount, and bidder username
      */
     @Override
     public String toString() {
@@ -139,16 +141,19 @@ public class Bid implements Serializable {
     }
 
     /**
-     * So sánh giá thầu này với một đối tượng khác xem có bằng nhau hay không.
-     * Hai bid được coi là bằng nhau nếu ngày khởi tạo, số tiền đặt và username đều khớp.
+     * Compares this bid with another object for equality.
+     * Two bids are equal if their creation date, bid amount, and bidder username
+     * all match.
      *
-     * @param o đối tượng cần so sánh
-     * @return {@code true} nếu cả 2 bid giống nhau hoàn toàn, {@code false} nếu không
+     * @param o the object to compare against
+     * @return {@code true} if the bids are equal, {@code false} otherwise
      */
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Bid bid1 = (Bid) o;
         return Float.compare(bid1.bid, bid) == 0 &&
                 Objects.equals(createdAt, bid1.createdAt) &&
@@ -156,9 +161,9 @@ public class Bid implements Serializable {
     }
 
     /**
-     * Sinh ra mã băm (hash code) dựa trên ngày giờ, số tiền và username.
+     * Returns a hash code based on createdAt, bid value, and bidder username.
      *
-     * @return mã băm nguyên (int)
+     * @return the hash code
      */
     @Override
     public int hashCode() {
