@@ -6,7 +6,6 @@
     src: url('/css/fonts/SpaceMono-Regular.ttf');
 }
 
-/* ROOT & MAIN CONTAINER */
 .root {
     -fx-font-family: "Space Mono";
 }
@@ -24,7 +23,7 @@
     -fx-padding: 0;
 }
 
-/* ===== HEADER (REUSED FROM DASHBOARD) ===== */
+/* ===== HEADER (dung theo dashboard) ===== */
 .header {
     -fx-background-color: white;
     -fx-padding: 15 30;
@@ -400,6 +399,7 @@
     -fx-font-weight: bold;
     -fx-cursor: hand;
     -fx-padding: 14 0;
+    -fx-background-radius: 0;
     /*-fx-background-radius: 3;*/
     -fx-letter-spacing: 0.5;
     -fx-alignment: center;
@@ -531,10 +531,6 @@
     -fx-border-color: #e8e8e8;
     -fx-border-width: 0 0 1 0;
     -fx-alignment: center-left;
-}
-
-.bid-history-item:last-child {
-    -fx-border-width: 0;
 }
 
 .bidder-name {
