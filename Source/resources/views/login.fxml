@@ -12,18 +12,18 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.text.Font?>
 
-<GridPane alignment="CENTER" hgap="10" prefHeight="396.0" prefWidth="396.0" style="-fx-padding: 40;" vgap="15" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.controllers.LoginController">
+<GridPane alignment="CENTER" hgap="10" prefHeight="396.0" prefWidth="396.0" style="-fx-padding: 40;" vgap="15" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.controllers.LoginController" stylesheets="@/css/login.css">
 
-   <Label styleClass="normalText" text="Username:" GridPane.rowIndex="1" />
+   <Label text="Username:" GridPane.rowIndex="1" />
    <TextField fx:id="usernameField" prefWidth="250" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-   <Label styleClass="normalText" text="Password:" GridPane.rowIndex="2" />
+   <Label text="Password:" GridPane.rowIndex="2" />
    <StackPane GridPane.columnIndex="1" GridPane.rowIndex="2">
       <PasswordField fx:id="hiddenPasswordField" prefWidth="250" />
       <TextField fx:id="visiblePasswordField" prefWidth="250" />
    </StackPane>
 
-   <CheckBox fx:id="showPasswordCheckBox" styleClass="normalText" text="Show Password" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+   <CheckBox fx:id="showPasswordCheckBox" text="Show Password" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
    <Label fx:id="errorLabel" style="-fx-text-fill: red;" GridPane.columnIndex="1" GridPane.rowIndex="4" />
 
@@ -31,9 +31,7 @@
    <AnchorPane prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="1">
       <children>
          <Label layoutX="-109.0" layoutY="18.0" prefHeight="58.0" prefWidth="396.0" styleClass="loginTitle" text="Auction System">
-            <font>
-               <Font size="50.0" />
-            </font></Label>
+         </Label>
       </children>
    </AnchorPane>
    <columnConstraints>
