@@ -64,7 +64,7 @@
     -fx-background-color: #2a3f56;
 }
 
-/* ACTIVE BIDS LIST */
+/* active bids list */
 .active-bids-scroll {
     -fx-background-color: transparent;
     -fx-max-height: 465;
@@ -188,7 +188,7 @@
     -fx-background-color: #0f1822;
 }
 
-/* ===== COMPLETED BIDS SECTION ===== */
+/* ===== bid da hoan thanh ===== */
 .completed-bids-section {
     -fx-padding: 20 30 30 30;
     -fx-spacing: 15;

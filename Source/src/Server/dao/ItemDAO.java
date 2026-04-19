@@ -1,6 +1,6 @@
 package Server.dao;
 
-import CommonClasses.Item;
+import CommonClasses.Items.*;
 
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;

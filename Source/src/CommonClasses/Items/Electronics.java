@@ -1,4 +1,4 @@
-package CommonClasses.Items
+package CommonClasses.Items;
 /**
  * Represents an electronics item in the auction system.
  *

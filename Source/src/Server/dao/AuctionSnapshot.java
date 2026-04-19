@@ -1,7 +1,7 @@
 package Server.dao;
 
 import CommonClasses.Bid;
-import CommonClasses.Item;
+import CommonClasses.Items.*;
 
 import java.io.Serializable;
 import java.util.ArrayList;
