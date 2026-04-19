@@ -1,0 +1,250 @@
+@font-face {
+    src: url('/css/fonts/SVN-Canopee.otf');
+}
+
+@font-face {
+    src: url('/css/fonts/SpaceMono-Regular.ttf');
+}
+
+.root {
+    -fx-font-family: "Space Mono";
+}
+
+.root-scroll {
+    -fx-background-color: #c7d5e0;
+}
+
+.main-container {
+    -fx-background-color: white;
+    -fx-padding: 0;
+}
+
+.header {
+    -fx-background-color: white;
+    -fx-padding: 15 30;
+    -fx-border-color: #e0e0e0;
+    -fx-border-width: 0 0 1 0;
+    -fx-min-height: 60;
+}
+
+.logo {
+    -fx-background-image: url('/images/logo.png');
+    -fx-background-size: contain;
+    -fx-background-position: center;
+    -fx-background-repeat: no-repeat;
+}
+
+.app-title {
+    -fx-font-family: "SVN-Canopee";
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+}
+
+.nav-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #666666;
+    -fx-font-size: 12px;
+    -fx-cursor: hand;
+    -fx-padding: 8 15;
+}
+
+.nav-button:hover {
+    -fx-text-fill: #1b2838;
+    -fx-underline: true;
+}
+
+.icon-button {
+    -fx-background-color: transparent;
+    -fx-cursor: hand;
+    -fx-padding: 8;
+    /*-fx-background-radius: 5;*/
+}
+
+.icon-button:hover {
+    -fx-background-color: #f0f0f0;
+}
+
+.icon-button-badge {
+    -fx-background-color: transparent;
+    -fx-cursor: hand;
+    -fx-padding: 8;
+    /*-fx-background-radius: 5;*/
+}
+
+.icon-button-badge:hover {
+    -fx-background-color: #f0f0f0;
+}
+
+.search-icon,
+.notification-icon,
+.user-icon {
+    -fx-min-width: 24;
+    -fx-min-height: 24;
+    -fx-pref-width: 24;
+    -fx-pref-height: 24;
+    -fx-background-color: #666666;
+    /*-fx-background-radius: 3;*/
+}
+
+.filters-section {
+    -fx-background-color: transparent;
+    -fx-padding: 25 30 15 30;
+}
+
+.section-label {
+    -fx-font-size: 9px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #666666;
+    -fx-letter-spacing: 0.5;
+}
+
+.filter-combo {
+    -fx-background-color: white;
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 1;
+    /*-fx-border-radius: 3;*/
+    /*-fx-background-radius: 3;*/
+    -fx-padding: 8 12;
+}
+
+.filter-combo .list-cell {
+    -fx-text-fill: #666666;
+}
+
+.stats-section {
+    -fx-padding: 15 30;
+    -fx-spacing: 20;
+}
+
+.stat-card {
+    -fx-background-color: white;
+    -fx-padding: 20;
+    -fx-border-color: #99a1af;
+    -fx-border-width: 2;
+    /*-fx-border-radius: 4;*/
+    /*-fx-background-radius: 4;*/
+    -fx-spacing: 8;
+}
+
+.stat-label {
+    -fx-font-size: 9px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #888888;
+    -fx-letter-spacing: 0.5;
+}
+
+.stat-value {
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+}
+
+/* AUCTION CARDS GRID */
+.cards-grid {
+    -fx-padding: 20 30;
+}
+
+.auction-card {
+    -fx-background-color: #fcfdff;
+    -fx-border-color: #99a1af;
+    -fx-border-width: 2;
+    /*-fx-border-radius: 4;*/
+    /*-fx-background-radius: 4;*/
+    -fx-pref-width: 215;
+    -fx-max-width: 215;
+}
+
+.card-image {
+    -fx-background-color: #e5e7eb;
+    -fx-min-height: 200;
+    -fx-pref-height: 200;
+    /*-fx-background-radius: 4 4 0 0;*/
+}
+
+.card-content {
+    -fx-padding: 15;
+}
+
+.card-title {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+}
+
+.card-subtitle {
+    -fx-font-size: 9px;
+    -fx-text-fill: #888888;
+}
+
+.card-price {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+}
+
+.card-meta {
+    -fx-font-size: 9px;
+    -fx-text-fill: #666666;
+}
+
+.time-icon,
+.bid-icon {
+    -fx-min-width: 14;
+    -fx-min-height: 14;
+    -fx-pref-width: 14;
+    -fx-pref-height: 14;
+    -fx-background-color: #888888;
+    /*-fx-background-radius: 2;*/
+}
+
+.bid-button {
+    -fx-background-color: #1b2838;
+    -fx-text-fill: white;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-padding: 10 0;
+    -fx-background-radius: 0;
+    /*-fx-background-radius: 3;*/
+    -fx-letter-spacing: 0.5;
+}
+
+.bid-button:hover {
+    -fx-background-color: #2a3f56;
+}
+
+.bid-button:pressed {
+    -fx-background-color: #0f1822;
+}
+
+/* PAGINATION */
+.pagination-section {
+    -fx-padding: 20 30 30 30;
+}
+
+.pagination-button {
+    -fx-background-color: white;
+    -fx-text-fill: #666666;
+    -fx-font-size: 11px;
+    -fx-cursor: hand;
+    -fx-min-width: 40;
+    -fx-min-height: 40;
+    -fx-border-color: #99a1af;
+    -fx-border-width: 2;
+    /*-fx-border-radius: 3;*/
+    /*-fx-background-radius: 3;*/
+}
+
+.pagination-button:hover {
+    -fx-background-color: #f5f5f5;
+}
+
+.pagination-active {
+    -fx-background-color: #1b2838;
+    -fx-text-fill: white;
+}
+
+.pagination-active:hover {
+    -fx-background-color: #1b2838;
+}
