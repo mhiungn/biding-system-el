@@ -10,9 +10,8 @@
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.StackPane?>
-<?import javafx.scene.text.Font?>
 
-<GridPane alignment="CENTER" hgap="10" prefHeight="396.0" prefWidth="396.0" style="-fx-padding: 40;" vgap="15" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.controllers.Controller" stylesheets="@/css/login.css">
+<GridPane alignment="CENTER" hgap="10" prefHeight="396.0" prefWidth="396.0" style="-fx-padding: 40;" stylesheets="@/css/login.css" vgap="15" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.controllers.LoginController">
 
    <Label text="Username:" GridPane.rowIndex="1" />
    <TextField fx:id="usernameField" prefWidth="250" GridPane.columnIndex="1" GridPane.rowIndex="1" />
@@ -20,10 +19,10 @@
    <Label text="Password:" GridPane.rowIndex="2" />
    <StackPane GridPane.columnIndex="1" GridPane.rowIndex="2">
       <PasswordField fx:id="hiddenPasswordField" prefWidth="250" />
-      <TextField fx:id="visiblePasswordField" prefWidth="250" />
+      <TextField fx:id="visiblePasswordField" managed="false" prefWidth="250" visible="false" /> <!-- managed to prevent taking space when hidden -->
    </StackPane>
 
-   <CheckBox fx:id="showPasswordCheckBox" text="Show Password" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+   <CheckBox fx:id="showPasswordCheckBox" onAction="#togglePasswordVisibility" text="Show Password" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
    <Label fx:id="errorLabel" style="-fx-text-fill: red;" GridPane.columnIndex="1" GridPane.rowIndex="4" />
 
