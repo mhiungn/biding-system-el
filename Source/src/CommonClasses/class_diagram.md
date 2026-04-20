@@ -1,3 +1,4 @@
+```mermaid
 classDiagram
     direction TB
 
@@ -67,3 +68,26 @@ classDiagram
     }
 
     class AuctionState
+
+    %% ─────────────────────────────────────────
+    %%  RELATIONSHIPS (Mapped to match your image)
+    %% ─────────────────────────────────────────
+
+    AuctionManager *-- Auction
+    
+    Entity <|-- User
+    Entity <|-- Item
+
+    User <|-- Bidder
+    User <|-- Seller
+    User <|-- Admin
+
+    Item <|-- Electronics
+    Item <|-- Art
+    Item <|-- Vehicle
+
+    Auction *-- Item
+    Auction *-- Bid
+    Auction o-- BidObserver
+    Auction --> AuctionState
+```
