@@ -3,6 +3,6 @@
 - Nguyễn Minh Hiếu
 - Lê Thiện Giáp
 - Nguyễn Nam Khánh
-- Phạm Quang
+- Phạm Tuấn Quang
 ### Class Diagram:
 [class_diagram.md](Source/src/CommonClasses/class_diagram.md)
