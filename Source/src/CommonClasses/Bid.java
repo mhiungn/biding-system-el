@@ -13,7 +13,7 @@ import java.util.Objects;
  * <li><b>bid</b> — the monetary value of the bid (as a float).</li>
  * <li><b>bidderUsername</b> — the username of the client who placed this bid,
  * used to uniquely identify the bidder.</li>
- * </ul>
+ * </ul.>
  * Bids are stored in a {@link java.util.LinkedList} inside each
  * {@link Auction},
  * ordered from highest (first) to lowest (last). This class implements
