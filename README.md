@@ -1,9 +1,8 @@
-## Hello
-- Toi la `khanh`
-- Toi la `hieu`
-- Toi la `quang`
-- 
-
-### need to fix:
-line 56: src/Server/AuctionCountdownTask
-line 35: src/CommonClasses/ItemFactory
+# Hệ thống đấu giá trực tuyến
+## Thành viên:
+- Nguyễn Minh Hiếu
+- Lê Thiện Giáp
+- Nguyễn Nam Khánh
+- Phạm Quang
+### Class Diagram:
+[class_diagram.md](Source/src/CommonClasses/class_diagram.md)
