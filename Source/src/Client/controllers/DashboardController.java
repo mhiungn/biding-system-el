@@ -26,9 +26,17 @@ public class DashboardController extends Controller {
     private int currentPage = 0;
     private static final int CARDS_PER_PAGE = 12;
 
+    /**
+     * List methods:
+     * - initialize()
+     * - showPage(int)
+     * - createAuctionCard(Item)
+     * - loadAuctionCards(List<Item>)
+     */
+
     @FXML
     public void initialize() {
-        // dummy database
+        // dummy database - tạo danh sách mẫu, ch implement database
         allItems = new ArrayList<>();
         String[] prefixes = {"Vintage", "Designer", "Collectible", "Antique", "Gaming", "Rare", "Modern"};
         String[] types = {"Camera", "Watch", "Computer", "Set", "Console", "Vase", "Bag", "Art", "Lamp"};
@@ -37,7 +45,7 @@ public class DashboardController extends Controller {
             String name = prefixes[i % prefixes.length] + " " + types[i % types.length];
             float price = 100.0f + (i * 50.0f);
             
-            // Create anonymous Item to avoid specific constructors
+            // Create anonymous Item to avoid specific constructors -> tạo lớp con thừa hưởng từ lớp abstract Item mà không cần phải cụ thể type nào.
             Item item = new Item(price, name, "Description for " + name) { };
             allItems.add(item);
         }
