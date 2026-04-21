@@ -11,5 +11,5 @@
 |:---:|------------------|-----------------------------------------------------|
 | 1 | Phạm Quang       | Common Classes                                      |
 | 2 | Lê Thiện Giáp    | Common Classes, proofread tổng quát database, logic |
-| 3 | Nguyễn Nam Khánh |Triển khai DAO, DataStore để lưu/tải dữ liệu                                         |
+| 3 | Nguyễn Nam Khánh | Triển khai DAO, DataStore để lưu/tải dữ liệu        |
 | 4 | Nguyễn Minh Hiếu | Giao diện UI, Controller                            |
