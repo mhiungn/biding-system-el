@@ -2,34 +2,42 @@ package Server.dao;
 
 import CommonClasses.Items.*;
 
+import java.sql.*;
 import java.util.*;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Lớp DAO quản lý việc lưu trữ dữ liệu {@link Item} (sản phẩm đấu giá).
+ * Lớp DAO quản lý việc lưu trữ dữ liệu {@link Item} (sản phẩm đấu giá) trên MySQL.
  * <p>
  * DAO này xử lý các thao tác CRUD cho sản phẩm (Electronics, Art, Vehicle, v.v.).
- * Vì lớp {@link Item} không có trường ID sẵn, DAO này tự tạo khóa UUID cho mỗi
- * item và duy trì một bảng ánh xạ riêng để theo dõi seller nào sở hữu item nào.
+ * Mỗi item được lưu trong bảng {@code items} với khóa chính là UUID tự sinh,
+ * kèm theo cột {@code seller_username} để theo dõi quyền sở hữu.
  * </p>
  *
  * <h3>Singleton Pattern:</h3>
  * Triển khai Singleton an toàn đa luồng bằng double-checked locking.
  *
- * <h3>File dữ liệu:</h3>
- * <ul>
- *   <li>{@code items.dat} — dữ liệu item chính (Map&lt;String, Item&gt;)</li>
- *   <li>{@code item_owners.dat} — ánh xạ quyền sở hữu (Map&lt;String, String&gt;: itemId → sellerUsername)</li>
- * </ul>
+ * <h3>Cấu trúc bảng:</h3>
+ * <pre>
+ *   items (
+ *       item_id         VARCHAR(36) PRIMARY KEY,
+ *       name            VARCHAR(255),
+ *       starting_price  FLOAT,
+ *       description     TEXT,
+ *       item_type       VARCHAR(50),       -- ELECTRONICS / ART / VEHICLE
+ *       seller_username VARCHAR(50)        -- username của seller sở hữu
+ *   )
+ * </pre>
  *
- * <h3>An toàn đa luồng:</h3>
- * Tất cả phương thức public được bảo vệ bởi {@link ReentrantReadWriteLock}.
+ * <h3>Mapping kiểu Item:</h3>
+ * Vì các lớp con {@link Electronics}, {@link Art}, {@link Vehicle} không có
+ * thuộc tính riêng (chỉ khác nhau ở {@code getDisplayInfo()}), cột {@code item_type}
+ * được dùng để xác định class nào cần tạo khi đọc từ database.
  *
  * <h3>Ví dụ sử dụng:</h3>
  * <pre>{@code
  *   ItemDAO itemDAO = ItemDAO.getInstance();
  *
- *   Item laptop = TypeItem.createItem("ELECTRONICS", 500f, "Gaming Laptop", "RTX 4090");
+ *   Item laptop = ItemFactory.createItem("ELECTRONICS", 500f, "Gaming Laptop", "RTX 4090");
  *   String itemId = itemDAO.saveItem(laptop, "seller_john");
  *
  *   Item found = itemDAO.findById(itemId);
@@ -38,26 +46,20 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @see Item
  * @see GenericDAO
- * @see DataStore
+ * @see DatabaseConnection
  */
 public class ItemDAO implements GenericDAO<String, Item> {
 
-    // ========================== Hằng số ==========================
-
-    /** Tên file lưu trữ các đối tượng Item. */
-    private static final String ITEMS_FILE = "items.dat";
-
-    /** Tên file lưu trữ ánh xạ item → seller. */
-    private static final String OWNERS_FILE = "item_owners.dat";
-
     // ========================== Singleton ==========================
 
+    /** Instance duy nhất của ItemDAO. */
     private static volatile ItemDAO instance;
 
     /**
      * Trả về instance Singleton của {@code ItemDAO}.
+     * Sử dụng double-checked locking để khởi tạo lazy an toàn đa luồng.
      *
-     * @return instance Singleton
+     * @return instance Singleton của {@code ItemDAO}
      */
     public static ItemDAO getInstance() {
         if (instance == null) {
@@ -70,49 +72,51 @@ public class ItemDAO implements GenericDAO<String, Item> {
         return instance;
     }
 
-    // ========================== Thuộc tính ==========================
-
-    /** Kho lưu trữ file cho dữ liệu Item. */
-    private final DataStore itemStore;
-
-    /** Kho lưu trữ file cho ánh xạ quyền sở hữu. */
-    private final DataStore ownerStore;
-
-    /** Cache trong bộ nhớ: itemId → Item. */
-    private HashMap<String, Item> items;
-
-    /** Ánh xạ quyền sở hữu trong bộ nhớ: itemId → sellerUsername. */
-    private HashMap<String, String> itemOwners;
-
-    /** Khóa đọc-ghi cho truy cập an toàn đa luồng. */
-    private final ReentrantReadWriteLock lock;
-
     // ========================== Constructor ==========================
 
     /**
      * Constructor private — sử dụng {@link #getInstance()}.
-     * Tải dữ liệu từ ổ đĩa khi khởi tạo.
+     * Tự động tạo bảng {@code items} nếu chưa tồn tại.
      */
     private ItemDAO() {
-        this.itemStore = new DataStore(ITEMS_FILE);
-        this.ownerStore = new DataStore(OWNERS_FILE);
-        this.lock = new ReentrantReadWriteLock();
-        this.items = itemStore.readData();
-        this.itemOwners = ownerStore.readData();
-        System.out.println("[ItemDAO] Đã khởi tạo. Tải " + items.size() + " sản phẩm từ ổ đĩa.");
+        createTableIfNotExists();
+        System.out.println("[ItemDAO] Đã khởi tạo với MySQL. Hiện có " + count() + " sản phẩm.");
+    }
+
+    // ========================== Tạo bảng ==========================
+
+    /**
+     * Tạo bảng {@code items} trong MySQL nếu chưa tồn tại.
+     */
+    private void createTableIfNotExists() {
+        String sql = "CREATE TABLE IF NOT EXISTS items ("
+                + "item_id         VARCHAR(36)    PRIMARY KEY, "
+                + "name            VARCHAR(255)   NOT NULL, "
+                + "starting_price  FLOAT          NOT NULL, "
+                + "item_type       VARCHAR(50)    NOT NULL, "
+                + "description     TEXT, "
+                + "seller_username VARCHAR(50)"
+                + ")";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
+        } catch (SQLException e) {
+            throw new RuntimeException("[ItemDAO] Không thể tạo bảng items", e);
+        }
     }
 
     // ========================== Triển khai GenericDAO ==========================
 
     /**
-     * Lưu một item với ID đã cho sẵn.
+     * Lưu một item với ID đã cho sẵn (không ghi nhận seller).
      * <p>
      * Để lưu item <b>kèm theo dõi quyền sở hữu seller</b>, sử dụng
      * {@link #saveItem(Item, String)} — tự động sinh ID.
      * </p>
-     *
      * @param itemId ID duy nhất của item
      * @param item   đối tượng Item cần lưu
+     * @throws IllegalArgumentException nếu itemId rỗng/null hoặc item là null
      */
     @Override
     public void save(String itemId, Item item) {
@@ -123,13 +127,20 @@ public class ItemDAO implements GenericDAO<String, Item> {
             throw new IllegalArgumentException("Sản phẩm không được null");
         }
 
-        lock.writeLock().lock();
-        try {
-            items.put(itemId, item);
-            persistData();
+        String sql = "INSERT INTO items (item_id, name, starting_price, item_type ,description ) "
+                + "VALUES (?, ?, ?, ?, ?)";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, itemId);
+            ps.setString(2, item.getName());
+            ps.setFloat(3, item.getStartingPrice());
+            ps.setString(4, getItemType(item));
+            ps.setString(5, item.getDescription());
+            ps.executeUpdate();
             System.out.println("[ItemDAO] Đã lưu sản phẩm: " + itemId + " (" + item.getName() + ")");
-        } finally {
-            lock.writeLock().unlock();
+        } catch (SQLException e) {
+            throw new RuntimeException("[ItemDAO] Lỗi khi lưu sản phẩm: " + itemId, e);
         }
     }
 
@@ -141,27 +152,41 @@ public class ItemDAO implements GenericDAO<String, Item> {
      */
     @Override
     public Item findById(String itemId) {
-        lock.readLock().lock();
-        try {
-            return items.get(itemId);
-        } finally {
-            lock.readLock().unlock();
+        String sql = "SELECT * FROM items WHERE item_id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, itemId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToItem(rs);
+                }
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[ItemDAO] Lỗi khi tìm sản phẩm: " + itemId, e);
         }
     }
 
     /**
      * Trả về tất cả sản phẩm đã lưu.
-     *
-     * @return danh sách mới chứa tất cả Item
+     * @return danh sách tất cả Item; trả về danh sách rỗng nếu không có
      */
     @Override
     public List<Item> findAll() {
-        lock.readLock().lock();
-        try {
-            return new ArrayList<>(items.values());
-        } finally {
-            lock.readLock().unlock();
+        String sql = "SELECT * FROM items";
+        List<Item> result = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                result.add(mapResultSetToItem(rs));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[ItemDAO] Lỗi khi lấy tất cả sản phẩm", e);
         }
+        return result;
     }
 
     /**
@@ -173,40 +198,48 @@ public class ItemDAO implements GenericDAO<String, Item> {
      */
     @Override
     public boolean update(String itemId, Item item) {
-        lock.writeLock().lock();
-        try {
-            if (!items.containsKey(itemId)) {
-                return false;
+        String sql = "UPDATE items SET name = ?, starting_price = ?, description = ?, item_type = ? "
+                + "WHERE item_id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, item.getName());
+            ps.setFloat(2, item.getStartingPrice());
+            ps.setString(3, item.getDescription());
+            ps.setString(4, getItemType(item));
+            ps.setString(5, itemId);
+            int rows = ps.executeUpdate();
+            if (rows > 0) {
+                System.out.println("[ItemDAO] Đã cập nhật sản phẩm: " + itemId + " (" + item.getName() + ")");
+                return true;
             }
-            items.put(itemId, item);
-            persistData();
-            System.out.println("[ItemDAO] Đã cập nhật sản phẩm: " + itemId + " (" + item.getName() + ")");
-            return true;
-        } finally {
-            lock.writeLock().unlock();
+            return false;
+        } catch (SQLException e) {
+            throw new RuntimeException("[ItemDAO] Lỗi khi cập nhật sản phẩm: " + itemId, e);
         }
     }
 
     /**
-     * Xóa một sản phẩm và ánh xạ quyền sở hữu của nó.
+     * Xóa một sản phẩm theo ID.
      *
      * @param itemId ID của sản phẩm cần xóa
      * @return {@code true} nếu tìm thấy và xóa thành công
      */
     @Override
     public boolean delete(String itemId) {
-        lock.writeLock().lock();
-        try {
-            Item removed = items.remove(itemId);
-            itemOwners.remove(itemId);
-            if (removed != null) {
-                persistData();
-                System.out.println("[ItemDAO] Đã xóa sản phẩm: " + itemId + " (" + removed.getName() + ")");
+        String sql = "DELETE FROM items WHERE item_id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, itemId);
+            int rows = ps.executeUpdate();
+            if (rows > 0) {
+                System.out.println("[ItemDAO] Đã xóa sản phẩm: " + itemId);
                 return true;
             }
             return false;
-        } finally {
-            lock.writeLock().unlock();
+        } catch (SQLException e) {
+            throw new RuntimeException("[ItemDAO] Lỗi khi xóa sản phẩm: " + itemId, e);
         }
     }
 
@@ -218,11 +251,19 @@ public class ItemDAO implements GenericDAO<String, Item> {
      */
     @Override
     public boolean exists(String itemId) {
-        lock.readLock().lock();
-        try {
-            return items.containsKey(itemId);
-        } finally {
-            lock.readLock().unlock();
+        String sql = "SELECT COUNT(*) FROM items WHERE item_id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, itemId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+                return false;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[ItemDAO] Lỗi khi kiểm tra tồn tại: " + itemId, e);
         }
     }
 
@@ -233,34 +274,17 @@ public class ItemDAO implements GenericDAO<String, Item> {
      */
     @Override
     public int count() {
-        lock.readLock().lock();
-        try {
-            return items.size();
-        } finally {
-            lock.readLock().unlock();
-        }
-    }
+        String sql = "SELECT COUNT(*) FROM items";
 
-    @Override
-    public void flush() {
-        lock.writeLock().lock();
-        try {
-            persistData();
-            System.out.println("[ItemDAO] Đã ghi " + items.size() + " sản phẩm xuống ổ đĩa.");
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    @Override
-    public void reload() {
-        lock.writeLock().lock();
-        try {
-            this.items = itemStore.readData();
-            this.itemOwners = ownerStore.readData();
-            System.out.println("[ItemDAO] Đã tải lại " + items.size() + " sản phẩm từ ổ đĩa.");
-        } finally {
-            lock.writeLock().unlock();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+            return 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("[ItemDAO] Lỗi khi đếm sản phẩm", e);
         }
     }
 
@@ -286,17 +310,24 @@ public class ItemDAO implements GenericDAO<String, Item> {
             throw new IllegalArgumentException("Username của seller không được để trống hoặc null");
         }
 
-        lock.writeLock().lock();
-        try {
-            String itemId = UUID.randomUUID().toString();
-            items.put(itemId, item);
-            itemOwners.put(itemId, sellerUsername);
-            persistData();
+        String itemId = UUID.randomUUID().toString();
+        String sql = "INSERT INTO items (item_id, name, starting_price, description, item_type, seller_username) "
+                + "VALUES (?, ?, ?, ?, ?, ?)";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, itemId);
+            ps.setString(2, item.getName());
+            ps.setFloat(3, item.getStartingPrice());
+            ps.setString(4, item.getDescription());
+            ps.setString(5, getItemType(item));
+            ps.setString(6, sellerUsername);
+            ps.executeUpdate();
             System.out.println("[ItemDAO] Đã lưu sản phẩm: " + itemId
                     + " (" + item.getName() + ") thuộc sở hữu của " + sellerUsername);
             return itemId;
-        } finally {
-            lock.writeLock().unlock();
+        } catch (SQLException e) {
+            throw new RuntimeException("[ItemDAO] Lỗi khi lưu sản phẩm với seller", e);
         }
     }
 
@@ -307,21 +338,23 @@ public class ItemDAO implements GenericDAO<String, Item> {
      * @return map itemId → Item cho tất cả sản phẩm của seller này
      */
     public Map<String, Item> findBySeller(String sellerUsername) {
-        lock.readLock().lock();
-        try {
-            Map<String, Item> result = new HashMap<>();
-            for (Map.Entry<String, String> entry : itemOwners.entrySet()) {
-                if (entry.getValue().equals(sellerUsername)) {
-                    Item item = items.get(entry.getKey());
-                    if (item != null) {
-                        result.put(entry.getKey(), item);
-                    }
+        String sql = "SELECT * FROM items WHERE seller_username = ?";
+        Map<String, Item> result = new HashMap<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, sellerUsername);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String itemId = rs.getString("item_id");
+                    Item item = mapResultSetToItem(rs);
+                    result.put(itemId, item);
                 }
             }
-            return result;
-        } finally {
-            lock.readLock().unlock();
+        } catch (SQLException e) {
+            throw new RuntimeException("[ItemDAO] Lỗi khi tìm sản phẩm theo seller: " + sellerUsername, e);
         }
+        return result;
     }
 
     /**
@@ -331,11 +364,19 @@ public class ItemDAO implements GenericDAO<String, Item> {
      * @return username của seller, hoặc {@code null} nếu không tìm thấy
      */
     public String getItemOwner(String itemId) {
-        lock.readLock().lock();
-        try {
-            return itemOwners.get(itemId);
-        } finally {
-            lock.readLock().unlock();
+        String sql = "SELECT seller_username FROM items WHERE item_id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, itemId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("seller_username");
+                }
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[ItemDAO] Lỗi khi tìm chủ sở hữu: " + itemId, e);
         }
     }
 
@@ -347,12 +388,20 @@ public class ItemDAO implements GenericDAO<String, Item> {
      * @return {@code true} nếu seller sở hữu sản phẩm này
      */
     public boolean isOwner(String itemId, String sellerUsername) {
-        lock.readLock().lock();
-        try {
-            String owner = itemOwners.get(itemId);
-            return owner != null && owner.equals(sellerUsername);
-        } finally {
-            lock.readLock().unlock();
+        String sql = "SELECT COUNT(*) FROM items WHERE item_id = ? AND seller_username = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, itemId);
+            ps.setString(2, sellerUsername);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+                return false;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[ItemDAO] Lỗi khi kiểm tra quyền sở hữu", e);
         }
     }
 
@@ -363,19 +412,23 @@ public class ItemDAO implements GenericDAO<String, Item> {
      * @return map itemId → Item cho tất cả sản phẩm khớp
      */
     public Map<String, Item> findByName(String namePart) {
-        lock.readLock().lock();
-        try {
-            Map<String, Item> result = new HashMap<>();
-            String searchLower = namePart.toLowerCase();
-            for (Map.Entry<String, Item> entry : items.entrySet()) {
-                if (entry.getValue().getName().toLowerCase().contains(searchLower)) {
-                    result.put(entry.getKey(), entry.getValue());
+        String sql = "SELECT * FROM items WHERE LOWER(name) LIKE ?";
+        Map<String, Item> result = new HashMap<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, "%" + namePart.toLowerCase() + "%");
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String itemId = rs.getString("item_id");
+                    Item item = mapResultSetToItem(rs);
+                    result.put(itemId, item);
                 }
             }
-            return result;
-        } finally {
-            lock.readLock().unlock();
+        } catch (SQLException e) {
+            throw new RuntimeException("[ItemDAO] Lỗi khi tìm sản phẩm theo tên: " + namePart, e);
         }
+        return result;
     }
 
     /**
@@ -384,22 +437,64 @@ public class ItemDAO implements GenericDAO<String, Item> {
      * @return map mới chứa tất cả sản phẩm
      */
     public Map<String, Item> findAllAsMap() {
-        lock.readLock().lock();
-        try {
-            return new HashMap<>(items);
-        } finally {
-            lock.readLock().unlock();
+        String sql = "SELECT * FROM items";
+        Map<String, Item> result = new HashMap<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                String itemId = rs.getString("item_id");
+                Item item = mapResultSetToItem(rs);
+                result.put(itemId, item);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[ItemDAO] Lỗi khi lấy tất cả sản phẩm dạng Map", e);
         }
+        return result;
     }
 
     // ========================== Phương thức Private ==========================
 
     /**
-     * Ghi cả map item và map quyền sở hữu xuống ổ đĩa.
-     * Phải được gọi khi đang giữ write lock.
+     * Chuyển đổi một dòng {@link ResultSet} thành đối tượng {@link Item} đúng kiểu.
+     * <p>
+     * Dựa vào cột {@code item_type} để xác định tạo {@link Electronics},
+     * {@link Art}, hay {@link Vehicle}.
+     * </p>
+     *
+     * @param rs ResultSet đang trỏ tới dòng cần đọc
+     * @return đối tượng Item đúng kiểu
+     * @throws SQLException nếu lỗi đọc dữ liệu
      */
-    private void persistData() {
-        itemStore.writeData(items);
-        ownerStore.writeData(itemOwners);
+    private Item mapResultSetToItem(ResultSet rs) throws SQLException {
+        String type = rs.getString("item_type");
+        float price = rs.getFloat("starting_price");
+        String name = rs.getString("name");
+        String desc = rs.getString("description");
+
+        switch (type.toUpperCase()) {
+            case "ELECTRONICS":
+                return new Electronics(price, name, desc);
+            case "ART":
+                return new Art(price, name, desc);
+            case "VEHICLE":
+                return new Vehicle(price, name, desc);
+            default:
+                throw new RuntimeException("Loại sản phẩm không xác định trong database: " + type);
+        }
+    }
+
+    /**
+     * Xác định chuỗi kiểu item từ đối tượng {@link Item} để lưu vào cột {@code item_type}.
+     *
+     * @param item đối tượng Item cần xác định kiểu
+     * @return chuỗi kiểu: "ELECTRONICS", "ART", hoặc "VEHICLE"
+     */
+    private String getItemType(Item item) {
+        if (item instanceof Electronics) return "ELECTRONICS";
+        if (item instanceof Art) return "ART";
+        if (item instanceof Vehicle) return "VEHICLE";
+        return item.getClass().getSimpleName().toUpperCase();
     }
 }
