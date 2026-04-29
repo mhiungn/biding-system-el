@@ -9,7 +9,7 @@
 
 | STT | Tên thành viên   | Nhiệm vụ                                            |
 |:---:|------------------|-----------------------------------------------------|
-| 1 | Phạm Tuấn Quang  | Network                                         |
+| 1 | Phạm Tuấn Quang  | Common Classes ,Network                             |
 | 2 | Lê Thiện Giáp    | Common Classes, proofread tổng quát database, logic |
 | 3 | Nguyễn Nam Khánh | Triển khai DAO, DataStore để lưu/tải dữ liệu        |
 | 4 | Nguyễn Minh Hiếu | Giao diện UI, Controller                            |
