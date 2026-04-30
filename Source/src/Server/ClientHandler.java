@@ -1,10 +1,12 @@
 package Server;
-
+import java.io.*;
+import java.net.Socket;
 import Packets.PacketMessage;
-
+import Packets.MessageType;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.net.Socket;
+import Server.dao.UserDAO;
+import CommonClasses.User;
 
 /**
  * Handles the communication with a single connected client.
@@ -59,7 +61,54 @@ public class ClientHandler implements Runnable {
 
     @Override
     public void run() {
-        // Main client handler loop — reads incoming packets from the client
-        // Implementation depends on the full networking stack
+        // 1. Khởi tạo luồng nhận dữ liệu (InputStream) từ socket
+        // Sử dụng try-with-resources để tự động đóng socket khi gặp lỗi hoặc ngắt kết nối
+        try (ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream())) {
+
+            System.out.println(" [Network] Đang lắng nghe từ client: " + (client != null ? client.getUsername() : "Guest"));
+
+            while (true) {
+                // 2. Chờ nhận dữ liệu từ Client gửi lên
+                Object received = inputStream.readObject();
+
+                if (received instanceof PacketMessage) {
+                    PacketMessage request = (PacketMessage) received;
+
+                    // --- KHU VỰC XỬ LÝ LOGIC ---
+
+                    // Xử lý yêu cầu ĐĂNG NHẬP (LOGIN_REQUEST)
+                    if (request.getMessageType() == MessageType.LOGIN_REQUEST) {
+                        User loginInfo = (User) request.getPayload();
+
+                        // Gọi UserDAO để xác thực tài khoản
+                        User userResult = UserDAO.getInstance().authenticate(loginInfo.getUsername(), loginInfo.getPassword());
+
+                        if (userResult != null) {
+                            // Cập nhật tên thật cho Client thay vì "Guest"
+                            this.client.setUsername(userResult.getUsername());
+
+                            // Đưa Handler này vào Map của Server để có thể gửi tin cho user này
+                            Server.getInstance().getClientHandlers().put(userResult.getUsername(), this);
+
+                            System.out.println(" [Network] User '" + userResult.getUsername() + "' đã đăng nhập thành công.");
+                        }
+
+                        // Gửi gói tin trả lời (Response) về cho Client
+                        sendPacket(new PacketMessage(MessageType.LOGIN_RESPONSE, userResult));
+                    }
+
+                    // Sau này nếu có thêm logic khác như xem danh sách hay đặt giá, viết tiếp else if ở đây
+                }
+            }
+        } catch (EOFException e) {
+            System.out.println(" [Network] Client đã ngắt kết nối chủ động.");
+        } catch (Exception e) {
+            System.err.println(" [Network] Lỗi kết nối hoặc xử lý dữ liệu: " + e.getMessage());
+        } finally {
+            // Khi ngắt kết nối, dọn dẹp danh sách trong Server (nếu cần)
+            if (client != null && client.getUsername() != null) {
+                Server.getInstance().getClientHandlers().remove(client.getUsername());
+            }
+        }
     }
 }

@@ -83,4 +83,30 @@ public class Server {
             }
         }
     }
+
+    public static void main(String[] args) {
+        int port = 12345; //
+        Server serverInstance = Server.getInstance();
+
+        try (java.net.ServerSocket serverSocket = new java.net.ServerSocket(port)) {
+            System.out.println(" Server Đấu Giá đã khởi động tại cổng: " + port);
+            System.out.println(" Đang đợi các bạn Client kết nối vào...");
+
+            while (true) {
+                // Chấp nhận kết nối
+                java.net.Socket socket = serverSocket.accept();
+
+                // Tạo một cái tên tạm cho Client (vì chưa login nên chưa biết username)
+                Client guestClient = new Client("Guest_" + socket.getPort());
+
+                // Tạo Handler để xử lý riêng cho người này
+                ClientHandler handler = new ClientHandler(guestClient, socket);
+
+                // Chạy luồng riêng (Multi-thread)
+                new Thread(handler).start();
+            }
+        } catch (java.io.IOException e) {
+            System.err.println(" Lỗi khởi động Server: " + e.getMessage());
+        }
+    }
 }
