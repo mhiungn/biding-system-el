@@ -1,80 +1,97 @@
 package Server.dao;
 
 import CommonClasses.Bid;
+import CommonClasses.Items.*;
 
+import java.sql.*;
 import java.util.*;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
+import java.util.Date;
 
 /**
- * Lớp DAO quản lý việc lưu trữ {@link AuctionSnapshot} (bản chụp phiên đấu giá).
+ * Lớp DAO quản lý việc lưu trữ dữ liệu {@link AuctionSnapshot} (phiên đấu giá)
+ * trên MySQL.
  * <p>
- * DAO này lưu trữ trạng thái phiên đấu giá bằng đối tượng {@link AuctionSnapshot}
- * — bản chụp có thể serialize, chứa phần dữ liệu bền vững của
- * {@link CommonClasses.Auction} mà không có các trường runtime không thể serialize
- * (Timer, Client, v.v.).
+ * DAO này xử lý các thao tác CRUD cho phiên đấu giá bao gồm snapshot chính,
+ * danh sách bid, và danh sách người tham gia. Dữ liệu được phân bổ qua 3 bảng:
  * </p>
+ * <ul>
+ * <li>{@code auction_snapshots} — thông tin chính của phiên đấu giá và item
+ * inline</li>
+ * <li>{@code auction_bids} — lịch sử các lượt đặt giá (sắp xếp giá cao nhất đầu
+ * tiên)</li>
+ * <li>{@code auction_participants} — danh sách username người tham gia</li>
+ * </ul>
  *
  * <h3>Singleton Pattern:</h3>
  * Triển khai Singleton an toàn đa luồng bằng double-checked locking.
  *
- * <h3>Ánh xạ khóa:</h3>
- * Phiên đấu giá được lưu trong {@code HashMap<Integer, AuctionSnapshot>}
- * với khóa là ID phiên (số nguyên, sinh bởi {@code AtomicInteger} trong lớp Auction).
+ * <h3>Cấu trúc bảng:</h3>
+ * 
+ * <pre>
+ *   auction_snapshots (
+ *       auction_id          INT           PRIMARY KEY,
+ *       client_owner        VARCHAR(50),
+ *       created_at          DATETIME,
+ *       terminate_at        DATETIME,
+ *       type                VARCHAR(30),
+ *       status              VARCHAR(20)   DEFAULT 'OPEN',
+ *       was_in_countdown    BOOLEAN       DEFAULT FALSE,
+ *       item_name           VARCHAR(255),
+ *       item_starting_price FLOAT,
+ *       item_description    TEXT,
+ *       item_type           VARCHAR(50)
+ *   )
  *
- * <h3>Vòng đời:</h3>
- * <ol>
- *   <li>Khi tạo phiên mới, {@link #save(Integer, AuctionSnapshot)} lưu trạng thái ban đầu.</li>
- *   <li>Khi có bid mới hoặc thay đổi trạng thái, {@link #update(Integer, AuctionSnapshot)}
- *       lưu trạng thái mới.</li>
- *   <li>Khi server khởi động lại, {@link #findActiveAuctions()} trả về tất cả phiên
- *       chưa kết thúc, cho phép tạo lại Timer/Client mới.</li>
- * </ol>
+ *   auction_bids (
+ *       id                  INT AUTO_INCREMENT PRIMARY KEY,
+ *       auction_id          INT FK → auction_snapshots,
+ *       bid_amount          FLOAT,
+ *       bidder_username     VARCHAR(50),
+ *       created_at          DATETIME,
+ *       bid_order           INT           -- 0 = giá cao nhất (đầu LinkedList)
+ *   )
  *
- * <h3>An toàn đa luồng:</h3>
- * Tất cả phương thức public được bảo vệ bởi {@link ReentrantReadWriteLock}.
+ *   auction_participants (
+ *       auction_id          INT FK → auction_snapshots,
+ *       username            VARCHAR(50),
+ *       PRIMARY KEY (auction_id, username)
+ *   )
+ * </pre>
+ *
+ * <h3>Transaction:</h3>
+ * Các thao tác {@link #save} và {@link #update} sử dụng transaction để đảm bảo
+ * tính toàn vẹn dữ liệu qua 3 bảng. Nếu có bất kỳ lỗi nào, toàn bộ thao tác
+ * sẽ được rollback.
  *
  * <h3>Ví dụ sử dụng:</h3>
+ * 
  * <pre>{@code
- *   AuctionDAO dao = AuctionDAO.getInstance();
+ * AuctionDAO auctionDAO = AuctionDAO.getInstance();
  *
- *   // Lưu snapshot phiên mới
- *   AuctionSnapshot snapshot = new AuctionSnapshot(
- *       1, "seller_john", new Date(), terminateDate,
- *       "Time_Fixed", "OPEN", item, new LinkedList<>(),
- *       new ArrayList<>(), false
- *   );
- *   dao.save(1, snapshot);
+ * AuctionSnapshot snapshot = new AuctionSnapshot(1, "seller_ann", new Date(),
+ *         endDate, "Time_Fixed", "OPEN", item, new LinkedList<>(), new ArrayList<>(), false);
+ * auctionDAO.save("1", snapshot);
  *
- *   // Cập nhật sau khi có bid
- *   snapshot.getBidList().addFirst(new Bid(new Date(), 150f, "bidder_jane"));
- *   snapshot.setStatus("RUNNING");
- *   dao.update(1, snapshot);
- *
- *   // Tìm phiên đang hoạt động khi khởi động lại
- *   List<AuctionSnapshot> active = dao.findActiveAuctions();
+ * AuctionSnapshot found = auctionDAO.findById("1");
+ * List<AuctionSnapshot> running = auctionDAO.findByStatus("RUNNING");
  * }</pre>
  *
  * @see AuctionSnapshot
- * @see CommonClasses.Auction
  * @see GenericDAO
- * @see DataStore
+ * @see DatabaseConnection
  */
-public class AuctionDAO implements GenericDAO<Integer, AuctionSnapshot> {
-
-    // ========================== Hằng số ==========================
-
-    /** Tên file lưu trữ dữ liệu phiên đấu giá. */
-    private static final String DATA_FILE = "auctions.dat";
+public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
 
     // ========================== Singleton ==========================
 
+    /** Instance duy nhất của AuctionDAO. */
     private static volatile AuctionDAO instance;
 
     /**
      * Trả về instance Singleton của {@code AuctionDAO}.
+     * Sử dụng double-checked locking để khởi tạo lazy an toàn đa luồng.
      *
-     * @return instance Singleton
+     * @return instance Singleton của {@code AuctionDAO}
      */
     public static AuctionDAO getInstance() {
         if (instance == null) {
@@ -87,449 +104,845 @@ public class AuctionDAO implements GenericDAO<Integer, AuctionSnapshot> {
         return instance;
     }
 
-    // ========================== Thuộc tính ==========================
-
-    /** Kho lưu trữ file cho dữ liệu phiên đấu giá. */
-    private final DataStore dataStore;
-
-    /** Cache trong bộ nhớ: auctionId → AuctionSnapshot. */
-    private HashMap<Integer, AuctionSnapshot> auctions;
-
-    /** Khóa đọc-ghi cho truy cập an toàn đa luồng. */
-    private final ReentrantReadWriteLock lock;
-
     // ========================== Constructor ==========================
 
     /**
      * Constructor private — sử dụng {@link #getInstance()}.
-     * Tải dữ liệu phiên đấu giá từ ổ đĩa khi khởi tạo.
+     * Tự động tạo các bảng {@code auction_snapshots}, {@code auction_bids},
+     * và {@code auction_participants} nếu chưa tồn tại.
      */
     private AuctionDAO() {
-        this.dataStore = new DataStore(DATA_FILE);
-        this.lock = new ReentrantReadWriteLock();
-        this.auctions = dataStore.readData();
-        System.out.println("[AuctionDAO] Đã khởi tạo. Tải " + auctions.size() + " phiên đấu giá từ ổ đĩa.");
+        createTablesIfNotExist();
+        System.out.println("[AuctionDAO] Đã khởi tạo với MySQL. Hiện có " + count() + " phiên đấu giá.");
+    }
+
+    // ========================== Tạo bảng ==========================
+
+    /**
+     * Tạo các bảng cần thiết trong MySQL nếu chưa tồn tại.
+     * <p>
+     * Thứ tự tạo bảng quan trọng: {@code auction_snapshots} phải được tạo trước
+     * vì hai bảng còn lại tham chiếu foreign key đến nó với
+     * {@code ON DELETE CASCADE}.
+     * </p>
+     */
+    private void createTablesIfNotExist() {
+        String snapshotTable = "CREATE TABLE IF NOT EXISTS auction_snapshots ("
+                + "auction_id          INT           PRIMARY KEY, "
+                + "client_owner        VARCHAR(50), "
+                + "created_at          DATETIME, "
+                + "terminate_at        DATETIME, "
+                + "type                VARCHAR(30), "
+                + "status              VARCHAR(20)   NOT NULL DEFAULT 'OPEN', "
+                + "was_in_countdown    BOOLEAN       NOT NULL DEFAULT FALSE, "
+                + "item_name           VARCHAR(255), "
+                + "item_starting_price FLOAT, "
+                + "item_description    TEXT, "
+                + "item_type           VARCHAR(50)"
+                + ")";
+
+        String bidsTable = "CREATE TABLE IF NOT EXISTS auction_bids ("
+                + "id                  INT           AUTO_INCREMENT PRIMARY KEY, "
+                + "auction_id          INT           NOT NULL, "
+                + "bid_amount          FLOAT         NOT NULL, "
+                + "bidder_username     VARCHAR(50), "
+                + "created_at          DATETIME, "
+                + "bid_order           INT           NOT NULL, "
+                + "FOREIGN KEY (auction_id) REFERENCES auction_snapshots(auction_id) ON DELETE CASCADE"
+                + ")";
+
+        String participantsTable = "CREATE TABLE IF NOT EXISTS auction_participants ("
+                + "auction_id          INT           NOT NULL, "
+                + "username            VARCHAR(50)   NOT NULL, "
+                + "PRIMARY KEY (auction_id, username), "
+                + "FOREIGN KEY (auction_id) REFERENCES auction_snapshots(auction_id) ON DELETE CASCADE"
+                + ")";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                Statement stmt = conn.createStatement()) {
+            stmt.execute(snapshotTable);
+            stmt.execute(bidsTable);
+            stmt.execute(participantsTable);
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Không thể tạo bảng", e);
+        }
     }
 
     // ========================== Triển khai GenericDAO ==========================
 
     /**
-     * Lưu snapshot phiên đấu giá mới.
+     * Lưu một phiên đấu giá mới vào cơ sở dữ liệu.
+     * <p>
+     * Thao tác lưu được thực hiện trong một transaction duy nhất bao gồm:
+     * snapshot chính, danh sách bid, và danh sách người tham gia.
+     * Nếu phiên đấu giá với ID đã tồn tại, tự động chuyển sang {@link #update}.
+     * </p>
      *
-     * @param auctionId ID duy nhất của phiên
-     * @param snapshot  bản chụp AuctionSnapshot cần lưu
-     * @throws IllegalArgumentException nếu auctionId null hoặc snapshot null
+     * @param auctionId ID duy nhất của phiên đấu giá (dạng chuỗi số)
+     * @param snapshot  đối tượng AuctionSnapshot cần lưu
+     * @throws IllegalArgumentException nếu auctionId rỗng/null hoặc snapshot là
+     *                                  null
      */
     @Override
-    public void save(Integer auctionId, AuctionSnapshot snapshot) {
-        if (auctionId == null) {
-            throw new IllegalArgumentException("ID phiên đấu giá không được null");
+    public void save(String auctionId, AuctionSnapshot snapshot) {
+        if (auctionId == null || auctionId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Auction ID không thể null hoặc để trống.");
         }
         if (snapshot == null) {
-            throw new IllegalArgumentException("AuctionSnapshot không được null");
+            throw new IllegalArgumentException("Auction Snapshot không thể null.");
         }
 
-        lock.writeLock().lock();
+        // Nếu đã tồn tại, chuyển sang update
+        if (exists(auctionId)) {
+            System.out.println("[AuctionDAO] Phiên " + auctionId + " đã tồn tại — chuyển sang update.");
+            update(auctionId, snapshot);
+            return;
+        }
+
+        int id = parseAuctionId(auctionId);
+        Connection conn = null;
         try {
-            if (auctions.containsKey(auctionId)) {
-                System.err.println("[AuctionDAO] Cảnh báo: Phiên " + auctionId
-                        + " đã tồn tại. Dùng update() thay thế.");
-                return;
-            }
-            auctions.put(auctionId, snapshot);
-            persistData();
-            System.out.println("[AuctionDAO] Đã lưu phiên: " + auctionId
-                    + " (" + snapshot.getItem().getName() + ")");
+            conn = DatabaseConnection.getConnection();
+            conn.setAutoCommit(false);
+
+            // 1. Lưu thông tin chính của phiên đấu giá
+            insertSnapshot(conn, id, snapshot);
+
+            // 2. Lưu danh sách bid
+            insertBids(conn, id, snapshot.getBidList());
+
+            // 3. Lưu danh sách người tham gia
+            insertParticipants(conn, id, snapshot.getRegisteredUsernames());
+
+            conn.commit();
+            System.out.println("[AuctionDAO] Đã lưu phiên đấu giá: " + auctionId);
+        } catch (SQLException e) {
+            rollbackQuietly(conn);
+            throw new RuntimeException("[AuctionDAO] Lỗi khi lưu phiên đấu giá: " + auctionId, e);
         } finally {
-            lock.writeLock().unlock();
+            closeQuietly(conn);
         }
     }
 
     /**
-     * Tìm snapshot phiên đấu giá theo ID.
+     * Tìm phiên đấu giá theo ID.
+     * <p>
+     * Dữ liệu được tập hợp từ 3 bảng: snapshot chính, danh sách bid
+     * (sắp xếp theo {@code bid_order}), và danh sách người tham gia.
+     * </p>
      *
-     * @param auctionId ID phiên đấu giá
-     * @return {@link AuctionSnapshot} nếu tìm thấy, hoặc {@code null}
+     * @param auctionId ID phiên đấu giá cần tìm (dạng chuỗi số)
+     * @return {@link AuctionSnapshot} nếu tìm thấy, hoặc {@code null} nếu không tồn
+     *         tại
      */
     @Override
-    public AuctionSnapshot findById(Integer auctionId) {
-        lock.readLock().lock();
-        try {
-            return auctions.get(auctionId);
-        } finally {
-            lock.readLock().unlock();
+    public AuctionSnapshot findById(String auctionId) {
+        String sql = "SELECT * FROM auction_snapshots WHERE auction_id = ?";
+        int id = parseAuctionId(auctionId);
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    AuctionSnapshot snapshot = mapResultSetToSnapshot(rs);
+                    snapshot.setBidList(loadBids(id));
+                    snapshot.setRegisteredUsernames(loadParticipants(id));
+                    return snapshot;
+                }
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi khi tìm phiên đấu giá: " + auctionId, e);
         }
     }
 
     /**
-     * Trả về tất cả snapshot phiên đấu giá đã lưu.
+     * Trả về tất cả phiên đấu giá đã lưu.
      *
-     * @return danh sách mới chứa tất cả snapshot
+     * @return danh sách tất cả AuctionSnapshot; trả về danh sách rỗng nếu không có
      */
     @Override
     public List<AuctionSnapshot> findAll() {
-        lock.readLock().lock();
-        try {
-            return new ArrayList<>(auctions.values());
-        } finally {
-            lock.readLock().unlock();
+        String sql = "SELECT * FROM auction_snapshots";
+        List<AuctionSnapshot> result = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                AuctionSnapshot snapshot = mapResultSetToSnapshot(rs);
+                int id = snapshot.getAuctionId();
+                snapshot.setBidList(loadBids(id));
+                snapshot.setRegisteredUsernames(loadParticipants(id));
+                result.add(snapshot);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi khi lấy tất cả phiên đấu giá", e);
         }
+        return result;
     }
 
     /**
-     * Cập nhật snapshot phiên đấu giá (VD: sau bid mới hoặc đổi trạng thái).
+     * Cập nhật thông tin một phiên đấu giá đã tồn tại.
+     * <p>
+     * Thao tác cập nhật được thực hiện trong transaction: cập nhật snapshot chính,
+     * xóa rồi chèn lại toàn bộ danh sách bid và danh sách người tham gia.
+     * </p>
      *
-     * @param auctionId ID phiên cần cập nhật
-     * @param snapshot  snapshot đã cập nhật
+     * @param auctionId ID của phiên cần cập nhật (dạng chuỗi số)
+     * @param snapshot  dữ liệu AuctionSnapshot mới
      * @return {@code true} nếu tìm thấy và cập nhật thành công
      */
     @Override
-    public boolean update(Integer auctionId, AuctionSnapshot snapshot) {
-        lock.writeLock().lock();
+    public boolean update(String auctionId, AuctionSnapshot snapshot) {
+        int id = parseAuctionId(auctionId);
+        Connection conn = null;
         try {
-            if (!auctions.containsKey(auctionId)) {
-                return false;
+            conn = DatabaseConnection.getConnection();
+            conn.setAutoCommit(false);
+
+            // 1. Cập nhật thông tin chính
+            String sql = "UPDATE auction_snapshots SET client_owner = ?, created_at = ?, "
+                    + "terminate_at = ?, type = ?, status = ?, was_in_countdown = ?, "
+                    + "item_name = ?, item_starting_price = ?, item_description = ?, item_type = ? "
+                    + "WHERE auction_id = ?";
+
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, snapshot.getClientOwner());
+                ps.setTimestamp(2, toTimestamp(snapshot.getCreatedAt()));
+                ps.setTimestamp(3, toTimestamp(snapshot.getTerminateAt()));
+                ps.setString(4, snapshot.getType());
+                ps.setString(5, snapshot.getStatus());
+                ps.setBoolean(6, snapshot.wasInCountDown());
+                setItemParams(ps, snapshot.getItem(), 7);
+                ps.setInt(11, id);
+                int rows = ps.executeUpdate();
+
+                if (rows == 0) {
+                    conn.rollback();
+                    return false;
+                }
             }
-            auctions.put(auctionId, snapshot);
-            persistData();
+
+            // 2. Xóa bid cũ rồi chèn lại
+            deleteBids(conn, id);
+            insertBids(conn, id, snapshot.getBidList());
+
+            // 3. Xóa participant cũ rồi chèn lại
+            deleteParticipants(conn, id);
+            insertParticipants(conn, id, snapshot.getRegisteredUsernames());
+
+            conn.commit();
+            System.out.println("[AuctionDAO] Đã cập nhật phiên đấu giá: " + auctionId);
             return true;
+        } catch (SQLException e) {
+            rollbackQuietly(conn);
+            throw new RuntimeException("[AuctionDAO] Lỗi khi cập nhật phiên đấu giá: " + auctionId, e);
         } finally {
-            lock.writeLock().unlock();
+            closeQuietly(conn);
         }
     }
 
     /**
-     * Xóa snapshot phiên đấu giá theo ID.
+     * Xóa một phiên đấu giá theo ID.
+     * <p>
+     * {@code ON DELETE CASCADE} trên foreign key sẽ tự động xóa
+     * các dòng liên quan trong {@code auction_bids} và
+     * {@code auction_participants}.
+     * </p>
      *
-     * @param auctionId ID phiên cần xóa
+     * @param auctionId ID của phiên cần xóa (dạng chuỗi số)
      * @return {@code true} nếu tìm thấy và xóa thành công
      */
     @Override
-    public boolean delete(Integer auctionId) {
-        lock.writeLock().lock();
-        try {
-            AuctionSnapshot removed = auctions.remove(auctionId);
-            if (removed != null) {
-                persistData();
-                System.out.println("[AuctionDAO] Đã xóa phiên: " + auctionId);
+    public boolean delete(String auctionId) {
+        String sql = "DELETE FROM auction_snapshots WHERE auction_id = ?";
+        int id = parseAuctionId(auctionId);
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            int rows = ps.executeUpdate();
+            if (rows > 0) {
+                System.out.println("[AuctionDAO] Đã xóa phiên đấu giá: " + auctionId);
                 return true;
             }
             return false;
-        } finally {
-            lock.writeLock().unlock();
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi khi xóa phiên đấu giá: " + auctionId, e);
         }
     }
 
     /**
      * Kiểm tra phiên đấu giá với ID cho trước có tồn tại hay không.
      *
-     * @param auctionId ID phiên cần kiểm tra
+     * @param auctionId ID phiên cần kiểm tra (dạng chuỗi số)
      * @return {@code true} nếu tồn tại
      */
     @Override
-    public boolean exists(Integer auctionId) {
-        lock.readLock().lock();
-        try {
-            return auctions.containsKey(auctionId);
-        } finally {
-            lock.readLock().unlock();
+    public boolean exists(String auctionId) {
+        String sql = "SELECT COUNT(*) FROM auction_snapshots WHERE auction_id = ?";
+        int id = parseAuctionId(auctionId);
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+                return false;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi khi kiểm tra tồn tại: " + auctionId, e);
         }
     }
 
     /**
      * Trả về tổng số phiên đấu giá đã lưu.
      *
-     * @return số lượng phiên
+     * @return số lượng phiên đấu giá
      */
     @Override
     public int count() {
-        lock.readLock().lock();
-        try {
-            return auctions.size();
-        } finally {
-            lock.readLock().unlock();
+        String sql = "SELECT COUNT(*) FROM auction_snapshots";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+            return 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi khi đếm phiên đấu giá", e);
         }
     }
 
-    @Override
-    public void flush() {
-        lock.writeLock().lock();
-        try {
-            persistData();
-            System.out.println("[AuctionDAO] Đã ghi " + auctions.size() + " phiên xuống ổ đĩa.");
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    @Override
-    public void reload() {
-        lock.writeLock().lock();
-        try {
-            this.auctions = dataStore.readData();
-            System.out.println("[AuctionDAO] Đã tải lại " + auctions.size() + " phiên từ ổ đĩa.");
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    // ========================== Phương thức Truy vấn riêng cho Auction ==========================
+    // ========================== Phương thức riêng cho Auction
+    // ==========================
 
     /**
-     * Tìm tất cả phiên đấu giá đang hoạt động (chưa kết thúc).
-     * <p>
-     * Phiên được coi là đang hoạt động nếu trạng thái là "OPEN" hoặc "RUNNING".
-     * Phương thức này được gọi khi server khởi động lại để tái tạo các phiên
-     * đấu giá đang diễn ra với Timer mới.
-     * </p>
+     * Tìm tất cả phiên đấu giá theo trạng thái.
      *
-     * @return danh sách snapshot của các phiên đang hoạt động
+     * @param status trạng thái cần lọc (OPEN, RUNNING, FINISHED, PAID, CANCELED)
+     * @return danh sách phiên đấu giá có trạng thái tương ứng
      */
-    public List<AuctionSnapshot> findActiveAuctions() {
-        lock.readLock().lock();
-        try {
-            return auctions.values().stream()
-                    .filter(s -> !s.isConcluded())
-                    .collect(Collectors.toList());
-        } finally {
-            lock.readLock().unlock();
+    public List<AuctionSnapshot> findByStatus(String status) {
+        String sql = "SELECT * FROM auction_snapshots WHERE UPPER(status) = ?";
+        List<AuctionSnapshot> result = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, status.toUpperCase());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    AuctionSnapshot snapshot = mapResultSetToSnapshot(rs);
+                    int id = snapshot.getAuctionId();
+                    snapshot.setBidList(loadBids(id));
+                    snapshot.setRegisteredUsernames(loadParticipants(id));
+                    result.add(snapshot);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi khi tìm phiên theo trạng thái: " + status, e);
         }
+        return result;
     }
 
     /**
      * Tìm tất cả phiên đấu giá do một seller cụ thể tạo.
      *
-     * @param sellerUsername username của seller
-     * @return danh sách snapshot các phiên thuộc seller này
+     * @param clientOwner username của seller
+     * @return danh sách phiên đấu giá của seller đó
      */
-    public List<AuctionSnapshot> findBySeller(String sellerUsername) {
-        lock.readLock().lock();
-        try {
-            return auctions.values().stream()
-                    .filter(s -> s.getClientOwner().equals(sellerUsername))
-                    .collect(Collectors.toList());
-        } finally {
-            lock.readLock().unlock();
+    public List<AuctionSnapshot> findByClientOwner(String clientOwner) {
+        String sql = "SELECT * FROM auction_snapshots WHERE client_owner = ?";
+        List<AuctionSnapshot> result = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, clientOwner);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    AuctionSnapshot snapshot = mapResultSetToSnapshot(rs);
+                    int id = snapshot.getAuctionId();
+                    snapshot.setBidList(loadBids(id));
+                    snapshot.setRegisteredUsernames(loadParticipants(id));
+                    result.add(snapshot);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi khi tìm phiên theo chủ: " + clientOwner, e);
         }
+        return result;
     }
 
     /**
-     * Tìm tất cả phiên đấu giá mà một bidder cụ thể đã đặt giá ít nhất 1 lần.
+     * Cập nhật nhanh trạng thái của một phiên đấu giá mà không cần truyền toàn bộ
+     * snapshot.
      *
-     * @param bidderUsername username của bidder
-     * @return danh sách snapshot các phiên có bid của user này
+     * @param auctionId ID phiên cần cập nhật
+     * @param newStatus trạng thái mới (OPEN / RUNNING / FINISHED / PAID / CANCELED)
+     * @return {@code true} nếu cập nhật thành công
      */
-    public List<AuctionSnapshot> findByBidder(String bidderUsername) {
-        lock.readLock().lock();
-        try {
-            return auctions.values().stream()
-                    .filter(s -> s.getBidList().stream()
-                            .anyMatch(bid -> bid.getBidderUsername().equals(bidderUsername)))
-                    .collect(Collectors.toList());
-        } finally {
-            lock.readLock().unlock();
+    public boolean updateStatus(String auctionId, String newStatus) {
+        String sql = "UPDATE auction_snapshots SET status = ? WHERE auction_id = ?";
+        int id = parseAuctionId(auctionId);
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newStatus);
+            ps.setInt(2, id);
+            int rows = ps.executeUpdate();
+            if (rows > 0) {
+                System.out.println("[AuctionDAO] Đã cập nhật trạng thái phiên " + auctionId + " → " + newStatus);
+                return true;
+            }
+            return false;
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi khi cập nhật trạng thái: " + auctionId, e);
         }
     }
 
     /**
-     * Tìm tất cả phiên đấu giá theo trạng thái cụ thể.
+     * Trả về tất cả phiên đấu giá dưới dạng Map (auctionId → AuctionSnapshot).
      *
-     * @param status trạng thái cần lọc (OPEN, RUNNING, FINISHED, PAID, CANCELED)
-     * @return danh sách snapshot khớp trạng thái
+     * @return map mới chứa tất cả phiên đấu giá
      */
-    public List<AuctionSnapshot> findByStatus(String status) {
-        lock.readLock().lock();
-        try {
-            return auctions.values().stream()
-                    .filter(s -> s.getStatus().equalsIgnoreCase(status))
-                    .collect(Collectors.toList());
-        } finally {
-            lock.readLock().unlock();
+    public Map<String, AuctionSnapshot> findAllAsMap() {
+        List<AuctionSnapshot> all = findAll();
+        Map<String, AuctionSnapshot> result = new HashMap<>();
+        for (AuctionSnapshot snapshot : all) {
+            result.put(String.valueOf(snapshot.getAuctionId()), snapshot);
         }
+        return result;
     }
 
     /**
-     * Tìm tất cả phiên đấu giá mà một user cụ thể đã đăng ký tham gia.
-     *
-     * @param username username của người tham gia
-     * @return danh sách snapshot các phiên user đã đăng ký
-     */
-    public List<AuctionSnapshot> findByParticipant(String username) {
-        lock.readLock().lock();
-        try {
-            return auctions.values().stream()
-                    .filter(s -> s.getRegisteredUsernames().contains(username))
-                    .collect(Collectors.toList());
-        } finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    /**
-     * Chỉ cập nhật trường trạng thái của một phiên đấu giá.
+     * Thêm một bid vào phiên đấu giá đang tồn tại.
      * <p>
-     * Phương thức tiện ích cho các chuyển trạng thái:
-     * OPEN → RUNNING → FINISHED → PAID / CANCELED
+     * Bid mới luôn là giá cao nhất nên được chèn vào đầu danh sách
+     * (bid_order = 0). Các bid cũ sẽ được dịch chuyển lên 1 bậc.
      * </p>
      *
      * @param auctionId ID phiên đấu giá
-     * @param newStatus trạng thái mới
-     * @return {@code true} nếu tìm thấy phiên và cập nhật thành công
+     * @param bid       bid cần thêm
      */
-    public boolean updateStatus(int auctionId, String newStatus) {
-        lock.writeLock().lock();
+    public void addBid(String auctionId, Bid bid) {
+        int id = parseAuctionId(auctionId);
+        Connection conn = null;
         try {
-            AuctionSnapshot snapshot = auctions.get(auctionId);
-            if (snapshot == null) {
-                return false;
+            conn = DatabaseConnection.getConnection();
+            conn.setAutoCommit(false);
+
+            // Dịch chuyển thứ tự của các bid hiện tại lên 1
+            String shiftSql = "UPDATE auction_bids SET bid_order = bid_order + 1 WHERE auction_id = ?";
+            try (PreparedStatement shiftPs = conn.prepareStatement(shiftSql)) {
+                shiftPs.setInt(1, id);
+                shiftPs.executeUpdate();
             }
-            String oldStatus = snapshot.getStatus();
-            snapshot.setStatus(newStatus);
-            persistData();
-            System.out.println("[AuctionDAO] Phiên " + auctionId
-                    + " trạng thái: " + oldStatus + " → " + newStatus);
-            return true;
+
+            // Chèn bid mới vào vị trí đầu tiên (bid_order = 0)
+            String insertSql = "INSERT INTO auction_bids "
+                    + "(auction_id, bid_amount, bidder_username, created_at, bid_order) "
+                    + "VALUES (?, ?, ?, ?, 0)";
+            try (PreparedStatement insertPs = conn.prepareStatement(insertSql)) {
+                insertPs.setInt(1, id);
+                insertPs.setFloat(2, bid.getBid());
+                insertPs.setString(3, bid.getBidderUsername());
+                insertPs.setTimestamp(4, toTimestamp(bid.getCreatedAt()));
+                insertPs.executeUpdate();
+            }
+
+            conn.commit();
+            System.out.println("[AuctionDAO] Đã thêm bid " + bid.getBid()
+                    + " của " + bid.getBidderUsername() + " vào phiên " + auctionId);
+        } catch (SQLException e) {
+            rollbackQuietly(conn);
+            throw new RuntimeException("[AuctionDAO] Lỗi khi thêm bid vào phiên: " + auctionId, e);
         } finally {
-            lock.writeLock().unlock();
+            closeQuietly(conn);
         }
     }
 
     /**
-     * Thêm bid mới vào snapshot phiên đấu giá và lưu thay đổi.
+     * Thêm một người tham gia vào phiên đấu giá.
      * <p>
-     * Bid được chèn vào đầu danh sách (giá cao nhất đầu tiên).
-     * Trạng thái phiên tự động chuyển sang "RUNNING" nếu đang là "OPEN".
+     * Nếu người tham gia đã tồn tại (trùng primary key), thao tác bị bỏ qua
+     * mà không ném ngoại lệ (dùng {@code INSERT IGNORE}).
      * </p>
      *
      * @param auctionId ID phiên đấu giá
-     * @param bid       bid mới cần thêm
-     * @return {@code true} nếu tìm thấy phiên và thêm bid thành công
+     * @param username  username của người tham gia
      */
-    public boolean addBid(int auctionId, Bid bid) {
-        lock.writeLock().lock();
-        try {
-            AuctionSnapshot snapshot = auctions.get(auctionId);
-            if (snapshot == null) {
-                return false;
+    public void addParticipant(String auctionId, String username) {
+        String sql = "INSERT IGNORE INTO auction_participants (auction_id, username) VALUES (?, ?)";
+        int id = parseAuctionId(auctionId);
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.setString(2, username);
+            int rows = ps.executeUpdate();
+            if (rows > 0) {
+                System.out.println("[AuctionDAO] Đã thêm người tham gia '"
+                        + username + "' vào phiên " + auctionId);
             }
-            snapshot.getBidList().addFirst(bid);
-            // Tự động chuyển từ OPEN sang RUNNING khi có bid đầu tiên
-            if ("OPEN".equals(snapshot.getStatus())) {
-                snapshot.setStatus("RUNNING");
-            }
-            persistData();
-            System.out.println("[AuctionDAO] Phiên " + auctionId
-                    + ": bid mới " + bid.getBid() + " bởi " + bid.getBidderUsername());
-            return true;
-        } finally {
-            lock.writeLock().unlock();
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi khi thêm người tham gia", e);
         }
     }
 
     /**
-     * Thêm username vào danh sách người tham gia của một phiên đấu giá.
+     * Xóa một người tham gia khỏi phiên đấu giá.
      *
      * @param auctionId ID phiên đấu giá
-     * @param username  username cần đăng ký
-     * @return {@code true} nếu tìm thấy phiên và đăng ký thành công
+     * @param username  username của người cần xóa
+     * @return {@code true} nếu tìm thấy và xóa thành công
      */
-    public boolean addParticipant(int auctionId, String username) {
-        lock.writeLock().lock();
-        try {
-            AuctionSnapshot snapshot = auctions.get(auctionId);
-            if (snapshot == null) {
-                return false;
-            }
-            if (!snapshot.getRegisteredUsernames().contains(username)) {
-                snapshot.getRegisteredUsernames().add(username);
-                persistData();
-                System.out.println("[AuctionDAO] Phiên " + auctionId
-                        + ": đã đăng ký user " + username);
-            }
-            return true;
-        } finally {
-            lock.writeLock().unlock();
+    public boolean removeParticipant(String auctionId, String username) {
+        String sql = "DELETE FROM auction_participants WHERE auction_id = ? AND username = ?";
+        int id = parseAuctionId(auctionId);
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.setString(2, username);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi khi xóa người tham gia", e);
         }
     }
 
+    // ========================== Phương thức Private — Ghi dữ liệu
+    // ==========================
+
     /**
-     * Xóa username khỏi danh sách người tham gia của một phiên đấu giá.
+     * Chèn dòng mới vào bảng {@code auction_snapshots}.
      *
-     * @param auctionId ID phiên đấu giá
-     * @param username  username cần hủy đăng ký
-     * @return {@code true} nếu tìm thấy phiên và xóa thành công
+     * @param conn     kết nối đang mở (trong transaction)
+     * @param id       auction_id dạng int
+     * @param snapshot dữ liệu cần chèn
+     * @throws SQLException nếu lỗi SQL
      */
-    public boolean removeParticipant(int auctionId, String username) {
-        lock.writeLock().lock();
-        try {
-            AuctionSnapshot snapshot = auctions.get(auctionId);
-            if (snapshot == null) {
-                return false;
-            }
-            boolean removed = snapshot.getRegisteredUsernames().remove(username);
-            if (removed) {
-                persistData();
-                System.out.println("[AuctionDAO] Phiên " + auctionId
-                        + ": đã hủy đăng ký user " + username);
-            }
-            return removed;
-        } finally {
-            lock.writeLock().unlock();
+    private void insertSnapshot(Connection conn, int id, AuctionSnapshot snapshot) throws SQLException {
+        String sql = "INSERT INTO auction_snapshots "
+                + "(auction_id, client_owner, created_at, terminate_at, type, status, "
+                + "was_in_countdown, item_name, item_starting_price, item_description, item_type) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.setString(2, snapshot.getClientOwner());
+            ps.setTimestamp(3, toTimestamp(snapshot.getCreatedAt()));
+            ps.setTimestamp(4, toTimestamp(snapshot.getTerminateAt()));
+            ps.setString(5, snapshot.getType());
+            ps.setString(6, snapshot.getStatus());
+            ps.setBoolean(7, snapshot.wasInCountDown());
+            setItemParams(ps, snapshot.getItem(), 8);
+            ps.executeUpdate();
         }
     }
 
     /**
-     * Trả về toàn bộ lịch sử bid của một phiên đấu giá cụ thể.
+     * Chèn danh sách bid vào bảng {@code auction_bids}.
+     * Thứ tự trong LinkedList được bảo toàn qua cột {@code bid_order}.
+     *
+     * @param conn    kết nối đang mở (trong transaction)
+     * @param id      auction_id dạng int
+     * @param bidList danh sách bid cần lưu
+     * @throws SQLException nếu lỗi SQL
+     */
+    private void insertBids(Connection conn, int id, LinkedList<Bid> bidList) throws SQLException {
+        if (bidList == null || bidList.isEmpty()) {
+            return;
+        }
+
+        String sql = "INSERT INTO auction_bids "
+                + "(auction_id, bid_amount, bidder_username, created_at, bid_order) "
+                + "VALUES (?, ?, ?, ?, ?)";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            int order = 0;
+            for (Bid bid : bidList) {
+                ps.setInt(1, id);
+                ps.setFloat(2, bid.getBid());
+                ps.setString(3, bid.getBidderUsername());
+                ps.setTimestamp(4, toTimestamp(bid.getCreatedAt()));
+                ps.setInt(5, order++);
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        }
+    }
+
+    /**
+     * Chèn danh sách người tham gia vào bảng {@code auction_participants}.
+     *
+     * @param conn      kết nối đang mở (trong transaction)
+     * @param id        auction_id dạng int
+     * @param usernames danh sách username
+     * @throws SQLException nếu lỗi SQL
+     */
+    private void insertParticipants(Connection conn, int id, List<String> usernames) throws SQLException {
+        if (usernames == null || usernames.isEmpty()) {
+            return;
+        }
+
+        String sql = "INSERT IGNORE INTO auction_participants (auction_id, username) VALUES (?, ?)";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            for (String username : usernames) {
+                ps.setInt(1, id);
+                ps.setString(2, username);
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        }
+    }
+
+    /**
+     * Xóa tất cả bid của một phiên (dùng trước khi chèn lại trong update).
+     */
+    private void deleteBids(Connection conn, int auctionId) throws SQLException {
+        String sql = "DELETE FROM auction_bids WHERE auction_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, auctionId);
+            ps.executeUpdate();
+        }
+    }
+
+    /**
+     * Xóa tất cả participant của một phiên (dùng trước khi chèn lại trong update).
+     */
+    private void deleteParticipants(Connection conn, int auctionId) throws SQLException {
+        String sql = "DELETE FROM auction_participants WHERE auction_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, auctionId);
+            ps.executeUpdate();
+        }
+    }
+
+    // ========================== Phương thức Private — Đọc dữ liệu
+    // ==========================
+
+    /**
+     * Chuyển đổi một dòng {@link ResultSet} từ bảng {@code auction_snapshots}
+     * thành đối tượng {@link AuctionSnapshot}.
      * <p>
-     * Hữu ích cho tính năng Biểu đồ Lịch sử Giá (realtime price curve).
-     * Danh sách sắp xếp từ giá cao nhất (đầu) đến thấp nhất (cuối).
+     * Chỉ đọc các trường trong bảng chính. Danh sách bid và participant
+     * cần được load riêng qua {@link #loadBids} và {@link #loadParticipants}.
      * </p>
      *
-     * @param auctionId ID phiên đấu giá
-     * @return danh sách bid, hoặc danh sách rỗng nếu không tìm thấy phiên
+     * @param rs ResultSet đang trỏ tới dòng cần đọc
+     * @return đối tượng AuctionSnapshot (chưa có bidList và registeredUsernames)
+     * @throws SQLException nếu lỗi đọc dữ liệu
      */
-    public List<Bid> getBidHistory(int auctionId) {
-        lock.readLock().lock();
-        try {
-            AuctionSnapshot snapshot = auctions.get(auctionId);
-            if (snapshot != null && snapshot.getBidList() != null) {
-                return new ArrayList<>(snapshot.getBidList());
-            }
-            return new ArrayList<>();
-        } finally {
-            lock.readLock().unlock();
+    private AuctionSnapshot mapResultSetToSnapshot(ResultSet rs) throws SQLException {
+        AuctionSnapshot snapshot = new AuctionSnapshot();
+        snapshot.setAuctionId(rs.getInt("auction_id"));
+        snapshot.setClientOwner(rs.getString("client_owner"));
+        snapshot.setCreatedAt(toDate(rs.getTimestamp("created_at")));
+        snapshot.setTerminateAt(toDate(rs.getTimestamp("terminate_at")));
+        snapshot.setType(rs.getString("type"));
+        snapshot.setStatus(rs.getString("status"));
+        snapshot.setWasInCountDown(rs.getBoolean("was_in_countdown"));
+
+        // Tái tạo đối tượng Item từ các cột inline
+        String itemType = rs.getString("item_type");
+        if (itemType != null && !itemType.trim().isEmpty()) {
+            String itemName = rs.getString("item_name");
+            float itemPrice = rs.getFloat("item_starting_price");
+            String itemDesc = rs.getString("item_description");
+            snapshot.setItem(createItem(itemType, itemPrice, itemName, itemDesc));
         }
+
+        return snapshot;
     }
 
     /**
-     * Trả về ID phiên đấu giá lớn nhất hiện đang được lưu trữ.
-     * <p>
-     * Được sử dụng khi server khởi động lại để khởi tạo bộ đếm
-     * {@code AtomicInteger} trong lớp {@link CommonClasses.Auction},
-     * đảm bảo phiên mới không bị trùng ID với phiên đã lưu.
-     * </p>
+     * Tải danh sách bid từ bảng {@code auction_bids} cho một phiên đấu giá.
+     * Dữ liệu được sắp xếp theo {@code bid_order ASC} để khôi phục đúng
+     * thứ tự LinkedList (giá cao nhất ở đầu).
      *
-     * @return ID phiên lớn nhất, hoặc 0 nếu không có phiên nào
+     * @param auctionId ID phiên đấu giá (int)
+     * @return LinkedList các Bid đã sắp xếp
      */
-    public int getMaxAuctionId() {
-        lock.readLock().lock();
+    private LinkedList<Bid> loadBids(int auctionId) {
+        String sql = "SELECT * FROM auction_bids WHERE auction_id = ? ORDER BY bid_order ASC";
+        LinkedList<Bid> bidList = new LinkedList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, auctionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    float amount = rs.getFloat("bid_amount");
+                    String username = rs.getString("bidder_username");
+                    Date createdAt = toDate(rs.getTimestamp("created_at"));
+                    bidList.add(new Bid(createdAt, amount, username));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi khi tải danh sách bid cho phiên: " + auctionId, e);
+        }
+        return bidList;
+    }
+
+    /**
+     * Tải danh sách username người tham gia từ bảng {@code auction_participants}.
+     *
+     * @param auctionId ID phiên đấu giá (int)
+     * @return danh sách username
+     */
+    private List<String> loadParticipants(int auctionId) {
+        String sql = "SELECT username FROM auction_participants WHERE auction_id = ?";
+        List<String> usernames = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, auctionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    usernames.add(rs.getString("username"));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi khi tải danh sách người tham gia: " + auctionId, e);
+        }
+        return usernames;
+    }
+
+    // ========================== Phương thức Private — Tiện ích
+    // ==========================
+
+    /**
+     * Chuyển đổi chuỗi auctionId sang int.
+     *
+     * @param auctionId ID dạng chuỗi
+     * @return giá trị int
+     * @throws IllegalArgumentException nếu chuỗi không phải số hợp lệ
+     */
+    private int parseAuctionId(String auctionId) {
         try {
-            return auctions.keySet().stream()
-                    .mapToInt(Integer::intValue)
-                    .max()
-                    .orElse(0);
-        } finally {
-            lock.readLock().unlock();
+            return Integer.parseInt(auctionId.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Auction ID phải là số nguyên hợp lệ: " + auctionId, e);
         }
     }
 
-    // ========================== Phương thức Private ==========================
+    /**
+     * Chuyển đổi {@link java.util.Date} sang {@link java.sql.Timestamp}.
+     *
+     * @param date đối tượng Date (có thể null)
+     * @return Timestamp tương ứng, hoặc {@code null} nếu đầu vào null
+     */
+    private Timestamp toTimestamp(Date date) {
+        return (date != null) ? new Timestamp(date.getTime()) : null;
+    }
 
     /**
-     * Ghi map phiên đấu giá xuống ổ đĩa.
-     * Phải được gọi khi đang giữ write lock.
+     * Chuyển đổi {@link java.sql.Timestamp} sang {@link java.util.Date}.
+     *
+     * @param timestamp đối tượng Timestamp (có thể null)
+     * @return Date tương ứng, hoặc {@code null} nếu đầu vào null
      */
-    private void persistData() {
-        dataStore.writeData(auctions);
+    private Date toDate(Timestamp timestamp) {
+        return (timestamp != null) ? new Date(timestamp.getTime()) : null;
+    }
+
+    /**
+     * Gán các tham số Item (name, starting_price, description, type) vào
+     * PreparedStatement.
+     * Xử lý trường hợp item là {@code null} bằng cách gán giá trị null cho tất cả
+     * các cột.
+     *
+     * @param ps         PreparedStatement đang được chuẩn bị
+     * @param item       đối tượng Item (có thể null)
+     * @param startIndex chỉ số bắt đầu (1-based) trong PreparedStatement cho
+     *                   item_name
+     * @throws SQLException nếu lỗi gán tham số
+     */
+    private void setItemParams(PreparedStatement ps, Item item, int startIndex) throws SQLException {
+        if (item != null) {
+            ps.setString(startIndex, item.getName());
+            ps.setFloat(startIndex + 1, item.getStartingPrice());
+            ps.setString(startIndex + 2, item.getDescription());
+            ps.setString(startIndex + 3, getItemType(item));
+        } else {
+            ps.setNull(startIndex, Types.VARCHAR);
+            ps.setNull(startIndex + 1, Types.FLOAT);
+            ps.setNull(startIndex + 2, Types.VARCHAR);
+            ps.setNull(startIndex + 3, Types.VARCHAR);
+        }
+    }
+
+    /**
+     * Tạo đối tượng {@link Item} đúng kiểu dựa trên chuỗi {@code item_type} từ
+     * database.
+     *
+     * @param type  kiểu item: "ELECTRONICS", "ART", hoặc "VEHICLE"
+     * @param price giá khởi điểm
+     * @param name  tên item
+     * @param desc  mô tả
+     * @return đối tượng Item đúng kiểu
+     * @throws RuntimeException nếu kiểu không xác định
+     */
+    private Item createItem(String type, float price, String name, String desc) {
+        switch (type.toUpperCase()) {
+            case "ELECTRONICS":
+                return new Electronics(price, name, desc);
+            case "ART":
+                return new Art(price, name, desc);
+            case "VEHICLE":
+                return new Vehicle(price, name, desc);
+            default:
+                throw new RuntimeException("[AuctionDAO] Loại sản phẩm không xác định: " + type);
+        }
+    }
+
+    /**
+     * Xác định chuỗi kiểu item từ đối tượng {@link Item}.
+     *
+     * @param item đối tượng Item cần xác định kiểu
+     * @return chuỗi kiểu: "ELECTRONICS", "ART", hoặc "VEHICLE"
+     */
+    private String getItemType(Item item) {
+        if (item instanceof Electronics)
+            return "ELECTRONICS";
+        if (item instanceof Art)
+            return "ART";
+        if (item instanceof Vehicle)
+            return "VEHICLE";
+        return item.getClass().getSimpleName().toUpperCase();
+    }
+
+    /**
+     * Rollback connection một cách an toàn, bỏ qua ngoại lệ.
+     */
+    private void rollbackQuietly(Connection conn) {
+        if (conn != null) {
+            try {
+                conn.rollback();
+            } catch (SQLException e) {
+                System.err.println("[AuctionDAO] Lỗi khi rollback: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Đóng connection một cách an toàn: khôi phục autoCommit và đóng.
+     */
+    private void closeQuietly(Connection conn) {
+        if (conn != null) {
+            try {
+                conn.setAutoCommit(true);
+                conn.close();
+            } catch (SQLException e) {
+                System.err.println("[AuctionDAO] Lỗi khi đóng connection: " + e.getMessage());
+            }
+        }
     }
 }

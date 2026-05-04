@@ -2,17 +2,15 @@ package Server.dao;
 
 import CommonClasses.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.sql.*;
+import java.util.*;
 
 /**
- * Lớp DAO quản lý việc lưu trữ dữ liệu {@link User}.
+ * Lớp DAO quản lý việc lưu trữ dữ liệu {@link User} trên MySQL.
  * <p>
  * DAO này xử lý tất cả các thao tác dữ liệu liên quan đến người dùng: đăng ký,
  * xác thực, và CRUD cho tài khoản {@link Bidder}, {@link Seller}, {@link Admin}.
- * Sử dụng Java Serialization thông qua {@link DataStore} để lưu dữ liệu ra ổ đĩa.
+ * Sử dụng JDBC thông qua {@link DatabaseConnection} để truy vấn MySQL.
  * </p>
  *
  * <h3>Singleton Pattern:</h3>
@@ -20,14 +18,19 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * (double-checked locking) để đảm bảo chỉ có một điểm truy cập dữ liệu
  * người dùng duy nhất trong toàn bộ ứng dụng server.
  *
- * <h3>Ánh xạ khóa:</h3>
- * Người dùng được lưu trong {@code HashMap<String, User>} với khóa là
- * {@link User#getUsername() username}. Cho phép tra cứu O(1) khi xác thực
- * và đảm bảo username không bị trùng.
+ * <h3>Cấu trúc bảng:</h3>
+ * <pre>
+ *   users (
+ *       username  VARCHAR(50)  PRIMARY KEY,
+ *       password  VARCHAR(255) NOT NULL,
+ *       email     VARCHAR(100) NOT NULL UNIQUE,
+ *       role      VARCHAR(20)  NOT NULL   -- BIDDER / SELLER / ADMIN
+ *   )
+ * </pre>
  *
- * <h3>An toàn đa luồng:</h3>
- * Tất cả phương thức public được bảo vệ bởi {@link ReentrantReadWriteLock},
- * cho phép đọc đồng thời nhưng ghi thì độc quyền.
+ * <h3>Mapping kiểu User:</h3>
+ * Cột {@code role} được dùng để xác định tạo {@link Bidder}, {@link Seller},
+ * hay {@link Admin} khi đọc từ database.
  *
  * <h3>Ví dụ sử dụng:</h3>
  * <pre>{@code
@@ -45,14 +48,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @see Seller
  * @see Admin
  * @see GenericDAO
- * @see DataStore
+ * @see DatabaseConnection
  */
 public class UserDAO implements GenericDAO<String, User> {
-
-    // ========================== Hằng số ==========================
-
-    /** Tên file lưu trữ dữ liệu người dùng. */
-    private static final String DATA_FILE = "users.dat";
 
     // ========================== Singleton ==========================
 
@@ -76,28 +74,36 @@ public class UserDAO implements GenericDAO<String, User> {
         return instance;
     }
 
-    // ========================== Thuộc tính ==========================
-
-    /** Kho lưu trữ file cho serialization. */
-    private final DataStore dataStore;
-
-    /** Bộ nhớ đệm (cache) trong RAM chứa tất cả user, khóa theo username. */
-    private HashMap<String, User> users;
-
-    /** Khóa đọc-ghi cho truy cập an toàn đa luồng vào cache. */
-    private final ReentrantReadWriteLock lock;
-
     // ========================== Constructor ==========================
 
     /**
      * Constructor private — sử dụng {@link #getInstance()} để lấy Singleton.
-     * Tải dữ liệu người dùng từ ổ đĩa khi khởi tạo.
+     * Tự động tạo bảng {@code users} nếu chưa tồn tại.
      */
     private UserDAO() {
-        this.dataStore = new DataStore(DATA_FILE);
-        this.lock = new ReentrantReadWriteLock();
-        this.users = dataStore.readData();
-        System.out.println("[UserDAO] Đã khởi tạo. Tải " + users.size() + " người dùng từ ổ đĩa.");
+        createTableIfNotExists();
+        System.out.println("[UserDAO] Đã khởi tạo với MySQL. Hiện có " + count() + " người dùng.");
+    }
+
+    // ========================== Tạo bảng ==========================
+
+    /**
+     * Tạo bảng {@code users} trong MySQL nếu chưa tồn tại.
+     */
+    private void createTableIfNotExists() {
+        String sql = "CREATE TABLE IF NOT EXISTS users ("
+                + "username  VARCHAR(50)  PRIMARY KEY, "
+                + "password  VARCHAR(255) NOT NULL, "
+                + "email     VARCHAR(100) NOT NULL UNIQUE, "
+                + "role      VARCHAR(20)  NOT NULL"
+                + ")";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
+        } catch (SQLException e) {
+            throw new RuntimeException("[UserDAO] Không thể tạo bảng users", e);
+        }
     }
 
     // ========================== Triển khai GenericDAO ==========================
@@ -105,9 +111,8 @@ public class UserDAO implements GenericDAO<String, User> {
     /**
      * Đăng ký một người dùng mới vào hệ thống.
      * <p>
-     * User được lưu vào bộ nhớ và ngay lập tức ghi xuống ổ đĩa.
-     * Nếu user với username này đã tồn tại, thao tác bị từ chối
-     * và in ra cảnh báo.
+     * User được lưu trực tiếp vào MySQL. Nếu user với username này đã tồn tại,
+     * thao tác bị từ chối và in ra cảnh báo.
      * </p>
      *
      * @param username tên đăng nhập duy nhất (khóa)
@@ -123,17 +128,24 @@ public class UserDAO implements GenericDAO<String, User> {
             throw new IllegalArgumentException("User không được null");
         }
 
-        lock.writeLock().lock();
-        try {
-            if (users.containsKey(username)) {
-                System.err.println("[UserDAO] Cảnh báo: User '" + username + "' đã tồn tại. Dùng update() thay thế.");
-                return;
-            }
-            users.put(username, user);
-            persistData();
+        // Kiểm tra trùng username
+        if (exists(username)) {
+            System.err.println("[UserDAO] Cảnh báo: User '" + username + "' đã tồn tại. Dùng update() thay thế.");
+            return;
+        }
+
+        String sql = "INSERT INTO users (username, password, email, role) VALUES (?, ?, ?, ?)";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, username);
+            ps.setString(2, user.getPassword());
+            ps.setString(3, user.getEmail());
+            ps.setString(4, user.getRole());
+            ps.executeUpdate();
             System.out.println("[UserDAO] Đã lưu user: " + username + " (vai trò: " + user.getRole() + ")");
-        } finally {
-            lock.writeLock().unlock();
+        } catch (SQLException e) {
+            throw new RuntimeException("[UserDAO] Lỗi khi lưu user: " + username, e);
         }
     }
 
@@ -145,27 +157,42 @@ public class UserDAO implements GenericDAO<String, User> {
      */
     @Override
     public User findById(String username) {
-        lock.readLock().lock();
-        try {
-            return users.get(username);
-        } finally {
-            lock.readLock().unlock();
+        String sql = "SELECT * FROM users WHERE username = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToUser(rs);
+                }
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[UserDAO] Lỗi khi tìm user: " + username, e);
         }
     }
 
     /**
      * Trả về danh sách tất cả người dùng đã đăng ký.
      *
-     * @return danh sách mới chứa tất cả user (an toàn để chỉnh sửa)
+     * @return danh sách tất cả user; trả về danh sách rỗng nếu không có
      */
     @Override
     public List<User> findAll() {
-        lock.readLock().lock();
-        try {
-            return new ArrayList<>(users.values());
-        } finally {
-            lock.readLock().unlock();
+        String sql = "SELECT * FROM users";
+        List<User> result = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                result.add(mapResultSetToUser(rs));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[UserDAO] Lỗi khi lấy tất cả user", e);
         }
+        return result;
     }
 
     /**
@@ -181,17 +208,22 @@ public class UserDAO implements GenericDAO<String, User> {
      */
     @Override
     public boolean update(String username, User user) {
-        lock.writeLock().lock();
-        try {
-            if (!users.containsKey(username)) {
-                return false;
+        String sql = "UPDATE users SET password = ?, email = ?, role = ? WHERE username = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, user.getPassword());
+            ps.setString(2, user.getEmail());
+            ps.setString(3, user.getRole());
+            ps.setString(4, username);
+            int rows = ps.executeUpdate();
+            if (rows > 0) {
+                System.out.println("[UserDAO] Đã cập nhật user: " + username);
+                return true;
             }
-            users.put(username, user);
-            persistData();
-            System.out.println("[UserDAO] Đã cập nhật user: " + username);
-            return true;
-        } finally {
-            lock.writeLock().unlock();
+            return false;
+        } catch (SQLException e) {
+            throw new RuntimeException("[UserDAO] Lỗi khi cập nhật user: " + username, e);
         }
     }
 
@@ -203,17 +235,19 @@ public class UserDAO implements GenericDAO<String, User> {
      */
     @Override
     public boolean delete(String username) {
-        lock.writeLock().lock();
-        try {
-            User removed = users.remove(username);
-            if (removed != null) {
-                persistData();
+        String sql = "DELETE FROM users WHERE username = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, username);
+            int rows = ps.executeUpdate();
+            if (rows > 0) {
                 System.out.println("[UserDAO] Đã xóa user: " + username);
                 return true;
             }
             return false;
-        } finally {
-            lock.writeLock().unlock();
+        } catch (SQLException e) {
+            throw new RuntimeException("[UserDAO] Lỗi khi xóa user: " + username, e);
         }
     }
 
@@ -225,11 +259,19 @@ public class UserDAO implements GenericDAO<String, User> {
      */
     @Override
     public boolean exists(String username) {
-        lock.readLock().lock();
-        try {
-            return users.containsKey(username);
-        } finally {
-            lock.readLock().unlock();
+        String sql = "SELECT COUNT(*) FROM users WHERE username = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+                return false;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[UserDAO] Lỗi khi kiểm tra tồn tại: " + username, e);
         }
     }
 
@@ -240,39 +282,17 @@ public class UserDAO implements GenericDAO<String, User> {
      */
     @Override
     public int count() {
-        lock.readLock().lock();
-        try {
-            return users.size();
-        } finally {
-            lock.readLock().unlock();
-        }
-    }
+        String sql = "SELECT COUNT(*) FROM users";
 
-    /**
-     * Ghi toàn bộ dữ liệu user trong bộ nhớ xuống ổ đĩa.
-     */
-    @Override
-    public void flush() {
-        lock.writeLock().lock();
-        try {
-            persistData();
-            System.out.println("[UserDAO] Đã ghi " + users.size() + " user xuống ổ đĩa.");
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    /**
-     * Tải lại toàn bộ dữ liệu user từ ổ đĩa, thay thế cache trong bộ nhớ.
-     */
-    @Override
-    public void reload() {
-        lock.writeLock().lock();
-        try {
-            this.users = dataStore.readData();
-            System.out.println("[UserDAO] Đã tải lại " + users.size() + " user từ ổ đĩa.");
-        } finally {
-            lock.writeLock().unlock();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+            return 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("[UserDAO] Lỗi khi đếm user", e);
         }
     }
 
@@ -291,17 +311,22 @@ public class UserDAO implements GenericDAO<String, User> {
      *         hoặc {@code null} nếu xác thực thất bại
      */
     public User authenticate(String username, String password) {
-        lock.readLock().lock();
-        try {
-            User user = users.get(username);
-            if (user != null && user.getPassword().equals(password)) {
-                System.out.println("[UserDAO] Xác thực thành công cho: " + username);
-                return user;
+        String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, username);
+            ps.setString(2, password);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    System.out.println("[UserDAO] Xác thực thành công cho: " + username);
+                    return mapResultSetToUser(rs);
+                }
+                System.out.println("[UserDAO] Xác thực thất bại cho: " + username);
+                return null;
             }
-            System.out.println("[UserDAO] Xác thực thất bại cho: " + username);
-            return null;
-        } finally {
-            lock.readLock().unlock();
+        } catch (SQLException e) {
+            throw new RuntimeException("[UserDAO] Lỗi khi xác thực user: " + username, e);
         }
     }
 
@@ -314,16 +339,19 @@ public class UserDAO implements GenericDAO<String, User> {
      * @return {@link User} nếu tìm thấy, hoặc {@code null} nếu không có user nào có email này
      */
     public User findByEmail(String email) {
-        lock.readLock().lock();
-        try {
-            for (User user : users.values()) {
-                if (user.getEmail().equals(email)) {
-                    return user;
+        String sql = "SELECT * FROM users WHERE email = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, email);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToUser(rs);
                 }
+                return null;
             }
-            return null;
-        } finally {
-            lock.readLock().unlock();
+        } catch (SQLException e) {
+            throw new RuntimeException("[UserDAO] Lỗi khi tìm user theo email: " + email, e);
         }
     }
 
@@ -334,18 +362,21 @@ public class UserDAO implements GenericDAO<String, User> {
      * @return danh sách user có vai trò tương ứng
      */
     public List<User> findByRole(String role) {
-        lock.readLock().lock();
-        try {
-            List<User> result = new ArrayList<>();
-            for (User user : users.values()) {
-                if (user.getRole().equalsIgnoreCase(role)) {
-                    result.add(user);
+        String sql = "SELECT * FROM users WHERE UPPER(role) = ?";
+        List<User> result = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, role.toUpperCase());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    result.add(mapResultSetToUser(rs));
                 }
             }
-            return result;
-        } finally {
-            lock.readLock().unlock();
+        } catch (SQLException e) {
+            throw new RuntimeException("[UserDAO] Lỗi khi tìm user theo role: " + role, e);
         }
+        return result;
     }
 
     /**
@@ -361,10 +392,31 @@ public class UserDAO implements GenericDAO<String, User> {
     // ========================== Phương thức Private ==========================
 
     /**
-     * Ghi map user hiện tại xuống ổ đĩa.
-     * Phải được gọi khi đang giữ write lock.
+     * Chuyển đổi một dòng {@link ResultSet} thành đối tượng {@link User} đúng kiểu.
+     * <p>
+     * Dựa vào cột {@code role} để xác định tạo {@link Bidder}, {@link Seller},
+     * hay {@link Admin}.
+     * </p>
+     *
+     * @param rs ResultSet đang trỏ tới dòng cần đọc
+     * @return đối tượng User đúng kiểu
+     * @throws SQLException nếu lỗi đọc dữ liệu
      */
-    private void persistData() {
-        dataStore.writeData(users);
+    private User mapResultSetToUser(ResultSet rs) throws SQLException {
+        String username = rs.getString("username");
+        String password = rs.getString("password");
+        String email = rs.getString("email");
+        String role = rs.getString("role");
+
+        switch (role.toUpperCase()) {
+            case "BIDDER":
+                return new Bidder(username, password, email);
+            case "SELLER":
+                return new Seller(username, password, email);
+            case "ADMIN":
+                return new Admin(username, password, email);
+            default:
+                throw new RuntimeException("Vai trò không xác định trong database: " + role);
+        }
     }
 }
