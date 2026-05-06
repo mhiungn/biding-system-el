@@ -3,14 +3,16 @@ package Server.dao;
 import java.util.List;
 
 /**
- * Interface DAO (Data Access Object) tổng quát định nghĩa các thao tác CRUD chuẩn.
+ * Interface DAO (Data Access Object) tổng quát định nghĩa các thao tác CRUD
+ * chuẩn.
  * <p>
  * Tất cả các lớp DAO trong hệ thống đấu giá đều implement interface này
  * để cung cấp một API thống nhất cho việc lưu trữ dữ liệu. Các tham số
  * kiểu generic cho phép mỗi DAO tự chỉ định kiểu khóa và giá trị riêng.
  * </p>
  *
- * @param <K> kiểu của khóa dùng để định danh thực thể (VD: String username, Integer auctionId)
+ * @param <K> kiểu của khóa dùng để định danh thực thể (VD: String username,
+ *            Integer auctionId)
  * @param <V> kiểu của thực thể được lưu trữ (VD: User, Item, AuctionSnapshot)
  */
 public interface GenericDAO<K, V> {
@@ -45,7 +47,8 @@ public interface GenericDAO<K, V> {
      *
      * @param key   khóa của thực thể cần cập nhật
      * @param value dữ liệu mới để thay thế
-     * @return {@code true} nếu tìm thấy và cập nhật thành công, {@code false} nếu không tồn tại
+     * @return {@code true} nếu tìm thấy và cập nhật thành công, {@code false} nếu
+     *         không tồn tại
      */
     boolean update(K key, V value);
 
@@ -53,7 +56,8 @@ public interface GenericDAO<K, V> {
      * Xóa một thực thể xác định bằng khóa.
      *
      * @param key khóa của thực thể cần xóa
-     * @return {@code true} nếu tìm thấy và xóa thành công, {@code false} nếu không tồn tại
+     * @return {@code true} nếu tìm thấy và xóa thành công, {@code false} nếu không
+     *         tồn tại
      */
     boolean delete(K key);
 
@@ -71,16 +75,4 @@ public interface GenericDAO<K, V> {
      * @return số lượng thực thể
      */
     int count();
-
-    /**
-     * Ghi toàn bộ dữ liệu trong bộ nhớ xuống file.
-     * Nên được gọi định kỳ hoặc khi server tắt để đảm bảo không mất dữ liệu.
-     */
-    void flush();
-
-    /**
-     * Tải lại toàn bộ dữ liệu từ file vào bộ nhớ.
-     * Hữu ích khi cần khôi phục trạng thái sau sự cố hoặc để test.
-     */
-    void reload();
 }
