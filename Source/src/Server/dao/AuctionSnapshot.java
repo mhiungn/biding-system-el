@@ -3,47 +3,13 @@ package Server.dao;
 import CommonClasses.Bid;
 import CommonClasses.Items.*;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
-/**
- * Bản chụp (snapshot) có thể serialize của trạng thái {@link CommonClasses.Auction}.
- * <p>
- * Lớp {@link CommonClasses.Auction} chứa các trường không thể serialize
- * ({@link java.util.Timer}, {@code AuctionCountdownTask}, đối tượng {@code Client})
- * vì chúng gắn liền với runtime của server và không thể lưu trữ trực tiếp.
- * Lớp này chỉ lưu lại dữ liệu bền vững, có thể serialize, cần thiết để
- * khôi phục phiên đấu giá sau khi server khởi động lại.
- * </p>
- *
- * <h3>Những gì ĐƯỢC lưu:</h3>
- * <ul>
- *   <li>Định danh phiên: {@code id}, {@code clientOwner}</li>
- *   <li>Thời gian: {@code createdAt}, {@code terminateAt}</li>
- *   <li>Cấu hình: {@code type} (Time_Fixed / Time_With_Reset)</li>
- *   <li>Trạng thái: {@code status} (OPEN, RUNNING, FINISHED, PAID, CANCELED)</li>
- *   <li>Lịch sử bid: danh sách đầy đủ các đối tượng {@link Bid}</li>
- *   <li>Thông tin sản phẩm: {@link Item} đang được đấu giá</li>
- *   <li>Danh sách người tham gia: username của các bidder đã đăng ký</li>
- * </ul>
- *
- * <h3>Những gì KHÔNG được lưu (chỉ tồn tại khi runtime):</h3>
- * <ul>
- *   <li>{@code Timer} — được tạo lại khi load dựa trên {@code terminateAt}</li>
- *   <li>{@code AuctionCountdownTask} — được tạo lại khi load</li>
- *   <li>Đối tượng {@code Client} — client sẽ kết nối lại sau restart</li>
- * </ul>
- *
- * @see AuctionDAO
- * @see CommonClasses.Auction
- */
-public class AuctionSnapshot implements Serializable {
 
-    private static final long serialVersionUID = 1L;
-
+public class AuctionSnapshot {
     // ========================== Thuộc tính ==========================
 
     /** ID duy nhất của phiên đấu giá. */
