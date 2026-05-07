@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
@@ -9,95 +9,90 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.RowConstraints?>
-<?import javafx.scene.layout.VBox?><ScrollPane fitToHeight="false" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" prefHeight="540" prefWidth="960" minHeight="540" minWidth="960" maxHeight="540" maxWidth="960" styleClass="root-scroll" stylesheets="@/css/dashboard.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.controllers.DashboardController">
-
-    <VBox prefWidth="960" minWidth="960" maxWidth="960" prefHeight="800" minHeight="800" styleClass="main-container">
-
-        <!-- HEADER -->
-        <HBox alignment="CENTER_LEFT" spacing="20" styleClass="header">
-            <HBox alignment="CENTER_LEFT" spacing="10" HBox.hgrow="ALWAYS">
-                <Region minHeight="40" minWidth="40" prefHeight="40" prefWidth="40" styleClass="logo" />
-                <Label styleClass="app-title" text="Auction System" />
-            </HBox>
-
-            <HBox alignment="CENTER" spacing="30" HBox.hgrow="ALWAYS">
-                <Button fx:id="btnBrowseAuctions" styleClass="nav-button" text="Browse Auctions" />
-                <Button fx:id="btnMyBids" onAction="#switchToMyBids" styleClass="nav-button" text="My Bids" />
-                <Button fx:id="btnSellItem" styleClass="nav-button" text="Sell Item" />
-            </HBox>
-
-            <HBox alignment="CENTER_RIGHT" spacing="15">
-                <Button fx:id="btnSearch" styleClass="icon-button">
-                    <graphic>
-                        <Region styleClass="search-icon" />
-                    </graphic>
-                </Button>
-                <Button fx:id="btnNotifications" styleClass="icon-button-badge">
-                    <graphic>
-                        <Region styleClass="notification-icon" />
-                    </graphic>
-                </Button>
-                <Button fx:id="btnUserProfile" styleClass="icon-button">
-                    <graphic>
-                        <Region styleClass="user-icon" />
-                    </graphic>
-                </Button>
-            </HBox>
-        </HBox>
-
-        <!-- FILTERS SECTION -->
-        <HBox alignment="CENTER_LEFT" spacing="20" styleClass="filters-section">
-            <VBox spacing="5" HBox.hgrow="ALWAYS">
-                <Label styleClass="section-label" text="FILTERS" />
-                <HBox spacing="15">
-                    <ComboBox fx:id="categoryFilter" prefWidth="300" promptText="Category: All" styleClass="filter-combo" />
-                    <ComboBox fx:id="sortFilter" prefWidth="300" promptText="Sort: Ending Soon" styleClass="filter-combo" />
-                    <ComboBox fx:id="priceRangeFilter" prefWidth="300" promptText="Price Range: Any" styleClass="filter-combo" />
+<?import javafx.scene.layout.VBox?>
+<ScrollPane fitToHeight="false" hbarPolicy="NEVER" maxHeight="540.0" maxWidth="977.0" minHeight="540.0" minWidth="977.0" prefHeight="540.0" prefWidth="977.0" styleClass="root-scroll" stylesheets="@/css/dashboard.css" vbarPolicy="AS_NEEDED" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.controllers.DashboardController">
+    <VBox maxWidth="960" minHeight="800" minWidth="960" prefHeight="1636.0" prefWidth="960" styleClass="main-container">
+            <!-- HEADER -->
+            <HBox alignment="CENTER_LEFT" spacing="20" styleClass="header">
+                <HBox alignment="CENTER_LEFT" spacing="10" HBox.hgrow="ALWAYS">
+                    <Region minHeight="40" minWidth="40" prefHeight="40" prefWidth="40" styleClass="logo" />
+                    <Label styleClass="app-title" text="Bidify" />
                 </HBox>
-            </VBox>
-        </HBox>
-
-        <!-- STATUS SECTION -->
-        <HBox spacing="20" styleClass="stats-section">
-            <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
-                <Label styleClass="stat-label" text="ACTIVE AUCTIONS" />
-                <Label fx:id="lblActiveAuctions" styleClass="stat-value" text="1,234" />
-            </VBox>
-            <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
-                <Label styleClass="stat-label" text="ENDING TODAY" />
-                <Label fx:id="lblEndingToday" styleClass="stat-value" text="89" />
-            </VBox>
-            <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
-                <Label styleClass="stat-label" text="TOTAL BIDS" />
-                <Label fx:id="lblTotalBids" styleClass="stat-value" text="45,678" />
-            </VBox>
-        </HBox>
-
-        <!-- AUCTION CARDS GRID: EXAMPLE PROTOTYPE -->
-        <GridPane fx:id="auctionCardsGrid" hgap="20" styleClass="cards-grid" vgap="20" prefHeight="450" minHeight="450">
-            <!-- Dynamic cards will be loaded here by DashboardController -->
-         <columnConstraints>
-            <ColumnConstraints />
-            <ColumnConstraints />
-            <ColumnConstraints />
-            <ColumnConstraints />
-         </columnConstraints>
-         <rowConstraints>
-            <RowConstraints />
-            <RowConstraints />
-            <RowConstraints />
-         </rowConstraints>
-        </GridPane>
-
-        <!-- PAGINATION -->
-        <HBox alignment="CENTER" spacing="10" styleClass="pagination-section">
-            <Button fx:id="btnPrevPage" styleClass="pagination-button" text="&lt;" />
-            <Button fx:id="btnPage1" styleClass="pagination-button" text="1" />
-            <Button fx:id="btnPage2" styleClass="pagination-button" text="2" />
-            <Button fx:id="btnPage3" styleClass="pagination-button" text="3" />
-            <Button fx:id="btnNextPage" styleClass="pagination-button" text="&gt;" />
-        </HBox>
-
-    </VBox>
-
-</ScrollPane>
+                <!-- NAV — centre cluster -->
+                <HBox alignment="CENTER" spacing="8" HBox.hgrow="ALWAYS">
+                    <Button fx:id="btnBrowseAuctions" styleClass="nav-button" text="Browse Auctions" />
+                    <Button fx:id="btnMyBids" onAction="#switchToMyBids" styleClass="nav-button" text="My Bids" />
+                    <Button fx:id="btnSellItem" styleClass="nav-button" text="Sell Item" />
+                </HBox>
+                <!-- ICON BUTTONS — right cluster -->
+                <HBox alignment="CENTER_RIGHT" spacing="8">
+                    <Button fx:id="btnSearch" styleClass="icon-button">
+                        <graphic>
+                            <Region styleClass="search-icon" />
+                        </graphic>
+                    </Button>
+                    <Button fx:id="btnNotifications" styleClass="icon-button-badge">
+                        <graphic>
+                            <Region styleClass="notification-icon" />
+                        </graphic>
+                    </Button>
+                    <Button fx:id="btnUserProfile" styleClass="icon-button">
+                        <graphic>
+                            <Region styleClass="user-icon" />
+                        </graphic>
+                    </Button>
+                </HBox>
+            </HBox>
+            <!-- FILTERS SECTION -->
+            <HBox alignment="CENTER_LEFT" spacing="20" styleClass="filters-section">
+                <VBox spacing="8" HBox.hgrow="ALWAYS">
+                    <Label styleClass="section-label" text="FILTERS" />
+                    <HBox spacing="12">
+                        <ComboBox fx:id="categoryFilter" prefWidth="285" promptText="Category: All" styleClass="filter-combo" />
+                        <ComboBox fx:id="sortFilter" prefWidth="285" promptText="Sort: Ending Soon" styleClass="filter-combo" />
+                        <ComboBox fx:id="priceRangeFilter" prefWidth="285" promptText="Price Range: Any" styleClass="filter-combo" />
+                    </HBox>
+                </VBox>
+            </HBox>
+            <!-- STATUS SECTION -->
+            <HBox spacing="20" styleClass="stats-section">
+                <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+                    <Label styleClass="stat-label" text="ACTIVE AUCTIONS" />
+                    <Label fx:id="lblActiveAuctions" styleClass="stat-value" text="1,234" />
+                </VBox>
+                <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+                    <Label styleClass="stat-label" text="ENDING TODAY" />
+                    <Label fx:id="lblEndingToday" styleClass="stat-value" text="89" />
+                </VBox>
+                <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+                    <Label styleClass="stat-label" text="TOTAL BIDS" />
+                    <Label fx:id="lblTotalBids" styleClass="stat-value" text="45,678" />
+                </VBox>
+            </HBox>
+            <!-- AUCTION CARDS GRID: dynamic cards loaded by DashboardController -->
+            <GridPane fx:id="auctionCardsGrid" hgap="20" minHeight="450.0" prefHeight="450.0" prefWidth="777.0" styleClass="cards-grid" vgap="20" VBox.vgrow="ALWAYS">
+                <columnConstraints>
+                    <ColumnConstraints />
+                    <ColumnConstraints />
+                    <ColumnConstraints />
+                    <ColumnConstraints />
+                </columnConstraints>
+                <rowConstraints>
+                    <RowConstraints />
+                    <RowConstraints />
+                    <RowConstraints />
+                </rowConstraints>
+                <VBox.margin>
+                    <Insets />
+                </VBox.margin>
+            </GridPane>
+            <!-- PAGINATION -->
+            <HBox alignment="CENTER" spacing="8" styleClass="pagination-section">
+                <Button fx:id="btnPrevPage" styleClass="pagination-button" text="‹" />
+                <Button fx:id="btnPage1" styleClass="pagination-button" text="1" />
+                <Button fx:id="btnPage2" styleClass="pagination-button" text="2" />
+                <Button fx:id="btnPage3" styleClass="pagination-button" text="3" />
+                <Button fx:id="btnNextPage" styleClass="pagination-button" text="›" />
+            </HBox>
+        </VBox>
+    </ScrollPane>

@@ -7,20 +7,74 @@
 }
 
 .root {
-    -fx-background-color: #2a475e;
+    -fx-background-color: #121212;
     -fx-font-family: "Space Mono";
-    -fx-text-fill: #c7d5e0;
+    -fx-text-fill: #b3b3b3;
     -fx-font-size: 10;
 }
 
 .label,
 .check-box {
-    -fx-text-fill: #c7d5e0;
+    -fx-text-fill: #b3b3b3;
+}
+
+.check-box .box {
+    -fx-background-color: #1f1f1f;
+    -fx-border-color: #4d4d4d;
+    -fx-border-width: 1;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+}
+
+.check-box:selected .box {
+    -fx-background-color: #1ed760;
+    -fx-border-color: #1ed760;
+}
+
+.check-box:selected .mark {
+    -fx-background-color: #000000;
 }
 
 .loginTitle {
     -fx-font-family: "SVN-Canopee";
-    -fx-text-fill: #c7d5e0;
+    -fx-text-fill: #1ed760;
     -fx-alignment: center;
     -fx-font-size: 50.0;
+}
+
+.text-field,
+.password-field {
+    -fx-background-color: #1f1f1f;
+    -fx-text-fill: #ffffff;
+    -fx-border-color: #4d4d4d;
+    -fx-border-width: 1;
+    -fx-border-radius: 9999;
+    -fx-background-radius: 9999;
+    -fx-padding: 8 16;
+    -fx-prompt-text-fill: #b3b3b3;
+}
+
+.text-field:focused,
+.password-field:focused {
+    -fx-border-color: #7c7c7c;
+}
+
+.button {
+    -fx-background-color: #1ed760;
+    -fx-text-fill: #000000;
+    -fx-font-weight: 700;
+    -fx-cursor: hand;
+    -fx-background-radius: 9999;
+    -fx-padding: 10 30;
+    -fx-font-size: 12px;
+    -fx-letter-spacing: 1.4;
+}
+
+.button:hover {
+    -fx-background-color: #1fdf64;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 8, 0, 0, 4);
+}
+
+.button:pressed {
+    -fx-background-color: #169c46;
 }

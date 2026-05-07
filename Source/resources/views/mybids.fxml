@@ -3,11 +3,14 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<ScrollPane fitToHeight="false" fitToWidth="true" hbarPolicy="NEVER" prefHeight="540" prefWidth="960" styleClass="root-scroll" stylesheets="@/css/mybids.css" vbarPolicy="AS_NEEDED" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.controllers.Controller">
+<AnchorPane prefHeight="540" prefWidth="960" styleClass="root-pane" stylesheets="@/css/mybids.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.controllers.Controller">
+
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="root-scroll" vbarPolicy="AS_NEEDED" AnchorPane.topAnchor="0" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0">
 
     <VBox prefWidth="960" styleClass="main-container">
 
@@ -15,7 +18,7 @@
         <HBox alignment="CENTER_LEFT" spacing="20" styleClass="header">
             <HBox alignment="CENTER_LEFT" spacing="10" HBox.hgrow="ALWAYS">
                 <Region minHeight="40" minWidth="40" prefHeight="40" prefWidth="40" styleClass="logo" />
-                <Label styleClass="app-title" text="Auction System" />
+                <Label styleClass="app-title" text="Bidify" />
             </HBox>
 
             <HBox alignment="CENTER" spacing="30" HBox.hgrow="ALWAYS">
@@ -172,7 +175,7 @@
                             <Label maxWidth="Infinity" styleClass="table-item-name" text="Vintage Camera" HBox.hgrow="ALWAYS" />
                             <Label minWidth="100" prefWidth="100" styleClass="table-value" text="380.000VND" />
                             <Label minWidth="110" prefWidth="110" styleClass="table-value" text="380.000VND" />
-                            <Label alignment="CENTER" minWidth="90" prefWidth="90" styleClass="status-badge status-won" text="WON" />
+                            <Label alignment="CENTER" minWidth="90" prefWidth="90" styleClass="status-badge, status-won" text="WON" />
                             <Label minWidth="110" prefWidth="110" styleClass="table-value" text="Apr 14, 2026" />
                         </HBox>
 
@@ -182,7 +185,7 @@
                             <Label maxWidth="Infinity" styleClass="table-item-name" text="Art Print Set" HBox.hgrow="ALWAYS" />
                             <Label minWidth="100" prefWidth="100" styleClass="table-value" text="200.000VND" />
                             <Label minWidth="110" prefWidth="110" styleClass="table-value" text="220.000VND" />
-                            <Label alignment="CENTER" minWidth="90" prefWidth="90" styleClass="status-badge status-lost" text="LOST" />
+                            <Label alignment="CENTER" minWidth="90" prefWidth="90" styleClass="status-badge, status-lost" text="LOST" />
                             <Label minWidth="110" prefWidth="110" styleClass="table-value" text="Apr 12, 2026" />
                         </HBox>
 
@@ -192,7 +195,7 @@
                             <Label maxWidth="Infinity" styleClass="table-item-name" text="Collectible Coins" HBox.hgrow="ALWAYS" />
                             <Label minWidth="100" prefWidth="100" styleClass="table-value" text="310.000VND" />
                             <Label minWidth="110" prefWidth="110" styleClass="table-value" text="350.000VND" />
-                            <Label alignment="CENTER" minWidth="90" prefWidth="90" styleClass="status-badge status-lost" text="LOST" />
+                            <Label alignment="CENTER" minWidth="90" prefWidth="90" styleClass="status-badge, status-lost" text="LOST" />
                             <Label minWidth="110" prefWidth="110" styleClass="table-value" text="Apr 10, 2026" />
                         </HBox>
 
@@ -203,4 +206,6 @@
 
     </VBox>
 
-</ScrollPane>
+    </ScrollPane>
+
+</AnchorPane>

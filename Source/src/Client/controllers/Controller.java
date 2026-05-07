@@ -15,7 +15,7 @@ public class Controller {
     private Parent root;
 
     public void switchToDashboard(ActionEvent event) throws IOException {
-        root = FXMLLoader.load(getClass().getResource("/views/dashboard.fxml"));
+        root = FXMLLoader.load(getClass().getResource("/views/test_dashboard.fxml"));
         stage = (Stage)((Node)event.getSource()).getScene().getWindow();
         scene = new Scene(root);
         stage.setScene(scene);

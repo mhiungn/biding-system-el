@@ -6,23 +6,43 @@
     src: url('/css/fonts/SpaceMono-Regular.ttf');
 }
 
+/* =============================================
+   ROOT & SCROLL
+   ============================================= */
 .root {
     -fx-font-family: "Space Mono";
 }
 
+.root-pane {
+    -fx-background-color: #121212;
+}
+
 .root-scroll {
-    -fx-background-color: #c7d5e0;
+    -fx-background-color: #121212;
+    -fx-border-color: transparent;
+}
+
+.root-scroll .viewport {
+    -fx-background-color: #121212;
+}
+
+/* Remove default ScrollPane focus ring */
+.root-scroll:focused {
+    -fx-border-color: transparent;
 }
 
 .main-container {
-    -fx-background-color: white;
+    -fx-background-color: #121212;
     -fx-padding: 0;
 }
 
+/* =============================================
+   HEADER
+   ============================================= */
 .header {
-    -fx-background-color: white;
+    -fx-background-color: #121212;
     -fx-padding: 15 30;
-    -fx-border-color: #e0e0e0;
+    -fx-border-color: #1f1f1f;
     -fx-border-width: 0 0 1 0;
     -fx-min-height: 60;
 }
@@ -36,44 +56,58 @@
 
 .app-title {
     -fx-font-family: "SVN-Canopee";
-    -fx-font-size: 16px;
+    -fx-font-size: 18px;
     -fx-font-weight: bold;
-    -fx-text-fill: #333333;
+    -fx-text-fill: #1ed760;
 }
 
+/* =============================================
+   NAVIGATION BUTTONS
+   ============================================= */
 .nav-button {
     -fx-background-color: transparent;
-    -fx-text-fill: #666666;
-    -fx-font-size: 12px;
+    -fx-text-fill: #b3b3b3;
+    -fx-font-size: 14px;
+    -fx-font-weight: 400;
     -fx-cursor: hand;
     -fx-padding: 8 15;
+    -fx-background-radius: 9999;
+    -fx-border-color: transparent;
 }
 
 .nav-button:hover {
-    -fx-text-fill: #1b2838;
-    -fx-underline: true;
+    -fx-text-fill: #ffffff;
+    -fx-background-color: #1f1f1f;
 }
 
+.nav-button-active {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: 700;
+}
+
+/* =============================================
+   ICON BUTTONS
+   ============================================= */
 .icon-button {
     -fx-background-color: transparent;
     -fx-cursor: hand;
     -fx-padding: 8;
-    /*-fx-background-radius: 5;*/
+    -fx-background-radius: 50%;
 }
 
 .icon-button:hover {
-    -fx-background-color: #f0f0f0;
+    -fx-background-color: #1f1f1f;
 }
 
 .icon-button-badge {
     -fx-background-color: transparent;
     -fx-cursor: hand;
     -fx-padding: 8;
-    /*-fx-background-radius: 5;*/
+    -fx-background-radius: 50%;
 }
 
 .icon-button-badge:hover {
-    -fx-background-color: #f0f0f0;
+    -fx-background-color: #1f1f1f;
 }
 
 .search-icon,
@@ -83,83 +117,118 @@
     -fx-min-height: 24;
     -fx-pref-width: 24;
     -fx-pref-height: 24;
-    -fx-background-color: #666666;
-    /*-fx-background-radius: 3;*/
+    -fx-background-color: #b3b3b3;
+    -fx-background-radius: 50%;
 }
 
+.search-icon:hover,
+.notification-icon:hover,
+.user-icon:hover {
+    -fx-background-color: #ffffff;
+}
+
+/* =============================================
+   FILTERS SECTION
+   ============================================= */
 .filters-section {
-    -fx-background-color: transparent;
+    -fx-background-color: #121212;
     -fx-padding: 25 30 15 30;
 }
 
 .section-label {
-    -fx-font-size: 9px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #666666;
-    -fx-letter-spacing: 0.5;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #b3b3b3;
+    -fx-letter-spacing: 2;
 }
 
 .filter-combo {
-    -fx-background-color: white;
-    -fx-border-color: #e5e7eb;
+    -fx-background-color: #1f1f1f;
+    -fx-border-color: #4d4d4d;
     -fx-border-width: 1;
-    /*-fx-border-radius: 3;*/
-    /*-fx-background-radius: 3;*/
-    -fx-padding: 8 12;
+    -fx-border-radius: 9999;
+    -fx-background-radius: 9999;
+    -fx-padding: 8 16;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 14px;
 }
 
 .filter-combo .list-cell {
-    -fx-text-fill: #666666;
+    -fx-text-fill: #b3b3b3;
+    -fx-background-color: #1f1f1f;
 }
 
+.filter-combo:hover {
+    -fx-border-color: #7c7c7c;
+}
+
+/* =============================================
+   STATS / STATUS CARDS
+   ============================================= */
 .stats-section {
+    -fx-background-color: #121212;
     -fx-padding: 15 30;
     -fx-spacing: 20;
 }
 
 .stat-card {
-    -fx-background-color: white;
+    -fx-background-color: #181818;
     -fx-padding: 20;
-    -fx-border-color: #99a1af;
-    -fx-border-width: 2;
-    /*-fx-border-radius: 4;*/
-    /*-fx-background-radius: 4;*/
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
     -fx-spacing: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 8);
+}
+
+.stat-card:hover {
+    -fx-background-color: #1f1f1f;
 }
 
 .stat-label {
-    -fx-font-size: 9px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #888888;
-    -fx-letter-spacing: 0.5;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #b3b3b3;
+    -fx-letter-spacing: 2;
 }
 
 .stat-value {
     -fx-font-size: 26px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #333333;
+    -fx-font-weight: 700;
+    -fx-text-fill: #ffffff;
 }
 
-/* AUCTION CARDS GRID */
+/* =============================================
+   AUCTION CARDS GRID
+   ============================================= */
 .cards-grid {
+    -fx-background-color: #121212;
     -fx-padding: 20 30;
 }
 
 .auction-card {
-    -fx-background-color: #fcfdff;
-    -fx-border-color: #99a1af;
-    -fx-border-width: 2;
-    /*-fx-border-radius: 4;*/
-    /*-fx-background-radius: 4;*/
+    -fx-background-color: #181818;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
     -fx-pref-width: 215;
     -fx-max-width: 215;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 8);
+    -fx-cursor: hand;
+}
+
+.auction-card:hover {
+    -fx-background-color: #252525;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 24, 0, 0, 8);
 }
 
 .card-image {
-    -fx-background-color: #e5e7eb;
+    -fx-background-color: #1f1f1f;
     -fx-min-height: 200;
     -fx-pref-height: 200;
-    /*-fx-background-radius: 4 4 0 0;*/
+    -fx-background-radius: 8 8 0 0;
 }
 
 .card-content {
@@ -167,25 +236,25 @@
 }
 
 .card-title {
-    -fx-font-size: 12px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #333333;
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #ffffff;
 }
 
 .card-subtitle {
-    -fx-font-size: 9px;
-    -fx-text-fill: #888888;
+    -fx-font-size: 12px;
+    -fx-text-fill: #b3b3b3;
 }
 
 .card-price {
     -fx-font-size: 16px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #333333;
+    -fx-font-weight: 700;
+    -fx-text-fill: #1ed760;
 }
 
 .card-meta {
-    -fx-font-size: 9px;
-    -fx-text-fill: #666666;
+    -fx-font-size: 12px;
+    -fx-text-fill: #b3b3b3;
 }
 
 .time-icon,
@@ -194,57 +263,65 @@
     -fx-min-height: 14;
     -fx-pref-width: 14;
     -fx-pref-height: 14;
-    -fx-background-color: #888888;
-    /*-fx-background-radius: 2;*/
+    -fx-background-color: #b3b3b3;
+    -fx-background-radius: 50%;
 }
 
+/* Primary CTA — Spotify Green pill */
 .bid-button {
-    -fx-background-color: #1b2838;
-    -fx-text-fill: white;
-    -fx-font-size: 10px;
-    -fx-font-weight: bold;
+    -fx-background-color: #1ed760;
+    -fx-text-fill: #000000;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
     -fx-cursor: hand;
     -fx-padding: 10 0;
-    -fx-background-radius: 0;
-    /*-fx-background-radius: 3;*/
-    -fx-letter-spacing: 0.5;
+    -fx-background-radius: 9999;
+    -fx-letter-spacing: 1.4;
 }
 
 .bid-button:hover {
-    -fx-background-color: #2a3f56;
+    -fx-background-color: #1fdf64;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 8, 0, 0, 4);
 }
 
 .bid-button:pressed {
-    -fx-background-color: #0f1822;
+    -fx-background-color: #169c46;
 }
 
-/* PAGINATION */
+/* =============================================
+   PAGINATION
+   ============================================= */
 .pagination-section {
+    -fx-background-color: #121212;
     -fx-padding: 20 30 30 30;
 }
 
 .pagination-button {
-    -fx-background-color: white;
-    -fx-text-fill: #666666;
-    -fx-font-size: 11px;
+    -fx-background-color: #1f1f1f;
+    -fx-text-fill: #b3b3b3;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
     -fx-cursor: hand;
     -fx-min-width: 40;
     -fx-min-height: 40;
-    -fx-border-color: #99a1af;
-    -fx-border-width: 2;
-    /*-fx-border-radius: 3;*/
-    /*-fx-background-radius: 3;*/
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-border-radius: 9999;
+    -fx-background-radius: 9999;
 }
 
 .pagination-button:hover {
-    -fx-background-color: #f5f5f5;
+    -fx-background-color: #252525;
+    -fx-text-fill: #ffffff;
 }
 
 .pagination-active {
-    -fx-background-color: #1b2838;
-    -fx-text-fill: white;
+    -fx-background-color: #1ed760;
+    -fx-text-fill: #000000;
+    -fx-font-weight: 700;
 }
 
 .pagination-active:hover {
-    -fx-background-color: #1b2838;
+    -fx-background-color: #1fdf64;
+    -fx-text-fill: #000000;
 }

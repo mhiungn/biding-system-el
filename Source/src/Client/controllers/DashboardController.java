@@ -59,6 +59,8 @@ public class DashboardController extends Controller {
 
         // 3. Load initial page
         showPage(0);
+        btnPrevPage.setVisible(false);
+
     }
 
     public void showPage(int pageNumber) {
@@ -75,17 +77,7 @@ public class DashboardController extends Controller {
         List<Item> pageItems = allItems.subList(startIndex, endIndex);
         loadAuctionCards(pageItems);
 
-        // Update button states
-        btnPrevPage.setDisable(currentPage == 0);
-        btnNextPage.setDisable(currentPage >= maxPage);
-        
         // Emphasize current page button by styling (optional)
-        btnPage1.setStyle(currentPage == 0 ? "-fx-background-color: #3b82f6; -fx-text-fill: white;" : "");
-        btnPage2.setStyle(currentPage == 1 ? "-fx-background-color: #3b82f6; -fx-text-fill: white;" : "");
-        btnPage3.setStyle(currentPage == 2 ? "-fx-background-color: #3b82f6; -fx-text-fill: white;" : "");
-        
-        // Hide btnPage3 if there are only 2 pages
-        btnPage3.setVisible(maxPage >= 2);
     }
 
     public void loadAuctionCards(List<Item> items) {

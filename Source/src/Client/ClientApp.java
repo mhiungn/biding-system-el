@@ -18,7 +18,8 @@ public class ClientApp extends Application {
         try {
             Font.loadFont(getClass().getResourceAsStream("/css/fonts/SVN-Canopee.otf"), 10);
             Font.loadFont(getClass().getResourceAsStream("/css/fonts/SpaceMono-Regular.ttf"), 10);
-            
+            Font.loadFont(getClass().getResourceAsStream("/css/fonts/Gotham-Black.ttf"), 10);
+
             Parent root = FXMLLoader.load(getClass().getResource("/views/test_dashboard.fxml"));
             Scene scene = new Scene(root);
             String css = this.getClass().getResource("/css/dashboard.css").toExternalForm();
