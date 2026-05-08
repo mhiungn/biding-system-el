@@ -29,13 +29,13 @@ public class DatabaseConnection {
     // ========================== Cấu hình kết nối ==========================
 
     /** URL kết nối tới MySQL server. */
-    private static final String URL = "jdbc:mysql://localhost:3306/hethongdaugia";
+    private static final String URL = "jdbc:mysql://blbsc98ma5stojowrgcs-mysql.services.clever-cloud.com:3306/blbsc98ma5stojowrgcs";
 
     /** Tên đăng nhập MySQL. */
-    private static final String USER = "root";
+    private static final String USER = "urhbndcybrfhy0sb";
 
     /** Mật khẩu MySQL. */
-    private static final String PASSWORD = "160907";
+    private static final String PASSWORD = "Gt37ZauKWCr4UeTUNiMt";
 
     // ========================== Phương thức ==========================
 
