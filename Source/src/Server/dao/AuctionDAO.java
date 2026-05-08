@@ -262,8 +262,13 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                     AuctionSnapshot snapshot = mapResultSetToSnapshot(rs);
                     // Load item từ ItemDAO
                     if (snapshot != null) {
-                        String itemId = snapshot.getItem() != null ? 
-                            rs.getString("item_id") : null;
+                        String itemId = rs.getString("item_id");
+                        if (itemId != null && !itemId.trim().isEmpty()) {
+                            Item item = ItemDAO.getInstance().findById(itemId);
+                            if (item != null) {
+                                snapshot.setItem(item);
+                           }
+                        }
                         if (itemId != null) {
                             Item item = ItemDAO.getInstance().findById(itemId);
                             if (item != null) {
