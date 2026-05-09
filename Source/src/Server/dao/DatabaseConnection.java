@@ -5,7 +5,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 /**
- * Lớp tiện ích quản lý kết nối tới cơ sở dữ liệu MySQL.
+ * Lớp tiện ích quản lý kết nối tới cơ sở dữ liệu MySQL. Ap dung Singleton
  * <p>
  * Cung cấp kết nối JDBC cho tất cả các lớp DAO trong hệ thống đấu giá.
  * Tất cả cấu hình kết nối (URL, username, password) được quản lý tập trung tại đây.
@@ -35,7 +35,7 @@ public class DatabaseConnection {
     private static final String USER = "root";
 
     /** Mật khẩu MySQL. */
-    private static final String PASSWORD = "160907";
+    private static final String PASSWORD = "123456";
 
     // ========================== Phương thức ==========================
 
@@ -49,7 +49,19 @@ public class DatabaseConnection {
      * @return kết nối JDBC tới cơ sở dữ liệu
      * @throws SQLException nếu không thể kết nối tới cơ sở dữ liệu
      */
+    private static Connection instance;
     public static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(URL, USER, PASSWORD);
+        if (instance == null || instance.isClosed()) {
+            try {
+                // Đăng ký Driver (với các bản Java mới có thể bỏ qua nhưng nên viết cho chắc)
+                Class.forName("com.mysql.cj.jdbc.Driver");
+                instance = DriverManager.getConnection(URL, USER, PASSWORD);
+                System.out.println("Kết nối MySQL thành công!");
+            } catch (ClassNotFoundException e) {
+                System.err.println("Không tìm thấy MySQL Driver!");
+                e.printStackTrace();
+            }
+        }
+        return instance;
     }
 }

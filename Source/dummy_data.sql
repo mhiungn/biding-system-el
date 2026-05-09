@@ -2,15 +2,31 @@
 -- DUMMY DATABASE INSERT SCRIPT CHO HỆ THỐNG ĐẤU GIÁ
 -- --------------------------------------------------------
 
+CREATE DATABASE IF NOT EXISTS hethongdaugia;
 USE hethongdaugia;
 
--- Xóa dữ liệu cũ nếu muốn reset (Bỏ comment nếu cần)
--- DELETE FROM items;
--- DELETE FROM users;
+-- Tạo bảng người dùng (Phải tạo trước vì Items tham chiếu tới đây)
+CREATE TABLE IF NOT EXISTS users (
+    username VARCHAR(50) PRIMARY KEY,
+    password VARCHAR(255) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    role ENUM('BIDDER', 'SELLER', 'ADMIN') NOT NULL
+);
+
+-- Tạo bảng sản phẩm
+CREATE TABLE IF NOT EXISTS items (
+    item_id VARCHAR(36) PRIMARY KEY, -- Để chứa giá trị UUID()
+    name VARCHAR(255) NOT NULL,
+    starting_price DOUBLE NOT NULL,
+    item_type ENUM('ELECTRONICS', 'ART', 'VEHICLE') NOT NULL,
+    description TEXT,
+    seller_username VARCHAR(50),
+    FOREIGN KEY (seller_username) REFERENCES users(username) ON DELETE CASCADE
+);
 
 -- 1. Chèn người dùng mẫu (Users)
 -- Vai trò (role) có thể là: BIDDER, SELLER, ADMIN
-INSERT INTO users (username, password, email, role) VALUES 
+INSERT INTO users (username, password, email, role) VALUES
 ('admin01', 'adminpass', 'admin@daugia.com', 'ADMIN'),
 ('seller_john', 'john123', 'john@seller.com', 'SELLER'),
 ('seller_anna', 'anna123', 'anna@seller.com', 'SELLER'),
@@ -19,7 +35,7 @@ INSERT INTO users (username, password, email, role) VALUES
 
 -- 2. Chèn sản phẩm mẫu (Items)
 -- item_type có thể là: ELECTRONICS, ART, VEHICLE
-INSERT INTO items (item_id, name, starting_price, item_type, description, seller_username) VALUES 
+INSERT INTO items (item_id, name, starting_price, item_type, description, seller_username) VALUES
 (UUID(), 'MacBook Pro M3 Max', 3500.0, 'ELECTRONICS', 'Laptop Apple siêu mạnh, RAM 64GB, SSD 2TB.', 'seller_john'),
 (UUID(), 'Bức tranh Mona Lisa (Bản sao)', 500.0, 'ART', 'Bản sao tỷ lệ 1:1 chất lượng cao của bức Mona Lisa.', 'seller_anna'),
 (UUID(), 'Honda Civic 2024', 25000.0, 'VEHICLE', 'Xe ô tô Honda Civic đời mới, odo 0km.', 'seller_john'),
