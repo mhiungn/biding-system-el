@@ -5,7 +5,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 /**
- * Lớp tiện ích quản lý kết nối tới cơ sở dữ liệu MySQL. Ap dung Singleton
+ * Lớp tiện ích quản lý kết nối tới cơ sở dữ liệu MySQL.
  * <p>
  * Cung cấp kết nối JDBC cho tất cả các lớp DAO trong hệ thống đấu giá.
  * Tất cả cấu hình kết nối (URL, username, password) được quản lý tập trung tại đây.
@@ -29,13 +29,13 @@ public class DatabaseConnection {
     // ========================== Cấu hình kết nối ==========================
 
     /** URL kết nối tới MySQL server. */
-    private static final String URL = "jdbc:mysql://localhost:3306/hethongdaugia";
+    private static final String URL = "jdbc:mysql://blbsc98ma5stojowrgcs-mysql.services.clever-cloud.com:3306/blbsc98ma5stojowrgcs";
 
     /** Tên đăng nhập MySQL. */
-    private static final String USER = "root";
+    private static final String USER = "urhbndcybrfhy0sb";
 
     /** Mật khẩu MySQL. */
-    private static final String PASSWORD = "123456";
+    private static final String PASSWORD = "Gt37ZauKWCr4UeTUNiMt";
 
     // ========================== Phương thức ==========================
 

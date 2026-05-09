@@ -94,4 +94,42 @@
             </plugin>
         </plugins>
     </build>
+
+    <!-- 1. MySQL Driver -->
+    <dependency>
+        <groupId>mysql</groupId>
+        <artifactId>mysql-connector-java</artifactId>
+        <version>8.0.33</version>
+    </dependency>
+
+    <!-- 2. Checkstyle Plugin (Tuần 9) -->
+    <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>3.3.1</version>
+        <configuration>
+            <configLocation>checkstyle.xml</configLocation>
+        </configuration>
+    </plugin>
+
+    <!-- 3. Surefire Plugin (chạy tests) -->
+    <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.1.2</version>
+    </plugin>
+
+    <!-- 4. JAR Plugin (build JAR) -->
+    <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.3.0</version>
+        <configuration>
+            <archive>
+                <manifest>
+                    <mainClass>RunApplication</mainClass>
+                </manifest>
+            </archive>
+        </configuration>
+    </plugin>
 </project>

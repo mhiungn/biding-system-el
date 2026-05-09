@@ -15,8 +15,7 @@ import java.util.Date;
  * danh sách bid, và danh sách người tham gia. Dữ liệu được phân bổ qua 3 bảng:
  * </p>
  * <ul>
- * <li>{@code auction_snapshots} — thông tin chính của phiên đấu giá và item
- * inline</li>
+ * <li>{@code auction_snapshots} — thông tin chính của phiên đấu giá + FK tới item</li>
  * <li>{@code auction_bids} — lịch sử các lượt đặt giá (sắp xếp giá cao nhất đầu
  * tiên)</li>
  * <li>{@code auction_participants} — danh sách username người tham gia</li>
@@ -30,16 +29,13 @@ import java.util.Date;
  * <pre>
  *   auction_snapshots (
  *       auction_id          INT           PRIMARY KEY,
- *       client_owner        VARCHAR(50),
+ *       client_owner        VARCHAR(50)   NOT NULL,
+ *       item_id             VARCHAR(36)   NOT NULL FK → items(item_id),
  *       created_at          DATETIME,
  *       terminate_at        DATETIME,
  *       type                VARCHAR(30),
  *       status              VARCHAR(20)   DEFAULT 'OPEN',
- *       was_in_countdown    BOOLEAN       DEFAULT FALSE,
- *       item_name           VARCHAR(255),
- *       item_starting_price FLOAT,
- *       item_description    TEXT,
- *       item_type           VARCHAR(50)
+ *       was_in_countdown    BOOLEAN       DEFAULT FALSE
  *   )
  *
  *   auction_bids (
@@ -58,6 +54,14 @@ import java.util.Date;
  *   )
  * </pre>
  *
+ * <h3>Lợi ích của thiết kế mới:</h3>
+ * <ul>
+ *   <li>❌ Không còn trùng lặp dữ liệu item (item chỉ lưu ở bảng items)</li>
+ *   <li>✅ Item được lấy từ ItemDAO qua FK join</li>
+ *   <li>✅ Khi seller cập nhật item → tự động thấy trong auction</li>
+ *   <li>✅ Referential integrity enforced by database</li>
+ * </ul>
+ *
  * <h3>Transaction:</h3>
  * Các thao tác {@link #save} và {@link #update} sử dụng transaction để đảm bảo
  * tính toàn vẹn dữ liệu qua 3 bảng. Nếu có bất kỳ lỗi nào, toàn bộ thao tác
@@ -67,18 +71,24 @@ import java.util.Date;
  * 
  * <pre>{@code
  * AuctionDAO auctionDAO = AuctionDAO.getInstance();
+ * ItemDAO itemDAO = ItemDAO.getInstance();
  *
+ * // Lưu item trước
+ * String itemId = itemDAO.saveItem(item, "seller_ann");
+ *
+ * // Tạo snapshot chỉ với item_id (không inline item)
  * AuctionSnapshot snapshot = new AuctionSnapshot(1, "seller_ann", new Date(),
  *         endDate, "Time_Fixed", "OPEN", item, new LinkedList<>(), new ArrayList<>(), false);
  * auctionDAO.save("1", snapshot);
  *
+ * // Lấy auction - item sẽ được load từ ItemDAO tự động
  * AuctionSnapshot found = auctionDAO.findById("1");
- * List<AuctionSnapshot> running = auctionDAO.findByStatus("RUNNING");
  * }</pre>
  *
  * @see AuctionSnapshot
  * @see GenericDAO
  * @see DatabaseConnection
+ * @see ItemDAO
  */
 public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
 
@@ -127,18 +137,17 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
      * </p>
      */
     private void createTablesIfNotExist() {
+        // Bảng snapshot chính (với FK tới items)
         String snapshotTable = "CREATE TABLE IF NOT EXISTS auction_snapshots ("
                 + "auction_id          INT           PRIMARY KEY, "
-                + "client_owner        VARCHAR(50), "
+                + "client_owner        VARCHAR(50)   NOT NULL, "
+                + "item_id             VARCHAR(36)   NOT NULL, "
                 + "created_at          DATETIME, "
                 + "terminate_at        DATETIME, "
                 + "type                VARCHAR(30), "
                 + "status              VARCHAR(20)   NOT NULL DEFAULT 'OPEN', "
                 + "was_in_countdown    BOOLEAN       NOT NULL DEFAULT FALSE, "
-                + "item_name           VARCHAR(255), "
-                + "item_starting_price FLOAT, "
-                + "item_description    TEXT, "
-                + "item_type           VARCHAR(50)"
+                + "FOREIGN KEY (item_id) REFERENCES items(item_id) ON DELETE CASCADE"
                 + ")";
 
         String bidsTable = "CREATE TABLE IF NOT EXISTS auction_bids ("
@@ -148,14 +157,17 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                 + "bidder_username     VARCHAR(50), "
                 + "created_at          DATETIME, "
                 + "bid_order           INT           NOT NULL, "
-                + "FOREIGN KEY (auction_id) REFERENCES auction_snapshots(auction_id) ON DELETE CASCADE"
+                + "FOREIGN KEY (auction_id) REFERENCES auction_snapshots(auction_id) ON DELETE CASCADE, "
+                + "INDEX idx_auction_id (auction_id), "
+                + "INDEX idx_bid_order (bid_order)"
                 + ")";
 
         String participantsTable = "CREATE TABLE IF NOT EXISTS auction_participants ("
                 + "auction_id          INT           NOT NULL, "
                 + "username            VARCHAR(50)   NOT NULL, "
                 + "PRIMARY KEY (auction_id, username), "
-                + "FOREIGN KEY (auction_id) REFERENCES auction_snapshots(auction_id) ON DELETE CASCADE"
+                + "FOREIGN KEY (auction_id) REFERENCES auction_snapshots(auction_id) ON DELETE CASCADE, "
+                + "FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE"
                 + ")";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -174,7 +186,8 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
      * Lưu một phiên đấu giá mới vào cơ sở dữ liệu.
      * <p>
      * Thao tác lưu được thực hiện trong một transaction duy nhất bao gồm:
-     * snapshot chính, danh sách bid, và danh sách người tham gia.
+     * snapshot chính (chỉ chứa item_id, không inline item), danh sách bid, 
+     * và danh sách người tham gia.
      * Nếu phiên đấu giá với ID đã tồn tại, tự động chuyển sang {@link #update}.
      * </p>
      *
@@ -205,7 +218,7 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
             conn = DatabaseConnection.getConnection();
             conn.setAutoCommit(false);
 
-            // 1. Lưu thông tin chính của phiên đấu giá
+            // 1. Lưu thông tin chính của phiên đấu giá (chỉ item_id, không inline)
             insertSnapshot(conn, id, snapshot);
 
             // 2. Lưu danh sách bid
@@ -228,7 +241,8 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
      * Tìm phiên đấu giá theo ID.
      * <p>
      * Dữ liệu được tập hợp từ 3 bảng: snapshot chính, danh sách bid
-     * (sắp xếp theo {@code bid_order}), và danh sách người tham gia.
+     * (sắp xếp theo {@code bid_order}), danh sách người tham gia,
+     * và item được load từ ItemDAO qua item_id.
      * </p>
      *
      * @param auctionId ID phiên đấu giá cần tìm (dạng chuỗi số)
@@ -246,6 +260,22 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     AuctionSnapshot snapshot = mapResultSetToSnapshot(rs);
+                    // Load item từ ItemDAO
+                    if (snapshot != null) {
+                        String itemId = rs.getString("item_id");
+                        if (itemId != null && !itemId.trim().isEmpty()) {
+                            Item item = ItemDAO.getInstance().findById(itemId);
+                            if (item != null) {
+                                snapshot.setItem(item);
+                           }
+                        }
+                        if (itemId != null) {
+                            Item item = ItemDAO.getInstance().findById(itemId);
+                            if (item != null) {
+                                snapshot.setItem(item);
+                            }
+                        }
+                    }
                     snapshot.setBidList(loadBids(id));
                     snapshot.setRegisteredUsernames(loadParticipants(id));
                     return snapshot;
@@ -273,6 +303,16 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
             while (rs.next()) {
                 AuctionSnapshot snapshot = mapResultSetToSnapshot(rs);
                 int id = snapshot.getAuctionId();
+                
+                // Load item từ ItemDAO
+                String itemId = rs.getString("item_id");
+                if (itemId != null) {
+                    Item item = ItemDAO.getInstance().findById(itemId);
+                    if (item != null) {
+                        snapshot.setItem(item);
+                    }
+                }
+                
                 snapshot.setBidList(loadBids(id));
                 snapshot.setRegisteredUsernames(loadParticipants(id));
                 result.add(snapshot);
@@ -302,21 +342,32 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
             conn = DatabaseConnection.getConnection();
             conn.setAutoCommit(false);
 
-            // 1. Cập nhật thông tin chính
-            String sql = "UPDATE auction_snapshots SET client_owner = ?, created_at = ?, "
-                    + "terminate_at = ?, type = ?, status = ?, was_in_countdown = ?, "
-                    + "item_name = ?, item_starting_price = ?, item_description = ?, item_type = ? "
+            // 1. Cập nhật thông tin chính (chỉ cập nhật item_id, không inline)
+            String sql = "UPDATE auction_snapshots SET client_owner = ?, item_id = ?, "
+                    + "created_at = ?, terminate_at = ?, type = ?, status = ?, was_in_countdown = ? "
                     + "WHERE auction_id = ?";
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, snapshot.getClientOwner());
-                ps.setTimestamp(2, toTimestamp(snapshot.getCreatedAt()));
-                ps.setTimestamp(3, toTimestamp(snapshot.getTerminateAt()));
-                ps.setString(4, snapshot.getType());
-                ps.setString(5, snapshot.getStatus());
-                ps.setBoolean(6, snapshot.wasInCountDown());
-                setItemParams(ps, snapshot.getItem(), 7);
-                ps.setInt(11, id);
+                
+                // Lấy item_id từ item hoặc để null
+                String itemId = null;
+                if (snapshot.getItem() != null) {
+                    // Nếu có item object, cần tìm item_id của nó
+                    // Thường là seller sẽ biết item_id của item mình
+                    // Hoặc có thể lấy từ context khác
+                    // Ở đây giả sử item_id đã được set sẵn
+                    itemId = getItemIdFromItem(snapshot.getItem());
+                }
+                ps.setString(2, itemId);
+                
+                ps.setTimestamp(3, toTimestamp(snapshot.getCreatedAt()));
+                ps.setTimestamp(4, toTimestamp(snapshot.getTerminateAt()));
+                ps.setString(5, snapshot.getType());
+                ps.setString(6, snapshot.getStatus());
+                ps.setBoolean(7, snapshot.wasInCountDown());
+                ps.setInt(8, id);
+                
                 int rows = ps.executeUpdate();
 
                 if (rows == 0) {
@@ -440,6 +491,16 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                 while (rs.next()) {
                     AuctionSnapshot snapshot = mapResultSetToSnapshot(rs);
                     int id = snapshot.getAuctionId();
+                    
+                    // Load item từ ItemDAO
+                    String itemId = rs.getString("item_id");
+                    if (itemId != null) {
+                        Item item = ItemDAO.getInstance().findById(itemId);
+                        if (item != null) {
+                            snapshot.setItem(item);
+                        }
+                    }
+                    
                     snapshot.setBidList(loadBids(id));
                     snapshot.setRegisteredUsernames(loadParticipants(id));
                     result.add(snapshot);
@@ -468,6 +529,16 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                 while (rs.next()) {
                     AuctionSnapshot snapshot = mapResultSetToSnapshot(rs);
                     int id = snapshot.getAuctionId();
+                    
+                    // Load item từ ItemDAO
+                    String itemId = rs.getString("item_id");
+                    if (itemId != null) {
+                        Item item = ItemDAO.getInstance().findById(itemId);
+                        if (item != null) {
+                            snapshot.setItem(item);
+                        }
+                    }
+                    
                     snapshot.setBidList(loadBids(id));
                     snapshot.setRegisteredUsernames(loadParticipants(id));
                     result.add(snapshot);
@@ -621,6 +692,7 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
 
     /**
      * Chèn dòng mới vào bảng {@code auction_snapshots}.
+     * Lưu item_id (FK), không lưu inline item.
      *
      * @param conn     kết nối đang mở (trong transaction)
      * @param id       auction_id dạng int
@@ -629,19 +701,25 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
      */
     private void insertSnapshot(Connection conn, int id, AuctionSnapshot snapshot) throws SQLException {
         String sql = "INSERT INTO auction_snapshots "
-                + "(auction_id, client_owner, created_at, terminate_at, type, status, "
-                + "was_in_countdown, item_name, item_starting_price, item_description, item_type) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "(auction_id, client_owner, item_id, created_at, terminate_at, type, status, was_in_countdown) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             ps.setString(2, snapshot.getClientOwner());
-            ps.setTimestamp(3, toTimestamp(snapshot.getCreatedAt()));
-            ps.setTimestamp(4, toTimestamp(snapshot.getTerminateAt()));
-            ps.setString(5, snapshot.getType());
-            ps.setString(6, snapshot.getStatus());
-            ps.setBoolean(7, snapshot.wasInCountDown());
-            setItemParams(ps, snapshot.getItem(), 8);
+            
+            // Lấy item_id từ item hoặc để null
+            String itemId = null;
+            if (snapshot.getItem() != null) {
+                itemId = getItemIdFromItem(snapshot.getItem());
+            }
+            ps.setString(3, itemId);
+            
+            ps.setTimestamp(4, toTimestamp(snapshot.getCreatedAt()));
+            ps.setTimestamp(5, toTimestamp(snapshot.getTerminateAt()));
+            ps.setString(6, snapshot.getType());
+            ps.setString(7, snapshot.getStatus());
+            ps.setBoolean(8, snapshot.wasInCountDown());
             ps.executeUpdate();
         }
     }
@@ -732,12 +810,12 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
      * Chuyển đổi một dòng {@link ResultSet} từ bảng {@code auction_snapshots}
      * thành đối tượng {@link AuctionSnapshot}.
      * <p>
-     * Chỉ đọc các trường trong bảng chính. Danh sách bid và participant
-     * cần được load riêng qua {@link #loadBids} và {@link #loadParticipants}.
+     * Chỉ đọc các trường trong bảng chính. Item, bid list, và participant
+     * cần được load riêng.
      * </p>
      *
      * @param rs ResultSet đang trỏ tới dòng cần đọc
-     * @return đối tượng AuctionSnapshot (chưa có bidList và registeredUsernames)
+     * @return đối tượng AuctionSnapshot (chưa load đủ item, bidList, participants)
      * @throws SQLException nếu lỗi đọc dữ liệu
      */
     private AuctionSnapshot mapResultSetToSnapshot(ResultSet rs) throws SQLException {
@@ -749,15 +827,9 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
         snapshot.setType(rs.getString("type"));
         snapshot.setStatus(rs.getString("status"));
         snapshot.setWasInCountDown(rs.getBoolean("was_in_countdown"));
-
-        // Tái tạo đối tượng Item từ các cột inline
-        String itemType = rs.getString("item_type");
-        if (itemType != null && !itemType.trim().isEmpty()) {
-            String itemName = rs.getString("item_name");
-            float itemPrice = rs.getFloat("item_starting_price");
-            String itemDesc = rs.getString("item_description");
-            snapshot.setItem(createItem(itemType, itemPrice, itemName, itemDesc));
-        }
+        
+        // Item sẽ được load từ ItemDAO sau (không inline)
+        snapshot.setItem(null);
 
         return snapshot;
     }
@@ -854,53 +926,31 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
     }
 
     /**
-     * Gán các tham số Item (name, starting_price, description, type) vào
-     * PreparedStatement.
-     * Xử lý trường hợp item là {@code null} bằng cách gán giá trị null cho tất cả
-     * các cột.
+     * Lấy item_id từ một đối tượng Item bằng cách tìm kiếm trong ItemDAO.
+     * 
+     * LƯUÝ: Phương thức này tìm kiếm item có cùng name, price, description
+     * từ ItemDAO. Nếu không tìm thấy hoặc có nhều item giống nhau, 
+     * nên truyền trực tiếp item_id vào AuctionSnapshot.
      *
-     * @param ps         PreparedStatement đang được chuẩn bị
-     * @param item       đối tượng Item (có thể null)
-     * @param startIndex chỉ số bắt đầu (1-based) trong PreparedStatement cho
-     *                   item_name
-     * @throws SQLException nếu lỗi gán tham số
+     * @param item đối tượng Item
+     * @return item_id nếu tìm thấy, hoặc null
      */
-    private void setItemParams(PreparedStatement ps, Item item, int startIndex) throws SQLException {
-        if (item != null) {
-            ps.setString(startIndex, item.getName());
-            ps.setFloat(startIndex + 1, item.getStartingPrice());
-            ps.setString(startIndex + 2, item.getDescription());
-            ps.setString(startIndex + 3, getItemType(item));
-        } else {
-            ps.setNull(startIndex, Types.VARCHAR);
-            ps.setNull(startIndex + 1, Types.FLOAT);
-            ps.setNull(startIndex + 2, Types.VARCHAR);
-            ps.setNull(startIndex + 3, Types.VARCHAR);
+    private String getItemIdFromItem(Item item) {
+        if (item == null) return null;
+        
+        // Tìm item có cùng thuộc tính
+        Map<String, Item> allItems = ItemDAO.getInstance().findAllAsMap();
+        for (Map.Entry<String, Item> entry : allItems.entrySet()) {
+            Item dbItem = entry.getValue();
+            if (dbItem.getName().equals(item.getName())
+                    && dbItem.getStartingPrice() == item.getStartingPrice()
+                    && dbItem.getDescription().equals(item.getDescription())
+                    && dbItem.getClass().equals(item.getClass())) {
+                return entry.getKey();
+            }
         }
-    }
-
-    /**
-     * Tạo đối tượng {@link Item} đúng kiểu dựa trên chuỗi {@code item_type} từ
-     * database.
-     *
-     * @param type  kiểu item: "ELECTRONICS", "ART", hoặc "VEHICLE"
-     * @param price giá khởi điểm
-     * @param name  tên item
-     * @param desc  mô tả
-     * @return đối tượng Item đúng kiểu
-     * @throws RuntimeException nếu kiểu không xác định
-     */
-    private Item createItem(String type, float price, String name, String desc) {
-        switch (type.toUpperCase()) {
-            case "ELECTRONICS":
-                return new Electronics(price, name, desc);
-            case "ART":
-                return new Art(price, name, desc);
-            case "VEHICLE":
-                return new Vehicle(price, name, desc);
-            default:
-                throw new RuntimeException("[AuctionDAO] Loại sản phẩm không xác định: " + type);
-        }
+        
+        return null;
     }
 
     /**
