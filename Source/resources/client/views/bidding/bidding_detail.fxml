@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.String?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
@@ -12,8 +13,37 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane maxHeight="540.0" maxWidth="977.0" minHeight="540.0" minWidth="977.0" prefHeight="540" prefWidth="977.0" styleClass="root-pane" stylesheets="@/css/bidding_detail.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.controllers.Controller">
+<?import javafx.scene.image.ImageView?>
+<?import javafx.geometry.Insets?>
+<VBox maxHeight="576.0" maxWidth="977.0" minHeight="576.0" minWidth="977.0" prefHeight="576.0" prefWidth="977.0" styleClass="root" stylesheets="@/client/views/dashboard/dashboard.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.features.dashboard.DashboardController">
 
+    <!-- ═══════════════════════════════════════════════════════════
+         CUSTOM TITLE BAR (same as login)
+         ═══════════════════════════════════════════════════════════ -->
+    <HBox fx:id="titleBar" alignment="CENTER_LEFT" onMouseDragged="#onTitleBarDragged" onMousePressed="#onTitleBarPressed" styleClass="title-bar">
+
+        <!-- Logo -->
+        <ImageView fitHeight="16" fitWidth="16" preserveRatio="true">
+
+        </ImageView>
+
+        <!-- App title -->
+        <Label styleClass="window-title" text=" ">
+            <HBox.margin><Insets left="8.0" /></HBox.margin>
+        </Label>
+
+        <!-- Spacer -->
+        <Region HBox.hgrow="ALWAYS" />
+
+        <!-- Window controls -->
+        <Button onAction="#handleMinimize" styleClass="title-bar-button" text="─" />
+        <Label styleClass="disable-button" text="□" />
+        <Button onAction="#handleClose" text="✕">
+            <styleClass>
+                <String fx:value="title-bar-button" />
+                <String fx:value="close-btn" />
+            </styleClass></Button>
+    </HBox>
     <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="root-scroll" vbarPolicy="AS_NEEDED" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
 
         <VBox maxWidth="960" minWidth="960" prefWidth="960" styleClass="main-container">
@@ -246,4 +276,4 @@
 
     </ScrollPane>
 
-</AnchorPane>
+</VBox>

@@ -1,9 +1,9 @@
 @font-face {
-    src: url('/css/fonts/SVN-Canopee.otf');
+    src: url('/client/fonts/SVN-Canopee.otf');
 }
 
 @font-face {
-    src: url('/css/fonts/SpaceMono-Regular.ttf');
+    src: url('/client/fonts/SpaceMono-Regular.ttf');
 }
 
 .root {
@@ -42,7 +42,7 @@
 }
 
 .logo {
-    -fx-background-image: url('/images/logo.png');
+    -fx-background-image: url('/client/images/logo.png');
     -fx-background-size: contain;
     -fx-background-position: center;
     -fx-background-repeat: no-repeat;

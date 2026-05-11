@@ -1,16 +1,19 @@
-package Client.controllers;
+package Client.features.auth;
 
+import Client.core.ui.NavigationController;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 
-public class LoginController extends Controller{
+public class LoginController extends NavigationController {
     @FXML private PasswordField hiddenPasswordField;
     @FXML private TextField visiblePasswordField;
     @FXML private CheckBox showPasswordCheckBox;
+    @FXML private Label errorLabel;
+    @FXML private Button loginButton;
+    @FXML private TextField usernameField;
 
     @FXML
     public void initialize() {
-        // sync 2 layer password
         visiblePasswordField.textProperty().bindBidirectional(hiddenPasswordField.textProperty());
     }
 
@@ -31,7 +34,7 @@ public class LoginController extends Controller{
         hiddenPasswordField.setVisible(false);
         hiddenPasswordField.setManaged(false);
         visiblePasswordField.requestFocus();
-        visiblePasswordField.end(); // Move cursor to end
+        visiblePasswordField.end();
     }
 
     private void showPasswordField() {
@@ -40,6 +43,6 @@ public class LoginController extends Controller{
         visiblePasswordField.setVisible(false);
         visiblePasswordField.setManaged(false);
         hiddenPasswordField.requestFocus();
-        hiddenPasswordField.end(); // Move cursor to end
+        hiddenPasswordField.end();
     }
 }

@@ -27,15 +27,25 @@ import java.sql.SQLException;
 public class DatabaseConnection {
 
     // ========================== Cấu hình kết nối ==========================
+    private static String URL;
+    private static String USER;
+    private static String PASSWORD;
 
-    /** URL kết nối tới MySQL server. */
-    private static final String URL = "jdbc:mysql://blbsc98ma5stojowrgcs-mysql.services.clever-cloud.com:3306/blbsc98ma5stojowrgcs";
-
-    /** Tên đăng nhập MySQL. */
-    private static final String USER = "urhbndcybrfhy0sb";
-
-    /** Mật khẩu MySQL. */
-    private static final String PASSWORD = "Gt37ZauKWCr4UeTUNiMt";
+    static {
+        try (java.io.InputStream input = DatabaseConnection.class.getResourceAsStream("/db.properties")) {
+            java.util.Properties prop = new java.util.Properties();
+            if (input == null) {
+                System.err.println("Không tìm thấy file db.properties!");
+            } else {
+                prop.load(input);
+                URL = prop.getProperty("db.url");
+                USER = prop.getProperty("db.user");
+                PASSWORD = prop.getProperty("db.password");
+            }
+        } catch (java.io.IOException ex) {
+            ex.printStackTrace();
+        }
+    }
 
     // ========================== Phương thức ==========================
 
@@ -53,15 +63,19 @@ public class DatabaseConnection {
     public static Connection getConnection() throws SQLException {
         if (instance == null || instance.isClosed()) {
             try {
-                // Đăng ký Driver (với các bản Java mới có thể bỏ qua nhưng nên viết cho chắc)
+                // Đăng ký Driver
                 Class.forName("com.mysql.cj.jdbc.Driver");
+                if (URL == null || USER == null || PASSWORD == null) {
+                    throw new SQLException("Cấu hình database chưa được tải!");
+                }
                 instance = DriverManager.getConnection(URL, USER, PASSWORD);
-                System.out.println("Kết nối MySQL thành công!");
             } catch (ClassNotFoundException e) {
+
                 System.err.println("Không tìm thấy MySQL Driver!");
                 e.printStackTrace();
             }
         }
         return instance;
     }
+
 }

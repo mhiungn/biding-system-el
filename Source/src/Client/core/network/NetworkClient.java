@@ -1,4 +1,4 @@
-package Client;
+package Client.core.network;
 
 import CommonClasses.Auction;
 import CommonClasses.Bidder;

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Hyperlink?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox prefHeight="456.0" prefWidth="396.0" stylesheets="@/client/views/auth/auth.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.features.auth.SignupController">
+
+   <HBox fx:id="titleBar" alignment="CENTER_LEFT" onMouseDragged="#onTitleBarDragged" onMousePressed="#onTitleBarPressed" styleClass="title-bar">
+
+      <ImageView fitHeight="16" fitWidth="16" preserveRatio="true">
+         <image>
+            <Image url="@/client/images/logo.png" />
+         </image>
+      </ImageView>
+
+      <Label styleClass="window-title" text="Bidify">
+         <HBox.margin>
+            <Insets left="8.0" />
+         </HBox.margin>
+      </Label>
+
+      <Region HBox.hgrow="ALWAYS" />
+
+      <Button onAction="#handleMinimize" styleClass="title-bar-button" text="─" />
+      <Label styleClass="disable-button" text="□" />
+      <Button onAction="#handleClose" styleClass="title-bar-button, close-btn" text="✕" />
+   </HBox>
+
+   <VBox alignment="CENTER" spacing="10" VBox.vgrow="ALWAYS">
+      <padding>
+         <Insets bottom="20.0" left="40.0" right="40.0" top="12.0" />
+      </padding>
+
+      <Label styleClass="signupTitle" text="Auction System" />
+
+      <GridPane alignment="CENTER" hgap="10" vgap="8">
+         <columnConstraints>
+            <ColumnConstraints minWidth="56.0" prefWidth="100.0" />
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="200.0" prefWidth="246.0" />
+         </columnConstraints>
+
+         <Label text="Username:" GridPane.rowIndex="0" />
+         <TextField fx:id="usernameField" prefWidth="250" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+         <Label text="Email:" GridPane.rowIndex="1" />
+         <TextField fx:id="emailField" prefWidth="250" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+         <Label text="New password:" GridPane.rowIndex="2" />
+         <PasswordField fx:id="newPasswordField" prefWidth="250" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+
+         <Label text="Confirm password:" wrapText="true" GridPane.rowIndex="3" />
+         <PasswordField fx:id="confirmPasswordField" prefWidth="250" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+
+         <Label fx:id="errorLabel" styleClass="error-label" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+         <rowConstraints>
+            <RowConstraints />
+            <RowConstraints />
+            <RowConstraints />
+            <RowConstraints />
+            <RowConstraints />
+         </rowConstraints>
+      </GridPane>
+
+      <Button fx:id="signupButton" onAction="#handleSignup" text="Sign up">
+         <VBox.margin>
+            <Insets top="2.0" />
+         </VBox.margin>
+      </Button>
+
+      <HBox alignment="CENTER" spacing="6" styleClass="auth-footer-row">
+         <Label styleClass="auth-footer-muted" text="Already have an account?" />
+         <Hyperlink onAction="#switchToLogin" styleClass="auth-footer-link" text="Login here" />
+      </HBox>
+   </VBox>
+</VBox>

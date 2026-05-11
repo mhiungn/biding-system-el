@@ -80,7 +80,7 @@ public class ItemDAO implements GenericDAO<String, Item> {
      */
     private ItemDAO() {
         createTableIfNotExists();
-        System.out.println("[ItemDAO] Đã khởi tạo với MySQL. Hiện có " + count() + " sản phẩm.");
+        System.out.println("[ItemDAO] Initialized with MySQL. Currently, there are " + count() + " products.");
     }
 
     // ========================== Tạo bảng ==========================
@@ -121,10 +121,10 @@ public class ItemDAO implements GenericDAO<String, Item> {
     @Override
     public void save(String itemId, Item item) {
         if (itemId == null || itemId.trim().isEmpty()) {
-            throw new IllegalArgumentException("ID sản phẩm không được để trống hoặc null");
+            throw new IllegalArgumentException("ID san pham khong duoc de trong va null");
         }
         if (item == null) {
-            throw new IllegalArgumentException("Sản phẩm không được null");
+            throw new IllegalArgumentException("San pham khong duoc NULL");
         }
 
         String sql = "INSERT INTO items (item_id, name, starting_price, item_type ,description ) "
@@ -138,9 +138,9 @@ public class ItemDAO implements GenericDAO<String, Item> {
             ps.setString(4, getItemType(item));
             ps.setString(5, item.getDescription());
             ps.executeUpdate();
-            System.out.println("[ItemDAO] Đã lưu sản phẩm: " + itemId + " (" + item.getName() + ")");
+            System.out.println("[ItemDAO] Da luu san pham: " + itemId + " (" + item.getName() + ")");
         } catch (SQLException e) {
-            throw new RuntimeException("[ItemDAO] Lỗi khi lưu sản phẩm: " + itemId, e);
+            throw new RuntimeException("[ItemDAO] Loi khi luu san pham: " + itemId, e);
         }
     }
 
@@ -164,7 +164,7 @@ public class ItemDAO implements GenericDAO<String, Item> {
                 return null;
             }
         } catch (SQLException e) {
-            throw new RuntimeException("[ItemDAO] Lỗi khi tìm sản phẩm: " + itemId, e);
+            throw new RuntimeException("[ItemDAO] Loi khi tim san pham: " + itemId, e);
         }
     }
 
@@ -184,7 +184,7 @@ public class ItemDAO implements GenericDAO<String, Item> {
                 result.add(mapResultSetToItem(rs));
             }
         } catch (SQLException e) {
-            throw new RuntimeException("[ItemDAO] Lỗi khi lấy tất cả sản phẩm", e);
+            throw new RuntimeException("[ItemDAO] Loi khi lay tat ca san pham", e);
         }
         return result;
     }
@@ -210,12 +210,12 @@ public class ItemDAO implements GenericDAO<String, Item> {
             ps.setString(5, itemId);
             int rows = ps.executeUpdate();
             if (rows > 0) {
-                System.out.println("[ItemDAO] Đã cập nhật sản phẩm: " + itemId + " (" + item.getName() + ")");
+                System.out.println("[ItemDAO] Update sp: " + itemId + " (" + item.getName() + ")");
                 return true;
             }
             return false;
         } catch (SQLException e) {
-            throw new RuntimeException("[ItemDAO] Lỗi khi cập nhật sản phẩm: " + itemId, e);
+            throw new RuntimeException("[ItemDAO] Error update sp: " + itemId, e);
         }
     }
 

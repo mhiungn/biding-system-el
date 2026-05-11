@@ -1,9 +1,9 @@
 @font-face {
-    src: url('/css/fonts/SVN-Canopee.otf');
+    src: url('/client/fonts/SVN-Canopee.otf');
 }
 
 @font-face {
-    src: url('/css/fonts/SpaceMono-Regular.ttf');
+    src: url('/client/fonts/SpaceMono-Regular.ttf');
 }
 
 /* =============================================
@@ -11,8 +11,67 @@
    ============================================= */
 .root {
     -fx-font-family: "Space Mono";
+    -fx-background-color: #121212;
 }
 
+/* =============================================
+   CUSTOM TITLE BAR
+   ============================================= */
+.title-bar {
+    -fx-background-color: #121212;
+    -fx-padding: 0 0 0 12;
+    -fx-pref-height: 36;
+    -fx-min-height: 36;
+    -fx-max-height: 36;
+    -fx-border-color: transparent transparent #1f1f1f transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.window-title {
+    -fx-font-size: 12px;
+    -fx-text-fill: #b3b3b3;
+}
+
+.title-bar-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #b3b3b3;
+    -fx-font-size: 13px;
+    -fx-font-family: "Space Mono";
+    -fx-background-radius: 0;
+    -fx-padding: 0 14 0 14;
+    -fx-pref-height: 36;
+    -fx-min-height: 36;
+    -fx-cursor: hand;
+    -fx-border-color: transparent;
+}
+
+.disable-button {
+    -fx-opacity: 0.3;
+    -fx-text-fill: #b3b3b3;
+    -fx-font-size: 11px;
+    -fx-font-family: "Space Mono";
+    -fx-padding: 0 14 0 14;
+    -fx-alignment: CENTER;
+}
+
+.title-bar-button:hover {
+    -fx-background-color: #2a2a2a;
+    -fx-text-fill: #ffffff;
+}
+
+/* Close button gets a red hover — standard UX convention */
+.close-btn {
+    -fx-text-fill: #b3b3b3;
+}
+
+.close-btn:hover {
+    -fx-background-color: #e81123;
+    -fx-text-fill: #ffffff;
+}
+
+/* =============================================
+   SCROLL CONTAINER
+   ============================================= */
 .root-pane {
     -fx-background-color: #121212;
 }
@@ -48,7 +107,7 @@
 }
 
 .logo {
-    -fx-background-image: url('/images/logo.png');
+    -fx-background-image: url('/client/images/logo.png');
     -fx-background-size: contain;
     -fx-background-position: center;
     -fx-background-repeat: no-repeat;

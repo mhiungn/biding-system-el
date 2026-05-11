@@ -1,5 +1,5 @@
 /* Import dashboard styles for shared header/nav components */
-@import url("dashboard.css");
+@import url("../dashboard/dashboard.css");
 
 /* =============================================
    ROOT & SCROLL OVERRIDES
