@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
@@ -74,7 +75,12 @@ public class ClientHandler implements Runnable {
             System.out.println(" [Network] Listening to client: " + client.getUsername());
 
             while (true) {
-                Object received = inputStream.readObject();
+                Object received;
+                try {
+                    received = inputStream.readObject();
+                } catch (SocketTimeoutException e) {
+                    continue;
+                }
                 if (received instanceof PacketMessage) {
                     handlePacket((PacketMessage) received);
                 }

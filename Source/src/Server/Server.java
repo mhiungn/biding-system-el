@@ -4,9 +4,12 @@ import CommonClasses.Auction;
 import Packets.PacketMessage;
 
 import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Singleton server managing all auctions and connected clients.
@@ -17,14 +20,16 @@ import java.util.Map;
  */
 public class Server {
 
+    private static final int PORT = 12345;
+    private static final int CLIENT_READ_TIMEOUT_MS = 10000;
     private static Server instance;
 
     private Map<Integer, Auction> auctions;
     private Map<String, ClientHandler> clientHandlers;
 
     private Server() {
-        auctions = new HashMap<>();
-        clientHandlers = new HashMap<>();
+        auctions = new ConcurrentHashMap<>();
+        clientHandlers = new ConcurrentHashMap<>();
     }
 
     /**
@@ -74,11 +79,13 @@ public class Server {
      */
     public void sendPackets(LinkedList<Client> clients, PacketMessage packet) {
         for (Client client : clients) {
-            if (clientHandlers.containsKey(client.getUsername())) {
+            ClientHandler handler = clientHandlers.get(client.getUsername());
+            if (handler != null) {
                 try {
-                    clientHandlers.get(client.getUsername()).sendPacket(packet);
+                    handler.sendPacket(packet);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    System.err.println("[Network] Cannot send packet to "
+                            + client.getUsername() + ": " + e.getMessage());
                 }
             }
         }
