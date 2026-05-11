@@ -11,7 +11,7 @@ import javafx.stage.StageStyle;
 
 public class ClientApp extends Application {
 
-    private static final String SIGNUP_FXML = "/client/views/auth/signup.fxml";
+    private static final String LOGIN_FXML = "/client/views/auth/login.fxml";
 
     public static void main(String[] args) {
         launch(args);
@@ -26,7 +26,7 @@ public class ClientApp extends Application {
 
             stage.initStyle(StageStyle.UNDECORATED);
 
-            Parent root = FXMLLoader.load(getClass().getResource(SIGNUP_FXML));
+            Parent root = FXMLLoader.load(getClass().getResource(LOGIN_FXML));
             Scene scene = new Scene(root);
 
             stage.setResizable(false);

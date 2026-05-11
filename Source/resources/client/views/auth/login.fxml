@@ -16,7 +16,7 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox prefHeight="456.0" prefWidth="396.0" stylesheets="@/client/views/auth/auth.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.features.auth.LoginController">
+<VBox prefHeight="456.0" prefWidth="396.0" stylesheets="@/client/views/auth/auth.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.features.auth.LoginController">
 
    <!-- ═══ Custom Title Bar ═══ -->
    <HBox fx:id="titleBar" alignment="CENTER_LEFT" styleClass="title-bar"
@@ -70,7 +70,7 @@
          <Label fx:id="errorLabel" styleClass="error-label" GridPane.columnIndex="1" GridPane.rowIndex="3" />
       </GridPane>
 
-      <Button fx:id="loginButton" onAction="#switchToDashboard" text="Login">
+      <Button fx:id="loginButton" onAction="#handleLogin" text="Login">
          <VBox.margin>
             <Insets top="4.0" />
          </VBox.margin>

@@ -14,7 +14,7 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox maxHeight="576.0" maxWidth="977.0" minHeight="576.0" minWidth="977.0" prefHeight="576.0" prefWidth="977.0" styleClass="root" stylesheets="@/client/views/dashboard/dashboard.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.features.dashboard.DashboardController">
+<VBox maxHeight="576.0" maxWidth="977.0" minHeight="576.0" minWidth="977.0" prefHeight="576.0" prefWidth="977.0" styleClass="root" stylesheets="@/client/views/dashboard/dashboard.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.features.dashboard.DashboardController">
 
     <!-- ═══════════════════════════════════════════════════════════
          CUSTOM TITLE BAR (same as login)
@@ -67,6 +67,7 @@
                 </HBox>
                 <!-- ICON BUTTONS — right cluster -->
                 <HBox alignment="CENTER_RIGHT" spacing="8">
+                    <Label fx:id="lblCurrentUserQuickInfo" styleClass="auth-footer-muted" text="Guest" />
                     <Button fx:id="btnSearch" styleClass="icon-button">
                         <graphic>
                             <Region styleClass="search-icon" />

@@ -1,7 +1,9 @@
 package Client.features.dashboard;
 
 import Client.core.ui.NavigationController;
+import Client.features.auth.UserSession;
 import CommonClasses.Items.Item;
+import CommonClasses.User;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
@@ -27,6 +29,7 @@ public class DashboardController extends NavigationController {
     @FXML private Label lblActiveAuctions;
     @FXML private Label lblEndingToday;
     @FXML private Label lblTotalBids;
+    @FXML private Label lblCurrentUserQuickInfo;
 
     private List<Item> allItems;
     private int currentPage = 0;
@@ -36,6 +39,12 @@ public class DashboardController extends NavigationController {
     public void initialize() {
         final DashboardService dashboardService = new DashboardService();
         allItems = dashboardService.loadAllItems();
+        User currentUser = UserSession.getCurrentUser();
+        if (lblCurrentUserQuickInfo != null) {
+            lblCurrentUserQuickInfo.setText(currentUser == null
+                    ? "Guest"
+                    : currentUser.getUsername() + " | " + currentUser.getEmail());
+        }
 
         if (lblActiveAuctions != null) {
             lblActiveAuctions.setText("0");

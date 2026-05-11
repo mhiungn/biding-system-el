@@ -26,9 +26,7 @@ public class SignupController extends NavigationController {
 
     @FXML
     private void handleSignup(ActionEvent event) {
-        errorLabel.setText("");
-        errorLabel.setManaged(false);
-        errorLabel.setVisible(false);
+        clearError();
 
         String user = usernameField.getText() != null ? usernameField.getText().trim() : "";
         String email = emailField.getText() != null ? emailField.getText().trim() : "";
@@ -39,9 +37,25 @@ public class SignupController extends NavigationController {
             showError("Please fill in all fields.");
             return;
         }
+        if (!authService.isValidEmail(email)) {
+            showError("Email must contain @.");
+            return;
+        }
         if (!authService.passwordsMatch(p1, p2)) {
             showError("Passwords do not match.");
             return;
+        }
+
+        String signupError = authService.register(user, email, p1);
+        if (signupError != null) {
+            showError(signupError);
+            return;
+        }
+        showError("Logged in successfully! Loading...");
+        try {
+            switchToDashboard(event);
+        } catch (Exception e) {
+            showError("Signup succeeded, but cannot open dashboard.");
         }
     }
 
@@ -49,5 +63,11 @@ public class SignupController extends NavigationController {
         errorLabel.setText(message);
         errorLabel.setManaged(true);
         errorLabel.setVisible(true);
+    }
+
+    private void clearError() {
+        errorLabel.setText("");
+        errorLabel.setManaged(false);
+        errorLabel.setVisible(false);
     }
 }
