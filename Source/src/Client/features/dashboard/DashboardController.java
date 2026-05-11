@@ -75,9 +75,11 @@ public class DashboardController extends NavigationController {
     }
 
     public void loadAuctionCards(List<Item> items) {
-        if (auctionCardsGrid != null) {
-            auctionCardsGrid.getChildren().clear();
+        if (auctionCardsGrid == null) {
+            return;
         }
+
+        auctionCardsGrid.getChildren().clear();
 
         int row = 0;
         int col = 0;

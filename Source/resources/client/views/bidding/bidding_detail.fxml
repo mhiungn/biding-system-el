@@ -15,7 +15,7 @@
 
 <?import javafx.scene.image.ImageView?>
 <?import javafx.geometry.Insets?>
-<VBox maxHeight="576.0" maxWidth="977.0" minHeight="576.0" minWidth="977.0" prefHeight="576.0" prefWidth="977.0" styleClass="root" stylesheets="@/client/views/dashboard/dashboard.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.features.dashboard.DashboardController">
+<VBox maxHeight="576.0" maxWidth="977.0" minHeight="576.0" minWidth="977.0" prefHeight="576.0" prefWidth="977.0" styleClass="root" stylesheets="@/client/views/bidding/bidding_detail.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.features.bidding.BiddingDetailController">
 
     <!-- ═══════════════════════════════════════════════════════════
          CUSTOM TITLE BAR (same as login)
