@@ -5,10 +5,10 @@ import CommonClasses.User;
 /**
  * Fast in-memory holder for the currently logged-in user.
  */
-public final class UserSession {
+public final class SessionManager {
     private static volatile User currentUser;
 
-    private UserSession() {
+    private SessionManager() {
     }
 
     public static void setCurrentUser(User user) {

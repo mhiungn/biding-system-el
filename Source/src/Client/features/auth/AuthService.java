@@ -41,7 +41,7 @@ public final class AuthService {
 
         User newUser = new Bidder(normalizedUsername, password, normalizedEmail);
         userDAO.save(normalizedUsername, newUser);
-        UserSession.setCurrentUser(newUser);
+        SessionManager.setCurrentUser(newUser);
         return null;
     }
 
@@ -52,7 +52,7 @@ public final class AuthService {
         }
 
         User user = userDAO.authenticate(normalizedUsername, password);
-        UserSession.setCurrentUser(user);
+        SessionManager.setCurrentUser(user);
         return user;
     }
 }

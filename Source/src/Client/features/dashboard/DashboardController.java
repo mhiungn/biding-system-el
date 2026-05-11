@@ -1,7 +1,7 @@
 package Client.features.dashboard;
 
 import Client.core.ui.NavigationController;
-import Client.features.auth.UserSession;
+import Client.features.auth.SessionManager;
 import CommonClasses.Items.Item;
 import CommonClasses.User;
 import javafx.fxml.FXML;
@@ -39,7 +39,7 @@ public class DashboardController extends NavigationController {
     public void initialize() {
         final DashboardService dashboardService = new DashboardService();
         allItems = dashboardService.loadAllItems();
-        User currentUser = UserSession.getCurrentUser();
+        User currentUser = SessionManager.getCurrentUser();
         if (lblCurrentUserQuickInfo != null) {
             lblCurrentUserQuickInfo.setText(currentUser == null
                     ? "Guest"
