@@ -93,9 +93,9 @@
                 <VBox spacing="8" HBox.hgrow="ALWAYS">
                     <Label styleClass="section-label" text="FILTERS" />
                     <HBox spacing="12">
-                        <ComboBox fx:id="categoryFilter" prefWidth="285" promptText="Category: All" styleClass="filter-combo" />
-                        <ComboBox fx:id="sortFilter" prefWidth="285" promptText="Sort: Ending Soon" styleClass="filter-combo" />
-                        <ComboBox fx:id="priceRangeFilter" prefWidth="285" promptText="Price Range: Any" styleClass="filter-combo" />
+                        <ComboBox fx:id="categoryFilter" prefWidth="285" styleClass="filter-combo" />
+                        <ComboBox fx:id="sortFilter" prefWidth="285" styleClass="filter-combo" />
+                        <ComboBox fx:id="priceRangeFilter" prefWidth="285" styleClass="filter-combo" />
                     </HBox>
                 </VBox>
             </HBox>

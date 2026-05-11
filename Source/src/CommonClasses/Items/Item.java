@@ -3,6 +3,7 @@ package CommonClasses.Items;
 import CommonClasses.Entity;
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.Objects;
 
 /**
@@ -31,6 +32,15 @@ public abstract class Item extends Entity implements Serializable {
     /** A longer textual description of the item providing additional details. */
     private String description;
 
+    /** Current highest price for this item in auction session. */
+    private float currentHighestPrice;
+
+    /** Planned auction start time for this item. */
+    private Date auctionStartTime;
+
+    /** Planned auction end time for this item. */
+    private Date auctionEndTime;
+
     // ========================== Constructors ==========================
 
     /**
@@ -46,6 +56,18 @@ public abstract class Item extends Entity implements Serializable {
         this.startingPrice = startingPrice;
         this.name = name;
         this.description = description;
+        this.currentHighestPrice = startingPrice;
+    }
+
+    public Item(float startingPrice, String name, String description,
+                float currentHighestPrice, Date auctionStartTime, Date auctionEndTime) {
+        super();
+        this.startingPrice = startingPrice;
+        this.name = name;
+        this.description = description;
+        this.currentHighestPrice = currentHighestPrice;
+        this.auctionStartTime = auctionStartTime;
+        this.auctionEndTime = auctionEndTime;
     }
 
     // ========================== Entity Implementation ==========================
@@ -88,6 +110,30 @@ public abstract class Item extends Entity implements Serializable {
         this.description = description;
     }
 
+    public float getCurrentHighestPrice() {
+        return currentHighestPrice;
+    }
+
+    public void setCurrentHighestPrice(float currentHighestPrice) {
+        this.currentHighestPrice = currentHighestPrice;
+    }
+
+    public Date getAuctionStartTime() {
+        return auctionStartTime;
+    }
+
+    public void setAuctionStartTime(Date auctionStartTime) {
+        this.auctionStartTime = auctionStartTime;
+    }
+
+    public Date getAuctionEndTime() {
+        return auctionEndTime;
+    }
+
+    public void setAuctionEndTime(Date auctionEndTime) {
+        this.auctionEndTime = auctionEndTime;
+    }
+
     // ========================== Object Overrides ==========================
 
     @Override
@@ -96,6 +142,9 @@ public abstract class Item extends Entity implements Serializable {
                 "startingPrice=" + startingPrice +
                 ", name='" + name + '\'' +
                 ", description='" + description + '\'' +
+                ", currentHighestPrice=" + currentHighestPrice +
+                ", auctionStartTime=" + auctionStartTime +
+                ", auctionEndTime=" + auctionEndTime +
                 '}';
     }
 
@@ -105,12 +154,15 @@ public abstract class Item extends Entity implements Serializable {
         if (o == null || getClass() != o.getClass()) return false;
         Item item = (Item) o;
         return Float.compare(item.startingPrice, startingPrice) == 0 &&
+                Float.compare(item.currentHighestPrice, currentHighestPrice) == 0 &&
                 Objects.equals(name, item.name) &&
-                Objects.equals(description, item.description);
+                Objects.equals(description, item.description) &&
+                Objects.equals(auctionStartTime, item.auctionStartTime) &&
+                Objects.equals(auctionEndTime, item.auctionEndTime);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(startingPrice, name, description);
+        return Objects.hash(startingPrice, name, description, currentHighestPrice, auctionStartTime, auctionEndTime);
     }
 }

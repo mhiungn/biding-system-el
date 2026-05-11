@@ -1,4 +1,5 @@
 package CommonClasses.Items;
+import java.util.Date;
 
 /**
  * Represents an art item in the auction system.
@@ -10,6 +11,11 @@ public class Art extends Item {
 
     public Art(float startingPrice, String name, String description) {
         super(startingPrice, name, description);
+    }
+
+    public Art(float startingPrice, String name, String description,
+               float currentHighestPrice, Date auctionStartTime, Date auctionEndTime) {
+        super(startingPrice, name, description, currentHighestPrice, auctionStartTime, auctionEndTime);
     }
 
     @Override

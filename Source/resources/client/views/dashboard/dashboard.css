@@ -219,6 +219,46 @@
 
 .filter-combo:hover {
     -fx-border-color: #7c7c7c;
+    -fx-background-color: #252525;
+}
+
+.filter-combo:hover > .arrow-button {
+    -fx-background-color: #2a2a2a;
+}
+
+.filter-combo > .arrow-button {
+    -fx-background-color: transparent;
+}
+
+.filter-combo > .arrow-button:hover {
+    -fx-background-color: #2a2a2a;
+}
+
+/* Dropdown popup (DESIGN.md: elevated surface + hover lift) */
+.combo-box-popup > .list-view {
+    -fx-background-color: #181818;
+    -fx-border-color: transparent;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 18, 0, 0, 6);
+}
+
+.combo-box-popup > .list-view .list-cell {
+    -fx-background-color: #1f1f1f;
+    -fx-text-fill: #b3b3b3;
+}
+
+.combo-box-popup > .list-view .list-cell:filled:hover {
+    -fx-background-color: #252525;
+    -fx-text-fill: #ffffff;
+}
+
+.combo-box-popup > .list-view .list-cell:filled:selected {
+    -fx-background-color: #1ed760;
+    -fx-text-fill: #000000;
+}
+
+.combo-box-popup > .list-view .list-cell:filled:selected:hover {
+    -fx-background-color: #1fdf64;
+    -fx-text-fill: #000000;
 }
 
 /* =============================================

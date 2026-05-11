@@ -591,6 +591,116 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
         return result;
     }
 
+    public int countDashboardAuctions(String category, boolean endingSoon, Float minPriceInclusive, Float maxPriceInclusive) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT COUNT(*) FROM (" +
+                " SELECT s.auction_id " +
+                " FROM auction_snapshots s " +
+                " JOIN items i ON i.item_id = s.item_id " +
+                " LEFT JOIN (SELECT auction_id, MAX(bid_amount) AS max_bid FROM auction_bids GROUP BY auction_id) b ON b.auction_id = s.auction_id " +
+                " WHERE s.status IN ('OPEN','RUNNING')"
+        );
+        List<Object> params = new ArrayList<>();
+        appendDashboardFilters(sql, params, category, endingSoon, minPriceInclusive, maxPriceInclusive);
+        sql.append(" ) x");
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            bindParams(ps, params);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+            return 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi đếm auction dashboard", e);
+        }
+    }
+
+    public List<DashboardAuctionRow> findDashboardAuctions(String category, boolean endingSoon,
+                                                           Float minPriceInclusive, Float maxPriceInclusive,
+                                                           int limit, int offset) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT s.auction_id, s.status, s.created_at, s.terminate_at, " +
+                " i.item_type, i.name, i.description, i.starting_price, i.auction_start_time, i.auction_end_time, " +
+                " COALESCE(b.max_bid, i.current_highest_price, i.starting_price) AS current_price, " +
+                " COALESCE(b.bid_count, 0) AS bid_count " +
+                " FROM auction_snapshots s " +
+                " JOIN items i ON i.item_id = s.item_id " +
+                " LEFT JOIN (SELECT auction_id, MAX(bid_amount) AS max_bid, COUNT(*) AS bid_count FROM auction_bids GROUP BY auction_id) b " +
+                " ON b.auction_id = s.auction_id " +
+                " WHERE s.status IN ('OPEN','RUNNING')"
+        );
+        List<Object> params = new ArrayList<>();
+        appendDashboardFilters(sql, params, category, endingSoon, minPriceInclusive, maxPriceInclusive);
+        sql.append(" ORDER BY s.terminate_at ASC, s.auction_id DESC LIMIT ? OFFSET ?");
+        params.add(limit);
+        params.add(offset);
+
+        List<DashboardAuctionRow> result = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            bindParams(ps, params);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Item item = createItemFromDashboardRow(rs);
+                    int auctionId = rs.getInt("auction_id");
+                    String status = rs.getString("status");
+                    Date startTime = toDate(rs.getTimestamp("created_at"));
+                    Date endTime = toDate(rs.getTimestamp("terminate_at"));
+                    int bidCount = rs.getInt("bid_count");
+                    result.add(new DashboardAuctionRow(auctionId, status, startTime, endTime, item, bidCount));
+                }
+            }
+            return result;
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi tải auction dashboard", e);
+        }
+    }
+
+    public int countActiveAuctions() {
+        String sql = "SELECT COUNT(*) FROM auction_snapshots WHERE status IN ('OPEN', 'RUNNING')";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+            return 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi đếm active auctions", e);
+        }
+    }
+
+    public int countEndingTodayAuctions() {
+        String sql = "SELECT COUNT(*) FROM auction_snapshots WHERE status IN ('OPEN', 'RUNNING') AND DATE(terminate_at) = CURDATE()";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+            return 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi đếm auction ending today", e);
+        }
+    }
+
+    public int countTotalBids() {
+        String sql = "SELECT COUNT(*) FROM auction_bids";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+            return 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi đếm tổng bids", e);
+        }
+    }
+
     /**
      * Thêm một bid vào phiên đấu giá đang tồn tại.
      * <p>
@@ -967,6 +1077,57 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
         if (item instanceof Vehicle)
             return "VEHICLE";
         return item.getClass().getSimpleName().toUpperCase();
+    }
+
+    private void appendDashboardFilters(StringBuilder sql, List<Object> params,
+                                        String category, boolean endingSoon,
+                                        Float minPriceInclusive, Float maxPriceInclusive) {
+        if (category != null && !"ALL".equalsIgnoreCase(category)) {
+            sql.append(" AND UPPER(i.item_type) = ?");
+            params.add(category.toUpperCase());
+        }
+        if (endingSoon) {
+            sql.append(" AND s.terminate_at IS NOT NULL AND s.terminate_at BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 3 DAY)");
+        }
+        if (minPriceInclusive != null) {
+            sql.append(" AND COALESCE(b.max_bid, i.current_highest_price, i.starting_price) >= ?");
+            params.add(minPriceInclusive);
+        }
+        if (maxPriceInclusive != null) {
+            sql.append(" AND COALESCE(b.max_bid, i.current_highest_price, i.starting_price) <= ?");
+            params.add(maxPriceInclusive);
+        }
+    }
+
+    private void bindParams(PreparedStatement ps, List<Object> params) throws SQLException {
+        for (int i = 0; i < params.size(); i++) {
+            ps.setObject(i + 1, params.get(i));
+        }
+    }
+
+    private Item createItemFromDashboardRow(ResultSet rs) throws SQLException {
+        String type = rs.getString("item_type");
+        float startingPrice = rs.getFloat("starting_price");
+        String name = rs.getString("name");
+        String description = rs.getString("description");
+        Item item;
+        switch (type.toUpperCase()) {
+            case "ELECTRONICS":
+                item = new Electronics(startingPrice, name, description);
+                break;
+            case "ART":
+                item = new Art(startingPrice, name, description);
+                break;
+            case "VEHICLE":
+                item = new Vehicle(startingPrice, name, description);
+                break;
+            default:
+                throw new RuntimeException("Loại sản phẩm không xác định trong database: " + type);
+        }
+        item.setCurrentHighestPrice(rs.getFloat("current_price"));
+        item.setAuctionStartTime(toDate(rs.getTimestamp("auction_start_time")));
+        item.setAuctionEndTime(toDate(rs.getTimestamp("auction_end_time")));
+        return item;
     }
 
     /**

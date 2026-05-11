@@ -33,8 +33,11 @@ CREATE TABLE IF NOT EXISTS items (
     item_id VARCHAR(36) PRIMARY KEY COMMENT 'ID sản phẩm (UUID)',
     name VARCHAR(255) NOT NULL COMMENT 'Tên sản phẩm',
     starting_price FLOAT NOT NULL COMMENT 'Giá khởi điểm',
+    current_highest_price FLOAT NOT NULL COMMENT 'Giá hiện tại cao nhất',
     item_type VARCHAR(50) NOT NULL COMMENT 'Loại sản phẩm: ELECTRONICS, ART, VEHICLE',
     description TEXT COMMENT 'Mô tả chi tiết sản phẩm',
+    auction_start_time DATETIME NULL COMMENT 'Thời gian bắt đầu đấu giá',
+    auction_end_time DATETIME NULL COMMENT 'Thời gian kết thúc đấu giá',
     seller_username VARCHAR(50) COMMENT 'Người bán sở hữu sản phẩm',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Thời điểm tạo sản phẩm',
     
