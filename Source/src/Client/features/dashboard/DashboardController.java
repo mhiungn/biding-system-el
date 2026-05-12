@@ -227,7 +227,7 @@ public class DashboardController extends NavigationController {
             selectedCategory = (newVal == null || "All".equalsIgnoreCase(newVal)) ? "ALL" : newVal;
             reloadFromFilters();
         });
-        categoryFilter.getSelectionModel().clearSelection();
+        categoryFilter.getSelectionModel().selectFirst();
     }
 
     private void setupTimeFilter() {
@@ -305,7 +305,7 @@ public class DashboardController extends NavigationController {
             applyPriceRange(newVal);
             reloadFromFilters();
         });
-        priceRangeFilter.getSelectionModel().clearSelection();
+        priceRangeFilter.getSelectionModel().selectFirst();
     }
 
     private void setupPaginationButtons() {

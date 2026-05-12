@@ -109,7 +109,6 @@ HeThongDauGia/
 │           ├── Server.java
 │           └── RunApplication.java
 │
-├── dummy_data.sql
 ├── Hướng-dẫn-BTL-LTNC-2026.pdf
 ├── mysql_migration_plan.md
 ├── sources.txt
