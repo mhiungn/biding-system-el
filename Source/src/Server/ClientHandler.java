@@ -6,7 +6,9 @@ import CommonClasses.User;
 import Packets.MessageType;
 import Packets.PacketMessage;
 import Payload.AuctionUpdatePayload;
-import Server.dao.UserDAO;
+import Server.service.AuctionService;
+import Server.service.AuthenticationService;
+import Server.service.BidService;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -14,14 +16,19 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.Map;
+
 /**
  * Handles the communication with a single connected client.
  * <p>
  * Each {@code ClientHandler} runs on its own thread and manages sending/receiving
  * packets to/from the associated {@link Client}.
+ * </p>
+ * <p>
+ * <b>Phase 2 refactor:</b> All business logic has been moved to the Service Layer
+ * ({@link AuthenticationService}, {@link AuctionService}, {@link BidService}).
+ * This handler is now a thin network adapter that deserializes requests,
+ * delegates to the appropriate service, and serializes responses.
  * </p>
  */
 public class ClientHandler implements Runnable {
@@ -29,6 +36,11 @@ public class ClientHandler implements Runnable {
     private Client client;
     private Socket socket;
     private ObjectOutputStream outputStream;
+
+    // Service Layer references (singletons)
+    private final AuthenticationService authService;
+    private final AuctionService auctionService;
+    private final BidService bidService;
 
     /**
      * Constructs a ClientHandler for the given client and socket.
@@ -39,6 +51,9 @@ public class ClientHandler implements Runnable {
     public ClientHandler(Client client, Socket socket) {
         this.client = client;
         this.socket = socket;
+        this.authService = AuthenticationService.getInstance();
+        this.auctionService = AuctionService.getInstance();
+        this.bidService = BidService.getInstance();
         try {
             this.outputStream = new ObjectOutputStream(socket.getOutputStream());
         } catch (IOException e) {
@@ -105,7 +120,7 @@ public class ClientHandler implements Runnable {
             } else if (type == MessageType.LIST_AUCTIONS) {
                 requireLogin();
                 sendPacket(new PacketMessage(MessageType.LIST_AUCTIONS,
-                        new ArrayList<>(Server.getInstance().getAuctions().values())));
+                        auctionService.getAllAuctions()));
             } else if (type == MessageType.CREATE_AUCTION) {
                 requireLogin();
                 handleCreateAuction(request);
@@ -129,9 +144,11 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    // ========================== Delegating Handlers ==========================
+
     private void handleLogin(PacketMessage request) throws IOException {
         User loginInfo = (User) request.getPayload();
-        User userResult = UserDAO.getInstance().authenticate(loginInfo.getUsername(), loginInfo.getPassword());
+        User userResult = authService.login(loginInfo.getUsername(), loginInfo.getPassword());
 
         if (userResult != null) {
             client.setUsername(userResult.getUsername());
@@ -144,16 +161,16 @@ public class ClientHandler implements Runnable {
 
     private void handleCreateAuction(PacketMessage request) throws IOException {
         Auction auction = (Auction) request.getPayload();
-        auction.setOwnerUsername(client.getUsername());
-        Server.getInstance().addAuction(auction);
+        Auction registered = auctionService.registerAuction(auction, client.getUsername());
 
-        sendPacket(new PacketMessage(MessageType.CREATE_AUCTION, auction));
-        broadcastAuctionUpdate(auction);
+        sendPacket(new PacketMessage(MessageType.CREATE_AUCTION, registered));
+        broadcastAuctionUpdate(registered);
     }
 
     private void handleJoinAuction(PacketMessage request) throws Exception {
-        Auction auction = getAuctionOrThrow(readAuctionId(request.getPayload()));
-        auction.addParticipant(client.getUsername());
+        int auctionId = readAuctionId(request.getPayload());
+        Auction auction = auctionService.joinAuction(auctionId, client.getUsername());
+
         if (!client.getRegisteredAuctions().contains(auction.getId())) {
             client.getRegisteredAuctions().add(auction.getId());
         }
@@ -163,8 +180,9 @@ public class ClientHandler implements Runnable {
     }
 
     private void handleLeaveAuction(PacketMessage request) throws Exception {
-        Auction auction = getAuctionOrThrow(readAuctionId(request.getPayload()));
-        auction.removeParticipant(client.getUsername());
+        int auctionId = readAuctionId(request.getPayload());
+        Auction auction = auctionService.leaveAuction(auctionId, client.getUsername());
+
         client.getRegisteredAuctions().remove(Integer.valueOf(auction.getId()));
 
         sendPacket(new PacketMessage(MessageType.LEAVE_AUCTION, buildAuctionUpdatePayload(auction)));
@@ -176,26 +194,31 @@ public class ClientHandler implements Runnable {
         int auctionId = ((Number) payload.get("auctionId")).intValue();
         float bidAmount = ((Number) payload.get("bid")).floatValue();
 
-        Auction auction = getAuctionOrThrow(auctionId);
-        String previousHighestBidder = auction.findHighestBid().getBidderUsername();
+        // Get the previous highest bidder BEFORE placing the new bid
+        String previousHighestBidder = bidService.getCurrentHighestBidder(auctionId);
 
-        Bid bid = new Bid(new Date(), bidAmount, client.getUsername());
-        auction.placeBid(bid, client.getUsername());
+        // Delegate bid placement to BidService (validation + persistence)
+        Bid bid = bidService.placeBid(auctionId, bidAmount, client.getUsername());
 
+        // Build update payload from the auction (which now has the new bid)
+        Auction auction = auctionService.getAuction(auctionId);
         AuctionUpdatePayload updatePayload = buildAuctionUpdatePayload(auction);
+
         notifyPreviousHighestBidder(previousHighestBidder, updatePayload);
         sendPacket(new PacketMessage(MessageType.PLACE_BID, updatePayload));
         broadcastAuctionUpdate(auction);
     }
 
     private void handleCancelAuction(PacketMessage request) throws Exception {
-        Auction auction = getAuctionOrThrow(readAuctionId(request.getPayload()));
-        auction.cancel(client.getUsername());
+        int auctionId = readAuctionId(request.getPayload());
+        Auction auction = auctionService.cancelAuction(auctionId, client.getUsername());
 
         AuctionUpdatePayload updatePayload = buildAuctionUpdatePayload(auction);
         sendPacket(new PacketMessage(MessageType.CANCEL_AUCTION, updatePayload));
         broadcastToParticipants(auction, new PacketMessage(MessageType.AUCTION_CANCELLED, updatePayload));
     }
+
+    // ========================== Utility Methods ==========================
 
     private void requireLogin() {
         String username = client != null ? client.getUsername() : null;
@@ -209,14 +232,6 @@ public class ClientHandler implements Runnable {
             return ((Number) payload).intValue();
         }
         throw new IllegalArgumentException("Payload must be an auction id");
-    }
-
-    private Auction getAuctionOrThrow(int auctionId) {
-        Auction auction = Server.getInstance().getAuctions().get(auctionId);
-        if (auction == null) {
-            throw new IllegalArgumentException("Auction not found: " + auctionId);
-        }
-        return auction;
     }
 
     private AuctionUpdatePayload buildAuctionUpdatePayload(Auction auction) {
@@ -234,6 +249,8 @@ public class ClientHandler implements Runnable {
                 auction.getItem().getDescription()
         );
     }
+
+    // ========================== Broadcasting ==========================
 
     private void broadcastAuctionUpdate(Auction auction) {
         broadcastToParticipants(auction,

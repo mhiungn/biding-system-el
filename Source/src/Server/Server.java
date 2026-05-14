@@ -1,34 +1,34 @@
 package Server;
 
-import CommonClasses.Auction;
 import Packets.PacketMessage;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Singleton server managing all auctions and connected clients.
+ * Singleton server managing connected clients and network broadcasting.
  * <p>
- * The {@code Server} maintains maps of active auctions and client handlers,
- * and provides utility methods for broadcasting packets to groups of clients.
+ * The {@code Server} maintains a map of connected client handlers and provides
+ * utility methods for broadcasting packets to groups of clients.
+ * </p>
+ * <p>
+ * <b>Phase 2 refactor:</b> Auction state management has been moved to
+ * {@link CommonClasses.AuctionManager} (the single source of truth for all
+ * auction data). The server no longer maintains its own auction map.
  * </p>
  */
 public class Server {
 
     private static final int PORT = 12345;
-    private static final int CLIENT_READ_TIMEOUT_MS = 10000;
     private static Server instance;
 
-    private Map<Integer, Auction> auctions;
     private Map<String, ClientHandler> clientHandlers;
 
     private Server() {
-        auctions = new ConcurrentHashMap<>();
         clientHandlers = new ConcurrentHashMap<>();
     }
 
@@ -42,24 +42,6 @@ public class Server {
             instance = new Server();
         }
         return instance;
-    }
-
-    /**
-     * Returns the map of active auctions keyed by auction ID.
-     *
-     * @return the auctions map
-     */
-    public Map<Integer, Auction> getAuctions() {
-        return auctions;
-    }
-
-    /**
-     * Adds an auction to the server's active auctions.
-     *
-     * @param auction the auction to add
-     */
-    public void addAuction(Auction auction) {
-        auctions.put(auction.getId(), auction);
     }
 
     /**
