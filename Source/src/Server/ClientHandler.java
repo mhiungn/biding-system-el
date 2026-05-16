@@ -25,7 +25,7 @@ import java.util.Map;
  */
 public class ClientHandler implements Runnable {
 
-    private Client client;
+        private Client client;
     private Socket socket;
     private ObjectOutputStream outputStream;
 
@@ -99,7 +99,7 @@ public class ClientHandler implements Runnable {
             } else if (type == MessageType.LIST_AUCTIONS) {
                 requireLogin();
                 sendPacket(new PacketMessage(MessageType.LIST_AUCTIONS,
-                        new ArrayList<>(Server.getInstance().getAuctions().values())));
+                        (java.io.Serializable) auctionService.getAllAuctions()));
             } else if (type == MessageType.CREATE_AUCTION) {
                 requireLogin();
                 handleCreateAuction(request);
