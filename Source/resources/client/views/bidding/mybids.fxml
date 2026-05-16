@@ -87,7 +87,7 @@
         <VBox styleClass="active-bids-section">
             <!-- Section Header with Filters -->
             <HBox alignment="CENTER_LEFT" styleClass="section-header">
-                <Label styleClass="section-heading" text="ACTIVE BIDS (3)" HBox.hgrow="ALWAYS" />
+                <Label fx:id="lblActiveBidsHeading" styleClass="section-heading" text="ACTIVE BIDS (0)" HBox.hgrow="ALWAYS" />
                 <HBox alignment="CENTER_RIGHT" spacing="10">
                     <Button fx:id="btnFilterAll" styleClass="filter-active" text="ALL" />
                     <Button fx:id="btnFilterWinning" styleClass="filter-btn" text="WINNING" />
@@ -98,82 +98,7 @@
             <!-- Active Bids List -->
             <ScrollPane fitToWidth="true" hbarPolicy="NEVER" prefHeight="465" styleClass="active-bids-scroll" vbarPolicy="AS_NEEDED">
                 <VBox fx:id="activeBidsList" spacing="15" styleClass="active-bids-list">
-
-                    <!-- Bid Item 1 -->
-                    <HBox styleClass="bid-item">
-                        <Region styleClass="bid-item-image" />
-                        <VBox spacing="5" styleClass="bid-item-info" HBox.hgrow="ALWAYS">
-                            <Label styleClass="bid-item-title" text="Laptop Computer" />
-                            <HBox spacing="15">
-                                <Label styleClass="bid-item-your-bid" text="Your Bid: $850" />
-                                <Label styleClass="bid-item-current" text="Current: $850" />
-                            </HBox>
-                        </VBox>
-                        <VBox alignment="CENTER_RIGHT" spacing="8" styleClass="bid-item-right">
-                            <HBox alignment="CENTER_RIGHT" spacing="5">
-                                <Region styleClass="time-icon-small" />
-                                <Label styleClass="bid-item-time" text="1h 45m" />
-                            </HBox>
-                            <HBox alignment="CENTER_RIGHT" spacing="5">
-                                <Region styleClass="status-icon-winning" />
-                                <Label styleClass="status-winning" text="WINNING" />
-                            </HBox>
-                        </VBox>
-                        <VBox alignment="CENTER" styleClass="bid-item-action">
-                            <Button styleClass="increase-bid-button" text="INCREASE BID" />
-                        </VBox>
-                    </HBox>
-
-                    <!-- Bid Item 2 -->
-                    <HBox styleClass="bid-item">
-                        <Region styleClass="bid-item-image" />
-                        <VBox spacing="5" styleClass="bid-item-info" HBox.hgrow="ALWAYS">
-                            <Label styleClass="bid-item-title" text="Designer Watch" />
-                            <HBox spacing="15">
-                                <Label styleClass="bid-item-your-bid" text="Your Bid: $1150" />
-                                <Label styleClass="bid-item-current" text="Current: $1200" />
-                            </HBox>
-                        </VBox>
-                        <VBox alignment="CENTER_RIGHT" spacing="8" styleClass="bid-item-right">
-                            <HBox alignment="CENTER_RIGHT" spacing="5">
-                                <Region styleClass="time-icon-small" />
-                                <Label styleClass="bid-item-time" text="5h 30m" />
-                            </HBox>
-                            <HBox alignment="CENTER_RIGHT" spacing="5">
-                                <Region styleClass="status-icon-outbid" />
-                                <Label styleClass="status-outbid" text="OUTBID" />
-                            </HBox>
-                        </VBox>
-                        <VBox alignment="CENTER" styleClass="bid-item-action">
-                            <Button styleClass="increase-bid-button" text="INCREASE BID" />
-                        </VBox>
-                    </HBox>
-
-                    <!-- Bid Item 3 -->
-                    <HBox styleClass="bid-item">
-                        <Region styleClass="bid-item-image" />
-                        <VBox spacing="5" styleClass="bid-item-info" HBox.hgrow="ALWAYS">
-                            <Label styleClass="bid-item-title" text="Gaming Console" />
-                            <HBox spacing="15">
-                                <Label styleClass="bid-item-your-bid" text="Your Bid: $420" />
-                                <Label styleClass="bid-item-current" text="Current: $420" />
-                            </HBox>
-                        </VBox>
-                        <VBox alignment="CENTER_RIGHT" spacing="8" styleClass="bid-item-right">
-                            <HBox alignment="CENTER_RIGHT" spacing="5">
-                                <Region styleClass="time-icon-small" />
-                                <Label styleClass="bid-item-time" text="3h 10m" />
-                            </HBox>
-                            <HBox alignment="CENTER_RIGHT" spacing="5">
-                                <Region styleClass="status-icon-winning" />
-                                <Label styleClass="status-winning" text="WINNING" />
-                            </HBox>
-                        </VBox>
-                        <VBox alignment="CENTER" styleClass="bid-item-action">
-                            <Button styleClass="increase-bid-button" text="INCREASE BID" />
-                        </VBox>
-                    </HBox>
-
+                    <!-- Populated dynamically by MyBidsController -->
                 </VBox>
             </ScrollPane>
         </VBox>
@@ -182,7 +107,7 @@
         <VBox styleClass="completed-bids-section">
             <!-- Section Header -->
             <HBox styleClass="section-header">
-                <Label styleClass="section-heading" text="COMPLETED BIDS (3)" />
+                <Label fx:id="lblCompletedHeading" styleClass="section-heading" text="COMPLETED BIDS (0)" />
             </HBox>
 
             <!-- Table Container -->
@@ -200,37 +125,7 @@
                 <!-- Table Rows ScrollPane -->
                 <ScrollPane fitToWidth="true" hbarPolicy="NEVER" prefHeight="225" styleClass="completed-table-scroll" vbarPolicy="AS_NEEDED">
                     <VBox fx:id="completedBidsList" spacing="0" styleClass="completed-table-rows">
-
-                        <!-- Row 1 -->
-                        <HBox alignment="CENTER_LEFT" spacing="12" styleClass="table-row">
-                            <Region maxWidth="42" minWidth="42" prefWidth="42" styleClass="table-item-image" />
-                            <Label maxWidth="Infinity" styleClass="table-item-name" text="Vintage Camera" HBox.hgrow="ALWAYS" />
-                            <Label minWidth="100" prefWidth="100" styleClass="table-value" text="380.000VND" />
-                            <Label minWidth="110" prefWidth="110" styleClass="table-value" text="380.000VND" />
-                            <Label alignment="CENTER" minWidth="90" prefWidth="90" styleClass="status-badge, status-won" text="WON" />
-                            <Label minWidth="110" prefWidth="110" styleClass="table-value" text="Apr 14, 2026" />
-                        </HBox>
-
-                        <!-- Row 2 -->
-                        <HBox alignment="CENTER_LEFT" spacing="12" styleClass="table-row">
-                            <Region maxWidth="42" minWidth="42" prefWidth="42" styleClass="table-item-image" />
-                            <Label maxWidth="Infinity" styleClass="table-item-name" text="Art Print Set" HBox.hgrow="ALWAYS" />
-                            <Label minWidth="100" prefWidth="100" styleClass="table-value" text="200.000VND" />
-                            <Label minWidth="110" prefWidth="110" styleClass="table-value" text="220.000VND" />
-                            <Label alignment="CENTER" minWidth="90" prefWidth="90" styleClass="status-badge, status-lost" text="LOST" />
-                            <Label minWidth="110" prefWidth="110" styleClass="table-value" text="Apr 12, 2026" />
-                        </HBox>
-
-                        <!-- Row 3 -->
-                        <HBox alignment="CENTER_LEFT" spacing="12" styleClass="table-row">
-                            <Region maxWidth="42" minWidth="42" prefWidth="42" styleClass="table-item-image" />
-                            <Label maxWidth="Infinity" styleClass="table-item-name" text="Collectible Coins" HBox.hgrow="ALWAYS" />
-                            <Label minWidth="100" prefWidth="100" styleClass="table-value" text="310.000VND" />
-                            <Label minWidth="110" prefWidth="110" styleClass="table-value" text="350.000VND" />
-                            <Label alignment="CENTER" minWidth="90" prefWidth="90" styleClass="status-badge, status-lost" text="LOST" />
-                            <Label minWidth="110" prefWidth="110" styleClass="table-value" text="Apr 10, 2026" />
-                        </HBox>
-
+                        <!-- Populated dynamically by MyBidsController -->
                     </VBox>
                 </ScrollPane>
             </VBox>

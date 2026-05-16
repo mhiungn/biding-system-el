@@ -11,14 +11,10 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox prefHeight="580.0" prefWidth="480.0" stylesheets="@/client/views/profile/user_profile.css"
-      xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="Client.features.profile.UserProfileController">
+<VBox prefHeight="580.0" prefWidth="480.0" stylesheets="@/client/views/profile/user_profile.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.features.profile.UserProfileController">
 
     <!-- ═══ Custom Title Bar ═══ -->
-    <HBox fx:id="titleBar" alignment="CENTER_LEFT" styleClass="title-bar"
-          onMousePressed="#onTitleBarPressed"
-          onMouseDragged="#onTitleBarDragged">
+    <HBox fx:id="titleBar" alignment="CENTER_LEFT" onMouseDragged="#onTitleBarDragged" onMousePressed="#onTitleBarPressed" styleClass="title-bar">
 
         <ImageView fitHeight="16" fitWidth="16" preserveRatio="true">
             <image>
@@ -34,87 +30,73 @@
 
         <Region HBox.hgrow="ALWAYS" />
 
-        <Button styleClass="title-bar-button" text="─" onAction="#handleMinimize" />
+        <Button onAction="#handleMinimize" styleClass="title-bar-button" text="─" />
         <Label styleClass="disable-button" text="□" />
-        <Button styleClass="title-bar-button, close-btn" text="✕" onAction="#handleClose" />
+        <Button onAction="#handleClose" styleClass="title-bar-button, close-btn" text="✕" />
     </HBox>
 
     <!-- ═══ Scrollable Content ═══ -->
-    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="profile-scroll"
-                vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="profile-scroll" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
 
-        <VBox alignment="TOP_CENTER" spacing="0" styleClass="profile-content">
+        <VBox alignment="TOP_CENTER" spacing="5.0" styleClass="profile-content">
             <padding>
                 <Insets bottom="32.0" left="40.0" right="40.0" top="28.0" />
             </padding>
 
             <!-- ─── Avatar + Identity ─── -->
-            <VBox alignment="CENTER" spacing="10" styleClass="identity-section">
-                <!-- Avatar circle -->
-                <Region prefHeight="80.0" prefWidth="80.0" styleClass="profile-avatar" />
+            <VBox alignment="CENTER" prefWidth="384.0" spacing="10" styleClass="identity-section">
                 <!-- Username -->
-                <Label fx:id="lblUsername" styleClass="profile-username" text="john_bidder" />
-                <!-- Handle / tagline -->
-                <Label fx:id="lblHandle" styleClass="profile-handle" text="#john_bidder" />
+                <Label fx:id="lblUsername" styleClass="profile-username" text="Loading..." />
                 <!-- Member since -->
-                <Label fx:id="lblMemberSince" styleClass="profile-meta" text="Member since January 2024" />
+                <Label fx:id="lblMemberSince" styleClass="profile-meta" text="" />
                 <!-- Status badge -->
                 <HBox alignment="CENTER" spacing="6">
-                    <Region prefHeight="8.0" prefWidth="8.0" styleClass="status-dot" />
-                    <Label styleClass="profile-status" text="Active Bidder" />
+                    <Region prefHeight="17.0" prefWidth="17.0" styleClass="status-dot" />
+                    <Label styleClass="profile-status" text="Admin" />
                 </HBox>
             </VBox>
-
-            <VBox.margin>
-                <Insets bottom="24.0" />
-            </VBox.margin>
 
             <!-- ─── Stats Row 1 ─── -->
             <HBox spacing="12" styleClass="stats-row">
                 <VBox alignment="CENTER" styleClass="stat-card" HBox.hgrow="ALWAYS">
-                    <Label styleClass="stat-value" text="47" />
+                    <Label styleClass="stat-value" text="0" />
                     <Label styleClass="stat-label" text="BIDS PLACED" />
                 </VBox>
                 <VBox alignment="CENTER" styleClass="stat-card" HBox.hgrow="ALWAYS">
-                    <Label styleClass="stat-value" text="12" />
+                    <Label styleClass="stat-value" text="0" />
                     <Label styleClass="stat-label" text="AUCTIONS WON" />
                 </VBox>
                 <VBox alignment="CENTER" styleClass="stat-card" HBox.hgrow="ALWAYS">
-                    <Label styleClass="stat-value" text="25.5%" />
+                    <Label styleClass="stat-value" text="0%" />
                     <Label styleClass="stat-label" text="WIN RATE" />
                 </VBox>
             </HBox>
 
-            <VBox.margin>
-                <Insets bottom="8.0" />
-            </VBox.margin>
-
             <!-- ─── Stats Row 2 ─── -->
             <HBox spacing="12" styleClass="stats-row">
                 <VBox alignment="CENTER" styleClass="stat-card" HBox.hgrow="ALWAYS">
-                    <Label styleClass="stat-value" text="8" />
+                    <Label styleClass="stat-value" text="0" />
                     <Label styleClass="stat-label" text="ITEMS BOUGHT" />
                 </VBox>
                 <VBox alignment="CENTER" styleClass="stat-card" HBox.hgrow="ALWAYS">
-                    <Label styleClass="stat-value" text="3" />
+                    <Label styleClass="stat-value" text="0" />
                     <Label styleClass="stat-label" text="ITEMS SOLD" />
                 </VBox>
                 <VBox alignment="CENTER" styleClass="stat-card" HBox.hgrow="ALWAYS">
-                    <Label styleClass="stat-value" text="100.000VND" />
+                    <Label styleClass="stat-value" text="—" />
                     <Label styleClass="stat-label" text="TOTAL SPENT" />
                 </VBox>
+            <padding>
+               <Insets bottom="5.0" />
+            </padding>
             </HBox>
 
-            <VBox.margin>
-                <Insets bottom="24.0" />
-            </VBox.margin>
-
             <!-- ─── Account Section ─── -->
-            <VBox spacing="0" styleClass="info-section">
+            <VBox styleClass="info-section">
 
-                <Label styleClass="section-heading" text="Account">
+                <Label prefHeight="17.0" prefWidth="384.0" styleClass="section-heading" text="Account">
                     <VBox.margin>
-                        <Insets bottom="4.0" />
+                        <Insets />
                     </VBox.margin>
                 </Label>
 
@@ -126,7 +108,7 @@
                             <Insets left="12.0" />
                         </HBox.margin>
                         <Label styleClass="info-label" text="Email" />
-                        <Label fx:id="lblEmail" styleClass="info-value" text="john@example.com" />
+                        <Label fx:id="lblEmail" styleClass="info-value" text="—" />
                     </VBox>
                     <Button styleClass="info-edit-btn" text="Edit" />
                 </HBox>
@@ -141,7 +123,7 @@
                             <Insets left="12.0" />
                         </HBox.margin>
                         <Label styleClass="info-label" text="Phone" />
-                        <Label fx:id="lblPhone" styleClass="info-value" text="+1 (555) 000-1234" />
+                        <Label fx:id="lblPhone" styleClass="info-value" text="Not set" />
                     </VBox>
                     <Button styleClass="info-edit-btn" text="Edit" />
                 </HBox>
@@ -156,7 +138,7 @@
                             <Insets left="12.0" />
                         </HBox.margin>
                         <Label styleClass="info-label" text="Location" />
-                        <Label fx:id="lblLocation" styleClass="info-value" text="Hanoi, Vietnam" />
+                        <Label fx:id="lblLocation" styleClass="info-value" text="Not set" />
                     </VBox>
                     <Button styleClass="info-edit-btn" text="Edit" />
                 </HBox>
@@ -171,16 +153,15 @@
                             <Insets left="12.0" />
                         </HBox.margin>
                         <Label styleClass="info-label" text="Password" />
-                        <Label styleClass="info-value" text="••••••••••" />
+                        <Label styleClass="info-value" text="•••••••••" />
                     </VBox>
                     <Button styleClass="info-edit-btn" text="Change" />
                 </HBox>
+            <VBox.margin>
+               <Insets top="3.0" />
+            </VBox.margin>
 
             </VBox>
-
-            <VBox.margin>
-                <Insets bottom="20.0" />
-            </VBox.margin>
 
             <!-- ─── Activity Section ─── -->
             <VBox spacing="0" styleClass="info-section">
@@ -199,45 +180,44 @@
                             <Insets left="12.0" />
                         </HBox.margin>
                         <Label styleClass="info-label" text="Active Bids" />
-                        <Label fx:id="lblActiveBids" styleClass="info-value" text="5 ongoing" />
+                        <Label fx:id="lblActiveBids" styleClass="info-value" text="0 ongoing" />
                     </VBox>
                     <Label styleClass="info-badge info-badge-green" text="LIVE" />
                 </HBox>
 
-                <Separator styleClass="row-divider" />
+<!--                <Separator styleClass="row-divider" />-->
 
-                <!-- Watchlist -->
-                <HBox alignment="CENTER_LEFT" styleClass="info-row">
-                    <Region prefHeight="16.0" prefWidth="16.0" styleClass="info-icon watch-icon" />
-                    <VBox spacing="2" HBox.hgrow="ALWAYS">
-                        <HBox.margin>
-                            <Insets left="12.0" />
-                        </HBox.margin>
-                        <Label styleClass="info-label" text="Watchlist" />
-                        <Label fx:id="lblWatchlist" styleClass="info-value" text="14 items saved" />
-                    </VBox>
-                    <Button styleClass="info-edit-btn" text="View" />
-                </HBox>
+<!--                &lt;!&ndash; Watchlist &ndash;&gt;-->
+<!--                <HBox alignment="CENTER_LEFT" styleClass="info-row">-->
+<!--                    <Region prefHeight="16.0" prefWidth="16.0" styleClass="info-icon watch-icon" />-->
+<!--                    <VBox spacing="2" HBox.hgrow="ALWAYS">-->
+<!--                        <HBox.margin>-->
+<!--                            <Insets left="12.0" />-->
+<!--                        </HBox.margin>-->
+<!--                        <Label styleClass="info-label" text="Watchlist" />-->
+<!--                        <Label fx:id="lblWatchlist" styleClass="info-value" text="14 items saved" />-->
+<!--                    </VBox>-->
+<!--                    <Button styleClass="info-edit-btn" text="View" />-->
+<!--                </HBox>-->
 
-                <Separator styleClass="row-divider" />
+<!--                <Separator styleClass="row-divider" />-->
 
-                <!-- Seller Rating -->
-                <HBox alignment="CENTER_LEFT" styleClass="info-row">
-                    <Region prefHeight="16.0" prefWidth="16.0" styleClass="info-icon star-icon" />
-                    <VBox spacing="2" HBox.hgrow="ALWAYS">
-                        <HBox.margin>
-                            <Insets left="12.0" />
-                        </HBox.margin>
-                        <Label styleClass="info-label" text="Seller Rating" />
-                        <Label fx:id="lblRating" styleClass="info-value" text="4.8 / 5.0  (23 reviews)" />
-                    </VBox>
-                </HBox>
+<!--                &lt;!&ndash; Seller Rating &ndash;&gt;-->
+<!--                <HBox alignment="CENTER_LEFT" styleClass="info-row">-->
+<!--                    <Region prefHeight="16.0" prefWidth="16.0" styleClass="info-icon star-icon" />-->
+<!--                    <VBox spacing="2" HBox.hgrow="ALWAYS">-->
+<!--                        <HBox.margin>-->
+<!--                            <Insets left="12.0" />-->
+<!--                        </HBox.margin>-->
+<!--                        <Label styleClass="info-label" text="Seller Rating" />-->
+<!--                        <Label fx:id="lblRating" styleClass="info-value" text="4.8 / 5.0  (23 reviews)" />-->
+<!--                    </VBox>-->
+<!--                </HBox>-->
+            <VBox.margin>
+               <Insets top="5.0" />
+            </VBox.margin>
 
             </VBox>
-
-            <VBox.margin>
-                <Insets bottom="20.0" />
-            </VBox.margin>
 
             <!-- ─── Preferences Section ─── -->
             <VBox spacing="0" styleClass="info-section">
@@ -273,7 +253,7 @@
                         <Label styleClass="info-label" text="Notifications" />
                         <Label styleClass="info-value-muted" text="Bid updates, outbid alerts, auction endings" />
                     </VBox>
-                    <Label styleClass="info-value-right" text="On" />
+                    <Label styleClass="info-value-right" text="Off" />
                 </HBox>
 
                 <Separator styleClass="row-divider" />
@@ -288,20 +268,45 @@
                         <Label styleClass="info-label" text="Display Currency" />
                         <Label styleClass="info-value-muted" text="All bid amounts shown in selected currency" />
                     </VBox>
-                    <Label fx:id="lblCurrency" styleClass="info-value-right" text="USD" />
+                    <Label fx:id="lblCurrency" styleClass="info-value-right" text="VND" />
                 </HBox>
+            <VBox.margin>
+               <Insets top="5.0" />
+            </VBox.margin>
 
             </VBox>
+
+            <!-- ─── Logout Button ─── -->
+            <HBox alignment="CENTER">
+                <Button fx:id="btnLogout" onAction="#handleLogout" styleClass="logout-button" text="LOG OUT" />
+            <VBox.margin>
+               <Insets top="5.0" />
+            </VBox.margin>
+            </HBox>
+
+            <VBox.margin>
+                <Insets bottom="24.0" />
+            </VBox.margin>
+
+            <VBox.margin>
+                <Insets bottom="8.0" />
+            </VBox.margin>
+
+            <VBox.margin>
+                <Insets bottom="24.0" />
+            </VBox.margin>
+
+            <VBox.margin>
+                <Insets bottom="20.0" />
+            </VBox.margin>
+
+            <VBox.margin>
+                <Insets bottom="20.0" />
+            </VBox.margin>
 
             <VBox.margin>
                 <Insets bottom="32.0" />
             </VBox.margin>
-
-            <!-- ─── Logout Button ─── -->
-            <HBox alignment="CENTER">
-                <Button fx:id="btnLogout" onAction="#handleLogout"
-                        styleClass="logout-button" text="LOG OUT" />
-            </HBox>
 
             <VBox.margin>
                 <Insets bottom="8.0" />

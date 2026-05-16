@@ -98,15 +98,6 @@
     -fx-alignment: CENTER;
 }
 
-.profile-avatar {
-    -fx-background-color: #272727;
-    -fx-background-radius: 50%;
-    -fx-border-color: #1ed760;
-    -fx-border-width: 2px;
-    -fx-border-radius: 50%;
-    /* Replace with -fx-background-image when real data is connected */
-}
-
 .profile-username {
     -fx-text-fill: #ffffff;
     -fx-font-family: "SpotifyMixUITitle", "Helvetica Neue", helvetica, arial, sans-serif;
@@ -128,7 +119,7 @@
 
 .status-dot {
     -fx-background-color: #1ed760;
-    -fx-background-radius: 50%;
+    -fx-background-radius: 100%;
 }
 
 .profile-status {

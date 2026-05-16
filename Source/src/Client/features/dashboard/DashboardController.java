@@ -208,7 +208,8 @@ public class DashboardController extends NavigationController {
                 if (empty || item == null || "All".equalsIgnoreCase(item)) {
                     setText(LABEL_CATEGORY);
                 } else {
-                    setText(LABEL_CATEGORY + " · " + item);
+                    setText(item);
+                    //LABEL_CATEGORY + " · " + (display choice)
                 }
             }
         });
