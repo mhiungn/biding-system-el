@@ -7,9 +7,11 @@ import java.util.*;
 import java.util.Date;
 
 /**
- * Lớp DAO quản lý việc lưu trữ dữ liệu {@link Item} (sản phẩm đấu giá) trên MySQL.
+ * Lớp DAO quản lý việc lưu trữ dữ liệu {@link Item} (sản phẩm đấu giá) trên
+ * MySQL.
  * <p>
- * DAO này xử lý các thao tác CRUD cho sản phẩm (Electronics, Art, Vehicle, v.v.).
+ * DAO này xử lý các thao tác CRUD cho sản phẩm (Electronics, Art, Vehicle,
+ * v.v.).
  * Mỗi item được lưu trong bảng {@code items} với khóa chính là UUID tự sinh,
  * kèm theo cột {@code seller_username} để theo dõi quyền sở hữu.
  * </p>
@@ -18,6 +20,7 @@ import java.util.Date;
  * Triển khai Singleton an toàn đa luồng bằng double-checked locking.
  *
  * <h3>Cấu trúc bảng:</h3>
+ *
  * <pre>
  *   items (
  *       item_id         VARCHAR(36) PRIMARY KEY,
@@ -31,18 +34,20 @@ import java.util.Date;
  *
  * <h3>Mapping kiểu Item:</h3>
  * Vì các lớp con {@link Electronics}, {@link Art}, {@link Vehicle} không có
- * thuộc tính riêng (chỉ khác nhau ở {@code getDisplayInfo()}), cột {@code item_type}
+ * thuộc tính riêng (chỉ khác nhau ở {@code getDisplayInfo()}), cột
+ * {@code item_type}
  * được dùng để xác định class nào cần tạo khi đọc từ database.
  *
  * <h3>Ví dụ sử dụng:</h3>
+ *
  * <pre>{@code
- *   ItemDAO itemDAO = ItemDAO.getInstance();
+ * ItemDAO itemDAO = ItemDAO.getInstance();
  *
- *   Item laptop = ItemFactory.createItem("ELECTRONICS", 500f, "Gaming Laptop", "RTX 4090");
- *   String itemId = itemDAO.saveItem(laptop, "seller_john");
+ * Item laptop = ItemFactory.createItem("ELECTRONICS", 500f, "Gaming Laptop", "RTX 4090");
+ * String itemId = itemDAO.saveItem(laptop, "seller_john");
  *
- *   Item found = itemDAO.findById(itemId);
- *   Map<String, Item> johnItems = itemDAO.findBySeller("seller_john");
+ * Item found = itemDAO.findById(itemId);
+ * Map<String, Item> johnItems = itemDAO.findBySeller("seller_john");
  * }</pre>
  *
  * @see Item
@@ -118,6 +123,7 @@ public class ItemDAO implements GenericDAO<String, Item> {
      * Để lưu item <b>kèm theo dõi quyền sở hữu seller</b>, sử dụng
      * {@link #saveItem(Item, String)} — tự động sinh ID.
      * </p>
+     *
      * @param itemId ID duy nhất của item
      * @param item   đối tượng Item cần lưu
      * @throws IllegalArgumentException nếu itemId rỗng/null hoặc item là null
@@ -135,7 +141,7 @@ public class ItemDAO implements GenericDAO<String, Item> {
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, itemId);
             ps.setString(2, item.getName());
             ps.setFloat(3, item.getStartingPrice());
@@ -162,7 +168,7 @@ public class ItemDAO implements GenericDAO<String, Item> {
         String sql = "SELECT * FROM items WHERE item_id = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, itemId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -185,8 +191,8 @@ public class ItemDAO implements GenericDAO<String, Item> {
         List<Item> result = new ArrayList<>();
 
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 result.add(mapResultSetToItem(rs));
             }
@@ -209,7 +215,7 @@ public class ItemDAO implements GenericDAO<String, Item> {
                 + "WHERE item_id = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, item.getName());
             ps.setFloat(2, item.getStartingPrice());
             ps.setFloat(3, item.getCurrentHighestPrice());
@@ -321,20 +327,17 @@ public class ItemDAO implements GenericDAO<String, Item> {
         }
 
         String itemId = UUID.randomUUID().toString();
-        String sql = "INSERT INTO items (item_id, name, starting_price, current_highest_price, description, item_type, auction_start_time, auction_end_time, seller_username) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO items (item_id, name, starting_price, description, item_type, seller_username) "
+                + "VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, itemId);
             ps.setString(2, item.getName());
             ps.setFloat(3, item.getStartingPrice());
-            ps.setFloat(4, item.getCurrentHighestPrice());
-            ps.setString(5, item.getDescription());
-            ps.setString(6, getItemType(item));
-            ps.setTimestamp(7, toTimestamp(item.getAuctionStartTime()));
-            ps.setTimestamp(8, toTimestamp(item.getAuctionEndTime()));
-            ps.setString(9, sellerUsername);
+            ps.setString(4, item.getDescription());
+            ps.setString(5, getItemType(item));
+            ps.setString(6, sellerUsername);
             ps.executeUpdate();
             System.out.println("[ItemDAO] Đã lưu sản phẩm: " + itemId
                     + " (" + item.getName() + ") thuộc sở hữu của " + sellerUsername);
@@ -483,33 +486,19 @@ public class ItemDAO implements GenericDAO<String, Item> {
     private Item mapResultSetToItem(ResultSet rs) throws SQLException {
         String type = rs.getString("item_type");
         float price = rs.getFloat("starting_price");
-        float currentHighestPrice = rs.getFloat("current_highest_price");
-        if (rs.wasNull()) {
-            currentHighestPrice = price;
-        }
         String name = rs.getString("name");
         String desc = rs.getString("description");
-        Date auctionStartTime = toDate(rs.getTimestamp("auction_start_time"));
-        Date auctionEndTime = toDate(rs.getTimestamp("auction_end_time"));
 
-        Item item;
         switch (type.toUpperCase()) {
             case "ELECTRONICS":
-                item = new Electronics(price, name, desc);
-                break;
+                return new Electronics(price, name, desc);
             case "ART":
-                item = new Art(price, name, desc);
-                break;
+                return new Art(price, name, desc);
             case "VEHICLE":
-                item = new Vehicle(price, name, desc);
-                break;
+                return new Vehicle(price, name, desc);
             default:
                 throw new RuntimeException("Loại sản phẩm không xác định trong database: " + type);
         }
-        item.setCurrentHighestPrice(currentHighestPrice);
-        item.setAuctionStartTime(auctionStartTime);
-        item.setAuctionEndTime(auctionEndTime);
-        return item;
     }
 
     /**
@@ -527,9 +516,5 @@ public class ItemDAO implements GenericDAO<String, Item> {
 
     private Timestamp toTimestamp(Date date) {
         return date == null ? null : new Timestamp(date.getTime());
-    }
-
-    private Date toDate(Timestamp timestamp) {
-        return timestamp == null ? null : new Date(timestamp.getTime());
     }
 }
