@@ -267,12 +267,6 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                             Item item = ItemDAO.getInstance().findById(itemId);
                             if (item != null) {
                                 snapshot.setItem(item);
-                           }
-                        }
-                        if (itemId != null) {
-                            Item item = ItemDAO.getInstance().findById(itemId);
-                            if (item != null) {
-                                snapshot.setItem(item);
                             }
                         }
                     }
@@ -589,6 +583,412 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
             result.put(String.valueOf(snapshot.getAuctionId()), snapshot);
         }
         return result;
+    }
+
+    public int countDashboardAuctions(String category, boolean endingSoon, Float minPriceInclusive, Float maxPriceInclusive) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT COUNT(*) FROM (" +
+                " SELECT s.auction_id " +
+                " FROM auction_snapshots s " +
+                " JOIN items i ON i.item_id = s.item_id " +
+                " LEFT JOIN (SELECT auction_id, MAX(bid_amount) AS max_bid FROM auction_bids GROUP BY auction_id) b ON b.auction_id = s.auction_id " +
+                " WHERE s.status IN ('OPEN','RUNNING')"
+                + " AND s.terminate_at IS NOT NULL AND s.terminate_at > NOW()"
+        );
+        List<Object> params = new ArrayList<>();
+        appendDashboardFilters(sql, params, category, endingSoon, minPriceInclusive, maxPriceInclusive);
+        sql.append(" ) x");
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            bindParams(ps, params);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+            return 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi đếm auction dashboard", e);
+        }
+    }
+
+    public List<DashboardAuctionRow> findDashboardAuctions(String category, boolean endingSoon,
+                                                           Float minPriceInclusive, Float maxPriceInclusive,
+                                                           int limit, int offset) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT s.auction_id, s.status, s.created_at, s.terminate_at, " +
+                " i.item_type, i.name, i.description, i.starting_price, i.auction_start_time, i.auction_end_time, " +
+                " COALESCE(b.max_bid, i.current_highest_price, i.starting_price) AS current_price, " +
+                " COALESCE(b.bid_count, 0) AS bid_count " +
+                " FROM auction_snapshots s " +
+                " JOIN items i ON i.item_id = s.item_id " +
+                " LEFT JOIN (SELECT auction_id, MAX(bid_amount) AS max_bid, COUNT(*) AS bid_count FROM auction_bids GROUP BY auction_id) b " +
+                " ON b.auction_id = s.auction_id " +
+                " WHERE s.status IN ('OPEN','RUNNING')"
+                + " AND s.terminate_at IS NOT NULL AND s.terminate_at > NOW()"
+        );
+        List<Object> params = new ArrayList<>();
+        appendDashboardFilters(sql, params, category, endingSoon, minPriceInclusive, maxPriceInclusive);
+        sql.append(" ORDER BY s.terminate_at ASC, s.auction_id DESC LIMIT ? OFFSET ?");
+        params.add(limit);
+        params.add(offset);
+
+        List<DashboardAuctionRow> result = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            bindParams(ps, params);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Item item = createItemFromDashboardRow(rs);
+                    int auctionId = rs.getInt("auction_id");
+                    String status = rs.getString("status");
+                    Date startTime = toDate(rs.getTimestamp("created_at"));
+                    Date endTime = toDate(rs.getTimestamp("terminate_at"));
+                    int bidCount = rs.getInt("bid_count");
+                    result.add(new DashboardAuctionRow(auctionId, status, startTime, endTime, item, bidCount));
+                }
+            }
+            return result;
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi tải auction dashboard", e);
+        }
+    }
+
+    public int countActiveAuctions() {
+        String sql = "SELECT COUNT(*) FROM auction_snapshots "
+                + "WHERE status IN ('OPEN', 'RUNNING') "
+                + "AND terminate_at IS NOT NULL AND terminate_at > NOW()";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+            return 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi đếm active auctions", e);
+        }
+    }
+
+    public int countEndingTodayAuctions() {
+        String sql = "SELECT COUNT(*) FROM auction_snapshots "
+                + "WHERE status IN ('OPEN', 'RUNNING') "
+                + "AND terminate_at IS NOT NULL AND terminate_at > NOW() "
+                + "AND DATE(terminate_at) = CURDATE()";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+            return 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi đếm auction ending today", e);
+        }
+    }
+
+    public int countTotalBids() {
+        String sql = "SELECT COUNT(*) FROM auction_bids";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+            return 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi đếm tổng bids", e);
+        }
+    }
+
+    /**
+     * Returns a full DashboardAuctionRow for a single auction by its ID.
+     * Used by BiddingDetailController to load auction detail.
+     *
+     * @param auctionId the auction ID
+     * @return DashboardAuctionRow with full item detail, or null if not found
+     */
+    public DashboardAuctionRow findFullAuctionDetail(int auctionId) {
+        String sql = "SELECT s.auction_id, s.status, s.created_at, s.terminate_at, s.client_owner, "
+                + " i.item_type, i.name, i.description, i.starting_price, i.auction_start_time, i.auction_end_time, "
+                + " COALESCE(b.max_bid, i.current_highest_price, i.starting_price) AS current_price, "
+                + " COALESCE(b.bid_count, 0) AS bid_count "
+                + " FROM auction_snapshots s "
+                + " JOIN items i ON i.item_id = s.item_id "
+                + " LEFT JOIN (SELECT auction_id, MAX(bid_amount) AS max_bid, COUNT(*) AS bid_count FROM auction_bids GROUP BY auction_id) b "
+                + " ON b.auction_id = s.auction_id "
+                + " WHERE s.auction_id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, auctionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Item item = createItemFromDashboardRow(rs);
+                    String status = rs.getString("status");
+                    Date startTime = toDate(rs.getTimestamp("created_at"));
+                    Date endTime = toDate(rs.getTimestamp("terminate_at"));
+                    int bidCount = rs.getInt("bid_count");
+                    return new DashboardAuctionRow(auctionId, status, startTime, endTime, item, bidCount);
+                }
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi khi tải chi tiết auction: " + auctionId, e);
+        }
+    }
+
+    /**
+     * Returns the owner username for a given auction.
+     *
+     * @param auctionId the auction ID
+     * @return the owner username, or null if auction not found
+     */
+    public String findAuctionOwner(int auctionId) {
+        String sql = "SELECT client_owner FROM auction_snapshots WHERE auction_id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, auctionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("client_owner");
+                }
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi khi tìm owner auction: " + auctionId, e);
+        }
+    }
+
+    /**
+     * Finds all active auctions where the given user is a participant.
+     * Used by MyBidsController to show active bids.
+     *
+     * @param username the participant username
+     * @return list of DashboardAuctionRow for active auctions the user participates in
+     */
+    public List<DashboardAuctionRow> findActiveAuctionsByParticipant(String username) {
+        String sql = "SELECT s.auction_id, s.status, s.created_at, s.terminate_at, "
+                + " i.item_type, i.name, i.description, i.starting_price, i.auction_start_time, i.auction_end_time, "
+                + " COALESCE(b.max_bid, i.current_highest_price, i.starting_price) AS current_price, "
+                + " COALESCE(b.bid_count, 0) AS bid_count "
+                + " FROM auction_participants p "
+                + " JOIN auction_snapshots s ON s.auction_id = p.auction_id "
+                + " JOIN items i ON i.item_id = s.item_id "
+                + " LEFT JOIN (SELECT auction_id, MAX(bid_amount) AS max_bid, COUNT(*) AS bid_count FROM auction_bids GROUP BY auction_id) b "
+                + "   ON b.auction_id = s.auction_id "
+                + " WHERE p.username = ? AND s.status IN ('OPEN','RUNNING') "
+                + " AND s.terminate_at IS NOT NULL AND s.terminate_at > NOW() "
+                + " ORDER BY s.terminate_at ASC";
+
+        List<DashboardAuctionRow> result = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Item item = createItemFromDashboardRow(rs);
+                    result.add(new DashboardAuctionRow(
+                            rs.getInt("auction_id"), rs.getString("status"),
+                            toDate(rs.getTimestamp("created_at")),
+                            toDate(rs.getTimestamp("terminate_at")),
+                            item, rs.getInt("bid_count")));
+                }
+            }
+            return result;
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi tìm active auctions cho user: " + username, e);
+        }
+    }
+
+    /**
+     * Finds all completed/cancelled auctions where the given user placed bids.
+     * Used by MyBidsController to show completed bids history.
+     *
+     * @param username the bidder username
+     * @return list of DashboardAuctionRow for completed auctions
+     */
+    public List<DashboardAuctionRow> findCompletedAuctionsByBidder(String username) {
+        String sql = "SELECT DISTINCT s.auction_id, s.status, s.created_at, s.terminate_at, "
+                + " i.item_type, i.name, i.description, i.starting_price, i.auction_start_time, i.auction_end_time, "
+                + " COALESCE(b_max.max_bid, i.current_highest_price, i.starting_price) AS current_price, "
+                + " COALESCE(b_max.bid_count, 0) AS bid_count "
+                + " FROM auction_bids ab "
+                + " JOIN auction_snapshots s ON s.auction_id = ab.auction_id "
+                + " JOIN items i ON i.item_id = s.item_id "
+                + " LEFT JOIN (SELECT auction_id, MAX(bid_amount) AS max_bid, COUNT(*) AS bid_count FROM auction_bids GROUP BY auction_id) b_max "
+                + "   ON b_max.auction_id = s.auction_id "
+                + " WHERE ab.bidder_username = ? AND s.status IN ('FINISHED','PAID','CANCELED') "
+                + " ORDER BY s.terminate_at DESC";
+
+        List<DashboardAuctionRow> result = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Item item = createItemFromDashboardRow(rs);
+                    result.add(new DashboardAuctionRow(
+                            rs.getInt("auction_id"), rs.getString("status"),
+                            toDate(rs.getTimestamp("created_at")),
+                            toDate(rs.getTimestamp("terminate_at")),
+                            item, rs.getInt("bid_count")));
+                }
+            }
+            return result;
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi tìm completed auctions cho user: " + username, e);
+        }
+    }
+
+    /**
+     * Returns the highest bid placed by a specific user on a specific auction.
+     *
+     * @param auctionId the auction ID
+     * @param username  the bidder username
+     * @return the user's highest bid amount, or 0 if no bid placed
+     */
+    public float getUserHighestBid(int auctionId, String username) {
+        String sql = "SELECT MAX(bid_amount) AS max_bid FROM auction_bids WHERE auction_id = ? AND bidder_username = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, auctionId);
+            ps.setString(2, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getFloat("max_bid");
+                }
+                return 0;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi khi lấy highest bid của user", e);
+        }
+    }
+
+    /**
+     * Returns the username of the current highest bidder for an auction.
+     *
+     * @param auctionId the auction ID
+     * @return username of highest bidder, or null if no bids
+     */
+    public String getHighestBidderUsername(int auctionId) {
+        String sql = "SELECT bidder_username FROM auction_bids WHERE auction_id = ? ORDER BY bid_order ASC LIMIT 1";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, auctionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("bidder_username");
+                }
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi khi tìm highest bidder", e);
+        }
+    }
+
+    /**
+     * Returns the bid history for a given auction (ordered highest first).
+     *
+     * @param auctionId the auction ID
+     * @return list of Bids ordered by bid_order ASC (highest first)
+     */
+    public List<Bid> getBidHistoryForAuction(int auctionId) {
+        return new ArrayList<>(loadBids(auctionId));
+    }
+
+    /**
+     * Counts auctions created by a specific user.
+     *
+     * @param username the owner username
+     * @return count of auctions created
+     */
+    public int countCreatedByUser(String username) {
+        String sql = "SELECT COUNT(*) FROM auction_snapshots WHERE client_owner = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+                return 0;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi đếm auctions created by user", e);
+        }
+    }
+
+    /**
+     * Counts auctions won by a specific user (highest bidder in FINISHED auctions).
+     *
+     * @param username the bidder username
+     * @return count of auctions won
+     */
+    public int countWonByUser(String username) {
+        String sql = "SELECT COUNT(*) FROM auction_snapshots s "
+                + " JOIN auction_bids b ON b.auction_id = s.auction_id AND b.bid_order = 0 "
+                + " WHERE s.status = 'FINISHED' AND b.bidder_username = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+                return 0;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi đếm auctions won by user", e);
+        }
+    }
+
+    /**
+     * Counts total bids placed by a specific user.
+     *
+     * @param username the bidder username
+     * @return count of bids placed
+     */
+    public int countBidsByUser(String username) {
+        String sql = "SELECT COUNT(*) FROM auction_bids WHERE bidder_username = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+                return 0;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi đếm bids by user", e);
+        }
+    }
+
+    /**
+     * Counts active auctions where the user is currently participating.
+     *
+     * @param username the participant username
+     * @return count of active participations
+     */
+    public int countActiveParticipations(String username) {
+        String sql = "SELECT COUNT(*) FROM auction_participants p "
+                + " JOIN auction_snapshots s ON s.auction_id = p.auction_id "
+                + " WHERE p.username = ? AND s.status IN ('OPEN','RUNNING') "
+                + " AND s.terminate_at IS NOT NULL AND s.terminate_at > NOW()";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+                return 0;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi đếm active participations", e);
+        }
     }
 
     /**
@@ -967,6 +1367,57 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
         if (item instanceof Vehicle)
             return "VEHICLE";
         return item.getClass().getSimpleName().toUpperCase();
+    }
+
+    private void appendDashboardFilters(StringBuilder sql, List<Object> params,
+                                        String category, boolean endingSoon,
+                                        Float minPriceInclusive, Float maxPriceInclusive) {
+        if (category != null && !"ALL".equalsIgnoreCase(category)) {
+            sql.append(" AND UPPER(i.item_type) = ?");
+            params.add(category.toUpperCase());
+        }
+        if (endingSoon) {
+            sql.append(" AND s.terminate_at IS NOT NULL AND s.terminate_at BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 3 DAY)");
+        }
+        if (minPriceInclusive != null) {
+            sql.append(" AND COALESCE(b.max_bid, i.current_highest_price, i.starting_price) >= ?");
+            params.add(minPriceInclusive);
+        }
+        if (maxPriceInclusive != null) {
+            sql.append(" AND COALESCE(b.max_bid, i.current_highest_price, i.starting_price) <= ?");
+            params.add(maxPriceInclusive);
+        }
+    }
+
+    private void bindParams(PreparedStatement ps, List<Object> params) throws SQLException {
+        for (int i = 0; i < params.size(); i++) {
+            ps.setObject(i + 1, params.get(i));
+        }
+    }
+
+    private Item createItemFromDashboardRow(ResultSet rs) throws SQLException {
+        String type = rs.getString("item_type");
+        float startingPrice = rs.getFloat("starting_price");
+        String name = rs.getString("name");
+        String description = rs.getString("description");
+        Item item;
+        switch (type.toUpperCase()) {
+            case "ELECTRONICS":
+                item = new Electronics(startingPrice, name, description);
+                break;
+            case "ART":
+                item = new Art(startingPrice, name, description);
+                break;
+            case "VEHICLE":
+                item = new Vehicle(startingPrice, name, description);
+                break;
+            default:
+                throw new RuntimeException("Loại sản phẩm không xác định trong database: " + type);
+        }
+        item.setCurrentHighestPrice(rs.getFloat("current_price"));
+        item.setAuctionStartTime(toDate(rs.getTimestamp("auction_start_time")));
+        item.setAuctionEndTime(toDate(rs.getTimestamp("auction_end_time")));
+        return item;
     }
 
     /**

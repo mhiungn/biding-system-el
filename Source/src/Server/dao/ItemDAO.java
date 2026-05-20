@@ -4,6 +4,7 @@ import CommonClasses.Items.*;
 
 import java.sql.*;
 import java.util.*;
+import java.util.Date;
 
 /**
  * Lớp DAO quản lý việc lưu trữ dữ liệu {@link Item} (sản phẩm đấu giá) trên MySQL.
@@ -80,7 +81,7 @@ public class ItemDAO implements GenericDAO<String, Item> {
      */
     private ItemDAO() {
         createTableIfNotExists();
-        System.out.println("[ItemDAO] Đã khởi tạo với MySQL. Hiện có " + count() + " sản phẩm.");
+        System.out.println("[ItemDAO] Initialized with MySQL. Currently, there are " + count() + " products.");
     }
 
     // ========================== Tạo bảng ==========================
@@ -93,8 +94,11 @@ public class ItemDAO implements GenericDAO<String, Item> {
                 + "item_id         VARCHAR(36)    PRIMARY KEY, "
                 + "name            VARCHAR(255)   NOT NULL, "
                 + "starting_price  FLOAT          NOT NULL, "
+                + "current_highest_price FLOAT    NOT NULL, "
                 + "item_type       VARCHAR(50)    NOT NULL, "
                 + "description     TEXT, "
+                + "auction_start_time DATETIME    NULL, "
+                + "auction_end_time DATETIME      NULL, "
                 + "seller_username VARCHAR(50)"
                 + ")";
 
@@ -121,26 +125,29 @@ public class ItemDAO implements GenericDAO<String, Item> {
     @Override
     public void save(String itemId, Item item) {
         if (itemId == null || itemId.trim().isEmpty()) {
-            throw new IllegalArgumentException("ID sản phẩm không được để trống hoặc null");
+            throw new IllegalArgumentException("ID san pham khong duoc de trong va null");
         }
         if (item == null) {
-            throw new IllegalArgumentException("Sản phẩm không được null");
+            throw new IllegalArgumentException("San pham khong duoc NULL");
         }
 
-        String sql = "INSERT INTO items (item_id, name, starting_price, item_type ,description ) "
-                + "VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO items (item_id, name, starting_price, current_highest_price, item_type, description, auction_start_time, auction_end_time) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, itemId);
             ps.setString(2, item.getName());
             ps.setFloat(3, item.getStartingPrice());
-            ps.setString(4, getItemType(item));
-            ps.setString(5, item.getDescription());
+            ps.setFloat(4, item.getCurrentHighestPrice());
+            ps.setString(5, getItemType(item));
+            ps.setString(6, item.getDescription());
+            ps.setTimestamp(7, toTimestamp(item.getAuctionStartTime()));
+            ps.setTimestamp(8, toTimestamp(item.getAuctionEndTime()));
             ps.executeUpdate();
-            System.out.println("[ItemDAO] Đã lưu sản phẩm: " + itemId + " (" + item.getName() + ")");
+            System.out.println("[ItemDAO] Da luu san pham: " + itemId + " (" + item.getName() + ")");
         } catch (SQLException e) {
-            throw new RuntimeException("[ItemDAO] Lỗi khi lưu sản phẩm: " + itemId, e);
+            throw new RuntimeException("[ItemDAO] Loi khi luu san pham: " + itemId, e);
         }
     }
 
@@ -164,7 +171,7 @@ public class ItemDAO implements GenericDAO<String, Item> {
                 return null;
             }
         } catch (SQLException e) {
-            throw new RuntimeException("[ItemDAO] Lỗi khi tìm sản phẩm: " + itemId, e);
+            throw new RuntimeException("[ItemDAO] Loi khi tim san pham: " + itemId, e);
         }
     }
 
@@ -184,7 +191,7 @@ public class ItemDAO implements GenericDAO<String, Item> {
                 result.add(mapResultSetToItem(rs));
             }
         } catch (SQLException e) {
-            throw new RuntimeException("[ItemDAO] Lỗi khi lấy tất cả sản phẩm", e);
+            throw new RuntimeException("[ItemDAO] Loi khi lay tat ca san pham", e);
         }
         return result;
     }
@@ -198,24 +205,27 @@ public class ItemDAO implements GenericDAO<String, Item> {
      */
     @Override
     public boolean update(String itemId, Item item) {
-        String sql = "UPDATE items SET name = ?, starting_price = ?, description = ?, item_type = ? "
+        String sql = "UPDATE items SET name = ?, starting_price = ?, current_highest_price = ?, description = ?, item_type = ?, auction_start_time = ?, auction_end_time = ? "
                 + "WHERE item_id = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, item.getName());
             ps.setFloat(2, item.getStartingPrice());
-            ps.setString(3, item.getDescription());
-            ps.setString(4, getItemType(item));
-            ps.setString(5, itemId);
+            ps.setFloat(3, item.getCurrentHighestPrice());
+            ps.setString(4, item.getDescription());
+            ps.setString(5, getItemType(item));
+            ps.setTimestamp(6, toTimestamp(item.getAuctionStartTime()));
+            ps.setTimestamp(7, toTimestamp(item.getAuctionEndTime()));
+            ps.setString(8, itemId);
             int rows = ps.executeUpdate();
             if (rows > 0) {
-                System.out.println("[ItemDAO] Đã cập nhật sản phẩm: " + itemId + " (" + item.getName() + ")");
+                System.out.println("[ItemDAO] Update sp: " + itemId + " (" + item.getName() + ")");
                 return true;
             }
             return false;
         } catch (SQLException e) {
-            throw new RuntimeException("[ItemDAO] Lỗi khi cập nhật sản phẩm: " + itemId, e);
+            throw new RuntimeException("[ItemDAO] Error update sp: " + itemId, e);
         }
     }
 
@@ -311,17 +321,20 @@ public class ItemDAO implements GenericDAO<String, Item> {
         }
 
         String itemId = UUID.randomUUID().toString();
-        String sql = "INSERT INTO items (item_id, name, starting_price, description, item_type, seller_username) "
-                + "VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO items (item_id, name, starting_price, current_highest_price, description, item_type, auction_start_time, auction_end_time, seller_username) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, itemId);
             ps.setString(2, item.getName());
             ps.setFloat(3, item.getStartingPrice());
-            ps.setString(4, item.getDescription());
-            ps.setString(5, getItemType(item));
-            ps.setString(6, sellerUsername);
+            ps.setFloat(4, item.getCurrentHighestPrice());
+            ps.setString(5, item.getDescription());
+            ps.setString(6, getItemType(item));
+            ps.setTimestamp(7, toTimestamp(item.getAuctionStartTime()));
+            ps.setTimestamp(8, toTimestamp(item.getAuctionEndTime()));
+            ps.setString(9, sellerUsername);
             ps.executeUpdate();
             System.out.println("[ItemDAO] Đã lưu sản phẩm: " + itemId
                     + " (" + item.getName() + ") thuộc sở hữu của " + sellerUsername);
@@ -470,19 +483,33 @@ public class ItemDAO implements GenericDAO<String, Item> {
     private Item mapResultSetToItem(ResultSet rs) throws SQLException {
         String type = rs.getString("item_type");
         float price = rs.getFloat("starting_price");
+        float currentHighestPrice = rs.getFloat("current_highest_price");
+        if (rs.wasNull()) {
+            currentHighestPrice = price;
+        }
         String name = rs.getString("name");
         String desc = rs.getString("description");
+        Date auctionStartTime = toDate(rs.getTimestamp("auction_start_time"));
+        Date auctionEndTime = toDate(rs.getTimestamp("auction_end_time"));
 
+        Item item;
         switch (type.toUpperCase()) {
             case "ELECTRONICS":
-                return new Electronics(price, name, desc);
+                item = new Electronics(price, name, desc);
+                break;
             case "ART":
-                return new Art(price, name, desc);
+                item = new Art(price, name, desc);
+                break;
             case "VEHICLE":
-                return new Vehicle(price, name, desc);
+                item = new Vehicle(price, name, desc);
+                break;
             default:
                 throw new RuntimeException("Loại sản phẩm không xác định trong database: " + type);
         }
+        item.setCurrentHighestPrice(currentHighestPrice);
+        item.setAuctionStartTime(auctionStartTime);
+        item.setAuctionEndTime(auctionEndTime);
+        return item;
     }
 
     /**
@@ -496,5 +523,13 @@ public class ItemDAO implements GenericDAO<String, Item> {
         if (item instanceof Art) return "ART";
         if (item instanceof Vehicle) return "VEHICLE";
         return item.getClass().getSimpleName().toUpperCase();
+    }
+
+    private Timestamp toTimestamp(Date date) {
+        return date == null ? null : new Timestamp(date.getTime());
+    }
+
+    private Date toDate(Timestamp timestamp) {
+        return timestamp == null ? null : new Date(timestamp.getTime());
     }
 }
