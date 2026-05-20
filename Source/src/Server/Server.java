@@ -100,17 +100,13 @@ public class Server {
             System.out.println(" Đang đợi các bạn Client kết nối vào...");
 
             while (true) {
-                // Chấp nhận kết nối
-                java.net.Socket socket = serverSocket.accept();
+                Socket socket = serverSocket.accept();
+                socket.setSoTimeout(CLIENT_READ_TIMEOUT_MS);
+                System.out.println("[Network] Client connected from " + socket.getRemoteSocketAddress());
 
-                // Tạo một cái tên tạm cho Client (vì chưa login nên chưa biết username)
                 Client guestClient = new Client("Guest_" + socket.getPort());
-
-                // Tạo Handler để xử lý riêng cho người này
                 ClientHandler handler = new ClientHandler(guestClient, socket);
-
-                // Chạy luồng riêng (Multi-thread)
-                new Thread(handler).start();
+                new Thread(handler, "client-handler-" + socket.getPort()).start();
             }
         } catch (java.io.IOException e) {
             System.err.println(" Lỗi khởi động Server: " + e.getMessage());
