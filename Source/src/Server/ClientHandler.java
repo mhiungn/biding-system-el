@@ -99,7 +99,7 @@ public class ClientHandler implements Runnable {
             } else if (type == MessageType.LIST_AUCTIONS) {
                 requireLogin();
                 sendPacket(new PacketMessage(MessageType.LIST_AUCTIONS,
-                        (java.io.Serializable) auctionService.getAllAuctions()));
+                        (java.io.Serializable) e.gauctionServicetAllAuctions()));
             } else if (type == MessageType.CREATE_AUCTION) {
                 requireLogin();
                 handleCreateAuction(request);
