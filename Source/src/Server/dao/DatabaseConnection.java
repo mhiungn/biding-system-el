@@ -29,13 +29,20 @@ public class DatabaseConnection {
     // ========================== Cấu hình kết nối ==========================
 
     /** URL kết nối tới MySQL server. */
-    private static final String URL = "jdbc:mysql://blbsc98ma5stojowrgcs-mysql.services.clever-cloud.com:3306/blbsc98ma5stojowrgcs";
+    private static String URL = "jdbc:mysql://blbsc98ma5stojowrgcs-mysql.services.clever-cloud.com:3306/blbsc98ma5stojowrgcs";
 
     /** Tên đăng nhập MySQL. */
-    private static final String USER = "urhbndcybrfhy0sb";
+    private static String USER = "urhbndcybrfhy0sb";
 
     /** Mật khẩu MySQL. */
-    private static final String PASSWORD = "Gt37ZauKWCr4UeTUNiMt";
+    private static String PASSWORD = "Gt37ZauKWCr4UeTUNiMt";
+
+    // ========================== Cấu hình cho Testing ==========================
+    public static void setConnectionParams(String url, String user, String password) {
+        URL = url;
+        USER = user;
+        PASSWORD = password;
+    }
 
     // ========================== Phương thức ==========================
 
