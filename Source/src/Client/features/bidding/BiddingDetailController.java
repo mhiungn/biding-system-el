@@ -8,7 +8,9 @@ import Server.dao.DashboardAuctionRow;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
@@ -20,6 +22,7 @@ import java.text.NumberFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -80,6 +83,10 @@ public class BiddingDetailController extends NavigationController {
      */
     @FXML
     public void initialize() {
+        if (btnPlaceBid != null) {
+            btnPlaceBid.setOnAction(e -> handlePlaceBid());
+        }
+
         // If auctionId was set before initialize (e.g. via static), load it
         if (currentAuctionId > 0) {
             loadAuctionData(currentAuctionId);
@@ -155,6 +162,10 @@ public class BiddingDetailController extends NavigationController {
         // Minimum bid = current price + 1
         float minBid = currentPrice + 1;
         lblMinBid.setText("Minimum bid: " + formatCurrency(minBid));
+
+        if (btnPlaceBid != null) {
+            btnPlaceBid.setDisable(isAuctionEnded());
+        }
     }
 
     /**
@@ -239,6 +250,9 @@ public class BiddingDetailController extends NavigationController {
                     Platform.runLater(() -> {
                         updateTimerDisplay(0, 0, 0);
                         lblTimerValue.setText("ENDED");
+                        if (btnPlaceBid != null) {
+                            btnPlaceBid.setDisable(true);
+                        }
                     });
                     cancel();
                     return;
@@ -278,6 +292,54 @@ public class BiddingDetailController extends NavigationController {
         lblTimerValue.setText(h + ":" + m + ":" + s);
     }
 
+    // ========================== Actions ==========================
+
+    @FXML
+    private void handlePlaceBid() {
+        if (auctionDetail == null || currentAuctionId <= 0) {
+            showError("Auction data is not loaded yet");
+            return;
+        }
+
+        User user = SessionManager.getCurrentUser();
+        if (user == null) {
+            showError("Please log in before placing a bid");
+            return;
+        }
+
+        if (isAuctionEnded()) {
+            if (btnPlaceBid != null) {
+                btnPlaceBid.setDisable(true);
+            }
+            showError("This auction has ended");
+            return;
+        }
+
+        String rawAmount = txtBidAmount.getText() == null ? "" : txtBidAmount.getText().trim();
+        float amount;
+        try {
+            amount = Float.parseFloat(rawAmount);
+        } catch (NumberFormatException e) {
+            showError("Please enter a valid bid amount");
+            return;
+        }
+
+        float currentPrice = auctionDetail.getItem().getCurrentHighestPrice();
+        if (amount <= currentPrice) {
+            showError("Bid must be higher than " + formatCurrency(currentPrice));
+            return;
+        }
+
+        boolean success = service.placeBid(currentAuctionId, user.getUsername(), amount);
+        if (!success) {
+            showError("Bid failed. The auction may have ended or the amount is too low.");
+            return;
+        }
+
+        txtBidAmount.clear();
+        loadAuctionData(currentAuctionId);
+    }
+
     // ========================== Utility Methods ==========================
 
     /**
@@ -315,18 +377,36 @@ public class BiddingDetailController extends NavigationController {
         return days + " day" + (days != 1 ? "s" : "") + " ago";
     }
 
+    private boolean isAuctionEnded() {
+        return auctionDetail == null
+                || auctionDetail.getEndTime() == null
+                || auctionDetail.getEndTime().getTime() <= System.currentTimeMillis();
+    }
+
     /**
      * Shows an error message in the item title.
      */
     private void showError(String message) {
-        lblItemTitle.setText(message);
+        if (lblItemTitle != null) {
+            lblItemTitle.setText(message);
+        }
+        Alert alert = new Alert(Alert.AlertType.ERROR, message, ButtonType.OK);
+        alert.showAndWait();
     }
 
     // ========================== Cleanup ==========================
 
     @Override
     protected boolean onBeforeClose() {
-        stopCountdown();
-        return true;
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
+                "Are you sure you want to exit?",
+                ButtonType.YES, ButtonType.NO);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        boolean shouldClose = result.isPresent() && result.get() == ButtonType.YES;
+        if (shouldClose) {
+            stopCountdown();
+        }
+        return shouldClose;
     }
 }

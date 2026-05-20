@@ -593,6 +593,7 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                 " JOIN items i ON i.item_id = s.item_id " +
                 " LEFT JOIN (SELECT auction_id, MAX(bid_amount) AS max_bid FROM auction_bids GROUP BY auction_id) b ON b.auction_id = s.auction_id " +
                 " WHERE s.status IN ('OPEN','RUNNING')"
+                + " AND s.terminate_at IS NOT NULL AND s.terminate_at > NOW()"
         );
         List<Object> params = new ArrayList<>();
         appendDashboardFilters(sql, params, category, endingSoon, minPriceInclusive, maxPriceInclusive);
@@ -625,6 +626,7 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                 " LEFT JOIN (SELECT auction_id, MAX(bid_amount) AS max_bid, COUNT(*) AS bid_count FROM auction_bids GROUP BY auction_id) b " +
                 " ON b.auction_id = s.auction_id " +
                 " WHERE s.status IN ('OPEN','RUNNING')"
+                + " AND s.terminate_at IS NOT NULL AND s.terminate_at > NOW()"
         );
         List<Object> params = new ArrayList<>();
         appendDashboardFilters(sql, params, category, endingSoon, minPriceInclusive, maxPriceInclusive);
@@ -654,7 +656,9 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
     }
 
     public int countActiveAuctions() {
-        String sql = "SELECT COUNT(*) FROM auction_snapshots WHERE status IN ('OPEN', 'RUNNING')";
+        String sql = "SELECT COUNT(*) FROM auction_snapshots "
+                + "WHERE status IN ('OPEN', 'RUNNING') "
+                + "AND terminate_at IS NOT NULL AND terminate_at > NOW()";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -668,7 +672,10 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
     }
 
     public int countEndingTodayAuctions() {
-        String sql = "SELECT COUNT(*) FROM auction_snapshots WHERE status IN ('OPEN', 'RUNNING') AND DATE(terminate_at) = CURDATE()";
+        String sql = "SELECT COUNT(*) FROM auction_snapshots "
+                + "WHERE status IN ('OPEN', 'RUNNING') "
+                + "AND terminate_at IS NOT NULL AND terminate_at > NOW() "
+                + "AND DATE(terminate_at) = CURDATE()";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -772,6 +779,7 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                 + " LEFT JOIN (SELECT auction_id, MAX(bid_amount) AS max_bid, COUNT(*) AS bid_count FROM auction_bids GROUP BY auction_id) b "
                 + "   ON b.auction_id = s.auction_id "
                 + " WHERE p.username = ? AND s.status IN ('OPEN','RUNNING') "
+                + " AND s.terminate_at IS NOT NULL AND s.terminate_at > NOW() "
                 + " ORDER BY s.terminate_at ASC";
 
         List<DashboardAuctionRow> result = new ArrayList<>();
@@ -967,7 +975,8 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
     public int countActiveParticipations(String username) {
         String sql = "SELECT COUNT(*) FROM auction_participants p "
                 + " JOIN auction_snapshots s ON s.auction_id = p.auction_id "
-                + " WHERE p.username = ? AND s.status IN ('OPEN','RUNNING')";
+                + " WHERE p.username = ? AND s.status IN ('OPEN','RUNNING') "
+                + " AND s.terminate_at IS NOT NULL AND s.terminate_at > NOW()";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);

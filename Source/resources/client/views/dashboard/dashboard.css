@@ -170,8 +170,7 @@
 }
 
 .search-icon,
-.notification-icon,
-.user-icon {
+.notification-icon{
     -fx-min-width: 24;
     -fx-min-height: 24;
     -fx-pref-width: 24;
@@ -330,28 +329,38 @@
 }
 
 .card-title {
-    -fx-font-size: 14px;
+    -fx-font-size: 12px;
     -fx-font-weight: 700;
     -fx-text-fill: #ffffff;
 }
 
 .card-subtitle {
-    -fx-font-size: 12px;
+    -fx-font-size: 10px;
     -fx-text-fill: #b3b3b3;
 }
 
 .card-price {
-    -fx-font-size: 16px;
+    -fx-font-size: 13px;
     -fx-font-weight: 700;
     -fx-text-fill: #1ed760;
 }
 
 .card-meta {
-    -fx-font-size: 12px;
+    -fx-font-size: 10px;
     -fx-text-fill: #b3b3b3;
 }
 
-.time-icon,
+.time-icon{
+    -fx-min-width: 14;
+    -fx-min-height: 14;
+    -fx-pref-width: 14;
+    -fx-pref-height: 14;
+    -fx-background-image: url('/client/images/clock.png');
+    -fx-background-size: contain;
+    -fx-background-position: center;
+    -fx-background-repeat: no-repeat;
+}
+
 .bid-icon {
     -fx-min-width: 14;
     -fx-min-height: 14;

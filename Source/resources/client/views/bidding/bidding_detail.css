@@ -152,8 +152,7 @@
 }
 
 .search-icon,
-.notification-icon,
-.user-icon {
+.notification-icon{
     -fx-min-width: 24;
     -fx-min-height: 24;
     -fx-pref-width: 24;
@@ -345,8 +344,10 @@
     -fx-min-height: 20;
     -fx-pref-width: 20;
     -fx-pref-height: 20;
-    -fx-background-color: #b3b3b3;
-    -fx-background-radius: 50%;
+    -fx-background-image: url('/client/images/clock.png');
+    -fx-background-size: contain;
+    -fx-background-position: center;
+    -fx-background-repeat: no-repeat;
 }
 
 .timer-value {

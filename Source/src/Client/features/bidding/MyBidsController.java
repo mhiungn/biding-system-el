@@ -6,7 +6,9 @@ import CommonClasses.User;
 import Server.dao.DashboardAuctionRow;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -17,6 +19,7 @@ import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 /**
  * Controller for the My Bids screen.
@@ -318,5 +321,15 @@ public class MyBidsController extends NavigationController {
         Label empty = new Label(message);
         empty.getStyleClass().add("bid-time");
         container.getChildren().add(empty);
+    }
+
+    @Override
+    protected boolean onBeforeClose() {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
+                "Are you sure you want to exit?",
+                ButtonType.YES, ButtonType.NO);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.isPresent() && result.get() == ButtonType.YES;
     }
 }

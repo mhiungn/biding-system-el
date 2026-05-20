@@ -18,7 +18,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -171,7 +170,7 @@ public class DashboardController extends NavigationController {
         bidButton.setMaxWidth(Double.MAX_VALUE);
         bidButton.setOnAction(e -> {
             try {
-                switchToBiddingDetails(e);
+                switchToBiddingDetails(e, rowData.getAuctionId());
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
@@ -416,9 +415,20 @@ public class DashboardController extends NavigationController {
 
     private String formatEndTime(Date endTime) {
         if (endTime == null) {
-            return "No end time";
+            return "Unknown";
         }
-        return "Ends: " + new SimpleDateFormat("dd/MM HH:mm").format(endTime);
+        long remaining = endTime.getTime() - System.currentTimeMillis();
+        if (remaining <= 0) {
+            return "Ended";
+        }
+
+        long totalMinutes = remaining / 60_000;
+        if (totalMinutes < 60) {
+            return "Less than 1 hour left";
+        }
+
+        long hours = totalMinutes / 60;
+        return hours == 1 ? "1 hour left" : hours + " hours left";
     }
 
     @Override

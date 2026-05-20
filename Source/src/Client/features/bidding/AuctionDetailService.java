@@ -5,6 +5,7 @@ import Server.dao.AuctionDAO;
 import Server.dao.DashboardAuctionRow;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -92,5 +93,48 @@ public class AuctionDetailService {
             System.err.println("[AuctionDetailService] Error loading participant count: " + e.getMessage());
             return 0;
         }
+    }
+
+    /**
+     * Validates and persists a bid for an active auction.
+     *
+     * @param auctionId the auction ID
+     * @param username  the bidder username
+     * @param amount    the bid amount
+     * @return true if the bid was accepted
+     */
+    public boolean placeBid(int auctionId, String username, float amount) {
+        try {
+            if (username == null || username.isBlank() || amount <= 0) {
+                return false;
+            }
+
+            AuctionDAO dao = AuctionDAO.getInstance();
+            String id = String.valueOf(auctionId);
+            if (!dao.exists(id)) {
+                return false;
+            }
+
+            DashboardAuctionRow detail = dao.findFullAuctionDetail(auctionId);
+            if (detail == null || detail.getItem() == null || isEnded(detail)) {
+                return false;
+            }
+
+            float currentPrice = detail.getItem().getCurrentHighestPrice();
+            if (amount <= currentPrice) {
+                return false;
+            }
+
+            dao.addBid(id, new Bid(new Date(), amount, username));
+            dao.addParticipant(id, username);
+            return true;
+        } catch (Exception e) {
+            System.err.println("[AuctionDetailService] Error placing bid: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean isEnded(DashboardAuctionRow detail) {
+        return detail.getEndTime() == null || detail.getEndTime().getTime() <= System.currentTimeMillis();
     }
 }

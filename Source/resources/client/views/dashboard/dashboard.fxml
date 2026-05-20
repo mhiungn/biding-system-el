@@ -14,6 +14,7 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
+<?import javafx.scene.image.Image?>
 <VBox maxHeight="576.0" maxWidth="977.0" minHeight="576.0" minWidth="977.0" prefHeight="576.0" prefWidth="977.0" styleClass="root" stylesheets="@/client/views/dashboard/dashboard.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.features.dashboard.DashboardController">
 
     <!-- ═══════════════════════════════════════════════════════════
@@ -78,9 +79,13 @@
                             <Region styleClass="notification-icon" />
                         </graphic>
                     </Button>
-                    <Button fx:id="btnUserProfile" styleClass="icon-button">
+                    <Button fx:id="btnUserProfile" onAction="#openUserProfile" styleClass="icon-button">
                         <graphic>
-                            <Region styleClass="user-icon" />
+                            <ImageView fitWidth="24" fitHeight="24" preserveRatio="true">
+                                <image>
+                                    <Image url="@/client/images/user.png" />
+                                </image>
+                            </ImageView>
                         </graphic>
                     </Button>
                 </HBox>
