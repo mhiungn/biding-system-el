@@ -108,7 +108,7 @@ public class ClientHandler implements Runnable {
             } else if (type == MessageType.LIST_AUCTIONS) {
                 requireLogin();
                 sendPacket(new PacketMessage(MessageType.LIST_AUCTIONS,
-                        new ArrayList<>(Server.getInstance().getAuctions().values())));
+                        new ArrayList<>(CommonClasses.AuctionManager.getInstance().getAllAuctions().values())));
             } else if (type == MessageType.CREATE_AUCTION) {
                 requireLogin();
                 handleCreateAuction(request);
@@ -157,7 +157,7 @@ public class ClientHandler implements Runnable {
 
         Auction auction = (Auction) request.getPayload();
         auction.setOwnerUsername(client.getUsername());
-        Server.getInstance().addAuction(auction);
+        CommonClasses.AuctionManager.getInstance().addAuction(auction);
 
         sendPacket(new PacketMessage(MessageType.CREATE_AUCTION, auction));
         broadcastAuctionUpdate(auction);
@@ -233,7 +233,7 @@ public class ClientHandler implements Runnable {
     }
 
     private Auction getAuctionOrThrow(int auctionId) {
-        Auction auction = Server.getInstance().getAuctions().get(auctionId);
+        Auction auction = CommonClasses.AuctionManager.getInstance().getAuction(auctionId);
         if (auction == null) {
             throw new IllegalArgumentException("Auction not found: " + auctionId);
         }
