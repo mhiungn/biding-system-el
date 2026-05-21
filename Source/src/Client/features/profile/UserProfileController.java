@@ -5,12 +5,7 @@ import Client.features.auth.SessionManager;
 import CommonClasses.User;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Label;
-import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.text.NumberFormat;
@@ -157,10 +152,8 @@ public class UserProfileController extends NavigationController {
      */
     @FXML
     public void handleLogout(ActionEvent event) {
-        SessionManager.clear();
-
         try {
-            switchToLogin(event);
+            handleLogoutToLogin(event);
         } catch (IOException e) {
             System.err.println("[UserProfileController] Error navigating to login: " + e.getMessage());
         }

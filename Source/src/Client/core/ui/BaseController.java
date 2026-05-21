@@ -52,6 +52,7 @@ public abstract class BaseController {
     @FXML
     protected void handleClose() {
         if (onBeforeClose()) {
+            onBeforeNavigate();
             Stage stage = getStage();
             if (stage != null) {
                 stage.close();
@@ -68,5 +69,8 @@ public abstract class BaseController {
 
     protected boolean onBeforeClose() {
         return true;
+    }
+
+    protected void onBeforeNavigate() {
     }
 }

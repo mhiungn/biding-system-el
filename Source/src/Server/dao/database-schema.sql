@@ -41,7 +41,11 @@ CREATE TABLE IF NOT EXISTS items (
     seller_username VARCHAR(50) COMMENT 'Người bán sở hữu sản phẩm',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Thời điểm tạo sản phẩm',
     
+    item_condition VARCHAR(255) NULL COMMENT 'Seller-provided condition description',
+    location VARCHAR(255) NULL COMMENT 'Seller-provided item location',
+    
     FOREIGN KEY (seller_username) REFERENCES users(username) ON DELETE SET NULL,
+    
     INDEX idx_seller (seller_username),
     INDEX idx_item_type (item_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -75,8 +79,11 @@ CREATE TABLE IF NOT EXISTS auction_snapshots (
     status VARCHAR(20) NOT NULL DEFAULT 'OPEN' COMMENT 'Trạng thái: OPEN, RUNNING, FINISHED, PAID, CANCELED',
     was_in_countdown BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Có đang ở giai đoạn countdown không',
     
+    minimum_bid_increment FLOAT NOT NULL DEFAULT 1 COMMENT 'Minimum increase required for each new bid',
+    
     FOREIGN KEY (client_owner) REFERENCES users(username) ON DELETE CASCADE,
     FOREIGN KEY (item_id) REFERENCES items(item_id) ON DELETE CASCADE,
+    
     INDEX idx_status (status),
     INDEX idx_client_owner (client_owner),
     INDEX idx_terminate_at (terminate_at)

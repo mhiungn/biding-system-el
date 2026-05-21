@@ -61,6 +61,7 @@
             </HBox>
 
             <HBox alignment="CENTER_RIGHT" spacing="8.0">
+                <Label fx:id="lblCurrentUserQuickInfo" styleClass="auth-footer-muted" text="Guest" />
                 <Button fx:id="btnSearch" styleClass="icon-button">
                     <graphic>
                         <Region styleClass="search-icon" />

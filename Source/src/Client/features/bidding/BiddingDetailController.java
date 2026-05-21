@@ -60,6 +60,7 @@ public class BiddingDetailController extends NavigationController {
     @FXML private Label lblMinBid;
     @FXML private TextField txtBidAmount;
     @FXML private Button btnPlaceBid;
+    @FXML private Label lblCurrentUserQuickInfo;
 
     // Seller
     @FXML private Label lblSellerName;
@@ -83,6 +84,8 @@ public class BiddingDetailController extends NavigationController {
      */
     @FXML
     public void initialize() {
+        applyCurrentUserQuickInfo(lblCurrentUserQuickInfo);
+
         if (btnPlaceBid != null) {
             btnPlaceBid.setOnAction(e -> handlePlaceBid());
         }
@@ -140,9 +143,10 @@ public class BiddingDetailController extends NavigationController {
         // Item ID
         lblItemId.setText("AUC-" + auctionDetail.getAuctionId());
 
-        // Condition and location are not in the DB schema yet — show defaults
-        lblCondition.setText("—");
-        lblLocation.setText("—");
+        lblCondition.setText(item.getItemCondition() != null && !item.getItemCondition().isBlank()
+                ? item.getItemCondition() : "—");
+        lblLocation.setText(item.getLocation() != null && !item.getLocation().isBlank()
+                ? item.getLocation() : "—");
     }
 
     /**
@@ -159,8 +163,7 @@ public class BiddingDetailController extends NavigationController {
         int participants = service.getParticipantCount(currentAuctionId);
         lblWatcherCount.setText(participants + " participant" + (participants != 1 ? "s" : ""));
 
-        // Minimum bid = current price + 1
-        float minBid = currentPrice + 1;
+        float minBid = currentPrice + auctionDetail.getMinimumBidIncrement();
         lblMinBid.setText("Minimum bid: " + formatCurrency(minBid));
 
         if (btnPlaceBid != null) {
@@ -325,8 +328,9 @@ public class BiddingDetailController extends NavigationController {
         }
 
         float currentPrice = auctionDetail.getItem().getCurrentHighestPrice();
-        if (amount <= currentPrice) {
-            showError("Bid must be higher than " + formatCurrency(currentPrice));
+        float minimumBid = currentPrice + auctionDetail.getMinimumBidIncrement();
+        if (amount < minimumBid) {
+            showError("Bid must be at least " + formatCurrency(minimumBid));
             return;
         }
 
@@ -397,16 +401,17 @@ public class BiddingDetailController extends NavigationController {
     // ========================== Cleanup ==========================
 
     @Override
+    protected void onBeforeNavigate() {
+        stopCountdown();
+    }
+
+    @Override
     protected boolean onBeforeClose() {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
                 "Are you sure you want to exit?",
                 ButtonType.YES, ButtonType.NO);
 
         Optional<ButtonType> result = alert.showAndWait();
-        boolean shouldClose = result.isPresent() && result.get() == ButtonType.YES;
-        if (shouldClose) {
-            stopCountdown();
-        }
-        return shouldClose;
+        return result.isPresent() && result.get() == ButtonType.YES;
     }
 }

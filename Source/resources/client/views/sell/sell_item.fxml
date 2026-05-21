@@ -83,6 +83,7 @@
 
                 <!-- Icon buttons -->
                 <HBox alignment="CENTER_RIGHT" spacing="8">
+                    <Label fx:id="lblCurrentUserQuickInfo" styleClass="auth-footer-muted" text="Guest" />
                     <Button fx:id="btnSearch" styleClass="icon-button">
                         <graphic><Region styleClass="search-icon" /></graphic>
                     </Button>
@@ -139,7 +140,7 @@
                         </StackPane>
 
                         <!-- Thumbnail Strip Label -->
-                        <Label styleClass="upload-sub-label" text="UPLOAD PICTURES (MAX 5)" />
+                        <Label styleClass="upload-sub-label" text="ADDITIONAL PICTURES (MAX 5)" />
 
                         <!-- Thumbnail Strip: 1 Add Button + 5 slots -->
                         <HBox fx:id="thumbnailRow" spacing="8" styleClass="thumbnail-row" alignment="CENTER_LEFT">
@@ -178,7 +179,7 @@
 
                         </HBox>
 
-                        <Label styleClass="upload-tip" text="First picture will be used as the cover image." />
+                        <Label styleClass="upload-tip" text="The main picture will be used as the cover image." />
 
                     </VBox>
 
@@ -243,7 +244,7 @@
                             </VBox>
                             <VBox spacing="6" styleClass="form-field" HBox.hgrow="ALWAYS">
                                 <Label styleClass="field-label" text="Condition" />
-                                <ComboBox fx:id="cmbCondition" maxWidth="Infinity" styleClass="form-combo" />
+                                <TextField fx:id="txtCondition" promptText="e.g. New, Like New, Good..." styleClass="form-input" />
                             </VBox>
                         </HBox>
 

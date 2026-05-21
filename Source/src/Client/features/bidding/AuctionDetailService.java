@@ -121,16 +121,30 @@ public class AuctionDetailService {
             }
 
             float currentPrice = detail.getItem().getCurrentHighestPrice();
-            if (amount <= currentPrice) {
+            if (amount < currentPrice + detail.getMinimumBidIncrement()) {
                 return false;
             }
 
             dao.addBid(id, new Bid(new Date(), amount, username));
             dao.addParticipant(id, username);
+            applyAutoExtendIfNeeded(dao, id);
             return true;
         } catch (Exception e) {
             System.err.println("[AuctionDetailService] Error placing bid: " + e.getMessage());
             return false;
+        }
+    }
+
+    private void applyAutoExtendIfNeeded(AuctionDAO dao, String auctionId) {
+        var snapshot = dao.findById(auctionId);
+        if (snapshot == null || !"Time_With_Reset".equals(snapshot.getType()) || snapshot.getTerminateAt() == null) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        long remaining = snapshot.getTerminateAt().getTime() - now;
+        if (remaining > 0 && remaining <= 120_000L) {
+            dao.updateTerminateAt(auctionId, new Date(snapshot.getTerminateAt().getTime() + 300_000L));
         }
     }
 

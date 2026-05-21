@@ -145,6 +145,7 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                 + "created_at          DATETIME, "
                 + "terminate_at        DATETIME, "
                 + "type                VARCHAR(30), "
+                + "minimum_bid_increment FLOAT     NOT NULL DEFAULT 1, "
                 + "status              VARCHAR(20)   NOT NULL DEFAULT 'OPEN', "
                 + "was_in_countdown    BOOLEAN       NOT NULL DEFAULT FALSE, "
                 + "FOREIGN KEY (item_id) REFERENCES items(item_id) ON DELETE CASCADE"
@@ -175,6 +176,7 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
             stmt.execute(snapshotTable);
             stmt.execute(bidsTable);
             stmt.execute(participantsTable);
+            addColumnIfMissing(conn, "auction_snapshots", "minimum_bid_increment", "FLOAT NOT NULL DEFAULT 1");
         } catch (SQLException e) {
             throw new RuntimeException("[AuctionDAO] Không thể tạo bảng", e);
         }
@@ -338,7 +340,7 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
 
             // 1. Cập nhật thông tin chính (chỉ cập nhật item_id, không inline)
             String sql = "UPDATE auction_snapshots SET client_owner = ?, item_id = ?, "
-                    + "created_at = ?, terminate_at = ?, type = ?, status = ?, was_in_countdown = ? "
+                    + "created_at = ?, terminate_at = ?, type = ?, status = ?, was_in_countdown = ?, minimum_bid_increment = ? "
                     + "WHERE auction_id = ?";
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -360,7 +362,8 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                 ps.setString(5, snapshot.getType());
                 ps.setString(6, snapshot.getStatus());
                 ps.setBoolean(7, snapshot.wasInCountDown());
-                ps.setInt(8, id);
+                ps.setFloat(8, snapshot.getMinimumBidIncrement());
+                ps.setInt(9, id);
                 
                 int rows = ps.executeUpdate();
 
@@ -571,6 +574,20 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
         }
     }
 
+    public boolean updateTerminateAt(String auctionId, Date terminateAt) {
+        String sql = "UPDATE auction_snapshots SET terminate_at = ? WHERE auction_id = ?";
+        int id = parseAuctionId(auctionId);
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setTimestamp(1, toTimestamp(terminateAt));
+            ps.setInt(2, id);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("[AuctionDAO] Lỗi khi cập nhật thời gian kết thúc: " + auctionId, e);
+        }
+    }
+
     /**
      * Trả về tất cả phiên đấu giá dưới dạng Map (auctionId → AuctionSnapshot).
      *
@@ -618,7 +635,8 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                                                            int limit, int offset) {
         StringBuilder sql = new StringBuilder(
                 "SELECT s.auction_id, s.status, s.created_at, s.terminate_at, " +
-                " i.item_type, i.name, i.description, i.starting_price, i.auction_start_time, i.auction_end_time, " +
+                " s.minimum_bid_increment, i.item_id, i.item_type, i.name, i.description, i.starting_price, " +
+                " i.auction_start_time, i.auction_end_time, i.item_condition, i.location, " +
                 " COALESCE(b.max_bid, i.current_highest_price, i.starting_price) AS current_price, " +
                 " COALESCE(b.bid_count, 0) AS bid_count " +
                 " FROM auction_snapshots s " +
@@ -646,7 +664,8 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                     Date startTime = toDate(rs.getTimestamp("created_at"));
                     Date endTime = toDate(rs.getTimestamp("terminate_at"));
                     int bidCount = rs.getInt("bid_count");
-                    result.add(new DashboardAuctionRow(auctionId, status, startTime, endTime, item, bidCount));
+                    float minimumBidIncrement = rs.getFloat("minimum_bid_increment");
+                    result.add(new DashboardAuctionRow(auctionId, status, startTime, endTime, item, bidCount, minimumBidIncrement));
                 }
             }
             return result;
@@ -711,7 +730,8 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
      */
     public DashboardAuctionRow findFullAuctionDetail(int auctionId) {
         String sql = "SELECT s.auction_id, s.status, s.created_at, s.terminate_at, s.client_owner, "
-                + " i.item_type, i.name, i.description, i.starting_price, i.auction_start_time, i.auction_end_time, "
+                + " s.minimum_bid_increment, i.item_id, i.item_type, i.name, i.description, i.starting_price, "
+                + " i.auction_start_time, i.auction_end_time, i.item_condition, i.location, "
                 + " COALESCE(b.max_bid, i.current_highest_price, i.starting_price) AS current_price, "
                 + " COALESCE(b.bid_count, 0) AS bid_count "
                 + " FROM auction_snapshots s "
@@ -730,7 +750,8 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                     Date startTime = toDate(rs.getTimestamp("created_at"));
                     Date endTime = toDate(rs.getTimestamp("terminate_at"));
                     int bidCount = rs.getInt("bid_count");
-                    return new DashboardAuctionRow(auctionId, status, startTime, endTime, item, bidCount);
+                    float minimumBidIncrement = rs.getFloat("minimum_bid_increment");
+                    return new DashboardAuctionRow(auctionId, status, startTime, endTime, item, bidCount, minimumBidIncrement);
                 }
                 return null;
             }
@@ -770,7 +791,8 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
      */
     public List<DashboardAuctionRow> findActiveAuctionsByParticipant(String username) {
         String sql = "SELECT s.auction_id, s.status, s.created_at, s.terminate_at, "
-                + " i.item_type, i.name, i.description, i.starting_price, i.auction_start_time, i.auction_end_time, "
+                + " s.minimum_bid_increment, i.item_id, i.item_type, i.name, i.description, i.starting_price, "
+                + " i.auction_start_time, i.auction_end_time, i.item_condition, i.location, "
                 + " COALESCE(b.max_bid, i.current_highest_price, i.starting_price) AS current_price, "
                 + " COALESCE(b.bid_count, 0) AS bid_count "
                 + " FROM auction_participants p "
@@ -793,7 +815,7 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                             rs.getInt("auction_id"), rs.getString("status"),
                             toDate(rs.getTimestamp("created_at")),
                             toDate(rs.getTimestamp("terminate_at")),
-                            item, rs.getInt("bid_count")));
+                            item, rs.getInt("bid_count"), rs.getFloat("minimum_bid_increment")));
                 }
             }
             return result;
@@ -811,7 +833,8 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
      */
     public List<DashboardAuctionRow> findCompletedAuctionsByBidder(String username) {
         String sql = "SELECT DISTINCT s.auction_id, s.status, s.created_at, s.terminate_at, "
-                + " i.item_type, i.name, i.description, i.starting_price, i.auction_start_time, i.auction_end_time, "
+                + " s.minimum_bid_increment, i.item_id, i.item_type, i.name, i.description, i.starting_price, "
+                + " i.auction_start_time, i.auction_end_time, i.item_condition, i.location, "
                 + " COALESCE(b_max.max_bid, i.current_highest_price, i.starting_price) AS current_price, "
                 + " COALESCE(b_max.bid_count, 0) AS bid_count "
                 + " FROM auction_bids ab "
@@ -833,7 +856,7 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                             rs.getInt("auction_id"), rs.getString("status"),
                             toDate(rs.getTimestamp("created_at")),
                             toDate(rs.getTimestamp("terminate_at")),
-                            item, rs.getInt("bid_count")));
+                            item, rs.getInt("bid_count"), rs.getFloat("minimum_bid_increment")));
                 }
             }
             return result;
@@ -1101,8 +1124,8 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
      */
     private void insertSnapshot(Connection conn, int id, AuctionSnapshot snapshot) throws SQLException {
         String sql = "INSERT INTO auction_snapshots "
-                + "(auction_id, client_owner, item_id, created_at, terminate_at, type, status, was_in_countdown) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                + "(auction_id, client_owner, item_id, created_at, terminate_at, type, status, was_in_countdown, minimum_bid_increment) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -1120,6 +1143,7 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
             ps.setString(6, snapshot.getType());
             ps.setString(7, snapshot.getStatus());
             ps.setBoolean(8, snapshot.wasInCountDown());
+            ps.setFloat(9, snapshot.getMinimumBidIncrement());
             ps.executeUpdate();
         }
     }
@@ -1227,6 +1251,7 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
         snapshot.setType(rs.getString("type"));
         snapshot.setStatus(rs.getString("status"));
         snapshot.setWasInCountDown(rs.getBoolean("was_in_countdown"));
+        snapshot.setMinimumBidIncrement(rs.getFloat("minimum_bid_increment"));
         
         // Item sẽ được load từ ItemDAO sau (không inline)
         snapshot.setItem(null);
@@ -1290,6 +1315,19 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
     // ========================== Phương thức Private — Tiện ích
     // ==========================
 
+    private void addColumnIfMissing(Connection conn, String tableName, String columnName, String definition)
+            throws SQLException {
+        DatabaseMetaData meta = conn.getMetaData();
+        try (ResultSet rs = meta.getColumns(null, null, tableName, columnName)) {
+            if (rs.next()) {
+                return;
+            }
+        }
+        try (Statement alterStmt = conn.createStatement()) {
+            alterStmt.execute("ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + definition);
+        }
+    }
+
     /**
      * Chuyển đổi chuỗi auctionId sang int.
      *
@@ -1337,6 +1375,9 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
      */
     private String getItemIdFromItem(Item item) {
         if (item == null) return null;
+        if (item.getId() != null && !item.getId().trim().isEmpty()) {
+            return item.getId();
+        }
         
         // Tìm item có cùng thuộc tính
         Map<String, Item> allItems = ItemDAO.getInstance().findAllAsMap();
@@ -1414,9 +1455,12 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
             default:
                 throw new RuntimeException("Loại sản phẩm không xác định trong database: " + type);
         }
+        item.setId(rs.getString("item_id"));
         item.setCurrentHighestPrice(rs.getFloat("current_price"));
         item.setAuctionStartTime(toDate(rs.getTimestamp("auction_start_time")));
         item.setAuctionEndTime(toDate(rs.getTimestamp("auction_end_time")));
+        item.setItemCondition(rs.getString("item_condition"));
+        item.setLocation(rs.getString("location"));
         return item;
     }
 
@@ -1445,5 +1489,24 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                 System.err.println("[AuctionDAO] Lỗi khi đóng connection: " + e.getMessage());
             }
         }
+    }
+
+    /**
+     * Lấy ID tiếp theo khả dụng cho phiên đấu giá mới.
+     *
+     * @return ID đấu giá tiếp theo
+     */
+    public int getNextAuctionId() {
+        String sql = "SELECT COALESCE(MAX(auction_id), 0) + 1 FROM auction_snapshots";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.err.println("[AuctionDAO] Lỗi khi lấy ID đấu giá tiếp theo: " + e.getMessage());
+        }
+        return (int) (System.currentTimeMillis() / 1000); // fallback
     }
 }
