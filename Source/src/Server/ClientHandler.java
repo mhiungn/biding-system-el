@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
@@ -26,7 +25,7 @@ import java.util.Map;
  */
 public class ClientHandler implements Runnable {
 
-    private Client client;
+        private Client client;
     private Socket socket;
     private ObjectOutputStream outputStream;
 
@@ -75,12 +74,7 @@ public class ClientHandler implements Runnable {
             System.out.println(" [Network] Listening to client: " + client.getUsername());
 
             while (true) {
-                Object received;
-                try {
-                    received = inputStream.readObject();
-                } catch (SocketTimeoutException e) {
-                    continue;
-                }
+                Object received = inputStream.readObject();
                 if (received instanceof PacketMessage) {
                     handlePacket((PacketMessage) received);
                 }
@@ -105,7 +99,7 @@ public class ClientHandler implements Runnable {
             } else if (type == MessageType.LIST_AUCTIONS) {
                 requireLogin();
                 sendPacket(new PacketMessage(MessageType.LIST_AUCTIONS,
-                        new ArrayList<>(Server.getInstance().getAuctions().values())));
+                        (java.io.Serializable) e.gauctionServicetAllAuctions()));
             } else if (type == MessageType.CREATE_AUCTION) {
                 requireLogin();
                 handleCreateAuction(request);

@@ -72,6 +72,23 @@ public class AuctionManager {
     }
 
     /**
+     * Registers a pre-built auction in the manager.
+     * <p>
+     * Used when the client sends a fully constructed {@link Auction} object
+     * over the network and it needs to be added to the central registry.
+     * </p>
+     *
+     * @param auction the auction to register
+     * @throws IllegalArgumentException if the auction is null
+     */
+    public synchronized void addAuction(Auction auction) {
+        if (auction == null) {
+            throw new IllegalArgumentException("Auction cannot be null.");
+        }
+        auctions.put(auction.getId(), auction);
+    }
+
+    /**
      * Retrieves an auction by its ID.
      *
      * @param auctionId the auction ID to look up
