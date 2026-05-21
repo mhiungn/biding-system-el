@@ -48,6 +48,21 @@ CREATE TABLE IF NOT EXISTS items (
 COMMENT='Bảng quản lý sản phẩm đấu giá';
 
 -- ============================================================================
+-- Table 2b: item_images - Lưu đường dẫn ảnh sản phẩm
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS item_images (
+    image_id VARCHAR(36) PRIMARY KEY COMMENT 'ID ảnh (UUID)',
+    item_id VARCHAR(36) NOT NULL COMMENT 'ID sản phẩm',
+    image_path VARCHAR(500) NOT NULL COMMENT 'Đường dẫn ảnh hoặc URL',
+    is_primary BOOLEAN DEFAULT FALSE COMMENT 'Có phải ảnh chính không',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (item_id) REFERENCES items(item_id) ON DELETE CASCADE,
+    INDEX idx_item_id (item_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Bảng lưu trữ ảnh của sản phẩm';
+
+-- ============================================================================
 -- Table 3: auction_snapshots - Thông tin chính của phiên đấu giá
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS auction_snapshots (

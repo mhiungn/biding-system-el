@@ -95,7 +95,7 @@ public class ItemDAO implements GenericDAO<String, Item> {
      * Tạo bảng {@code items} trong MySQL nếu chưa tồn tại.
      */
     private void createTableIfNotExists() {
-        String sql = "CREATE TABLE IF NOT EXISTS items ("
+        String sqlItems = "CREATE TABLE IF NOT EXISTS items ("
                 + "item_id         VARCHAR(36)    PRIMARY KEY, "
                 + "name            VARCHAR(255)   NOT NULL, "
                 + "starting_price  FLOAT          NOT NULL, "
@@ -107,11 +107,21 @@ public class ItemDAO implements GenericDAO<String, Item> {
                 + "seller_username VARCHAR(50)"
                 + ")";
 
+        String sqlImages = "CREATE TABLE IF NOT EXISTS item_images ("
+                + "image_id        VARCHAR(36)    PRIMARY KEY, "
+                + "item_id         VARCHAR(36)    NOT NULL, "
+                + "image_path      VARCHAR(500)   NOT NULL, "
+                + "is_primary      BOOLEAN        DEFAULT FALSE, "
+                + "created_at      TIMESTAMP      DEFAULT CURRENT_TIMESTAMP, "
+                + "FOREIGN KEY (item_id) REFERENCES items(item_id) ON DELETE CASCADE"
+                + ")";
+
         try (Connection conn = DatabaseConnection.getConnection();
              Statement stmt = conn.createStatement()) {
-            stmt.execute(sql);
+            stmt.execute(sqlItems);
+            stmt.execute(sqlImages);
         } catch (SQLException e) {
-            throw new RuntimeException("[ItemDAO] Không thể tạo bảng items", e);
+            throw new RuntimeException("[ItemDAO] Không thể tạo bảng items hoặc item_images", e);
         }
     }
 
@@ -516,5 +526,65 @@ public class ItemDAO implements GenericDAO<String, Item> {
 
     private Timestamp toTimestamp(Date date) {
         return date == null ? null : new Timestamp(date.getTime());
+    }
+
+    /**
+     * Lưu một đường dẫn ảnh cho sản phẩm.
+     *
+     * @param itemId ID của sản phẩm
+     * @param imagePath Đường dẫn đến file ảnh hoặc URL ảnh
+     * @param isPrimary Có phải là ảnh chính đại diện cho sản phẩm không
+     */
+    public void saveItemImage(String itemId, String imagePath, boolean isPrimary) {
+        String sql = "INSERT INTO item_images (image_id, item_id, image_path, is_primary) VALUES (?, ?, ?, ?)";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, java.util.UUID.randomUUID().toString());
+            ps.setString(2, itemId);
+            ps.setString(3, imagePath);
+            ps.setBoolean(4, isPrimary);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("[ItemDAO] Lỗi khi lưu ảnh sản phẩm: " + itemId, e);
+        }
+    }
+
+    /**
+     * Lấy tất cả đường dẫn ảnh của một sản phẩm.
+     *
+     * @param itemId ID của sản phẩm
+     * @return Danh sách các đường dẫn ảnh
+     */
+    public List<String> getItemImages(String itemId) {
+        List<String> images = new ArrayList<>();
+        String sql = "SELECT image_path FROM item_images WHERE item_id = ? ORDER BY is_primary DESC, created_at ASC";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, itemId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    images.add(rs.getString("image_path"));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[ItemDAO] Lỗi khi lấy ảnh sản phẩm: " + itemId, e);
+        }
+        return images;
+    }
+
+    /**
+     * Xóa tất cả ảnh của một sản phẩm.
+     *
+     * @param itemId ID của sản phẩm
+     */
+    public void deleteItemImages(String itemId) {
+        String sql = "DELETE FROM item_images WHERE item_id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, itemId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("[ItemDAO] Lỗi khi xóa ảnh sản phẩm: " + itemId, e);
+        }
     }
 }

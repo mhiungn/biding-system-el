@@ -41,25 +41,22 @@ public class SellItemController extends NavigationController {
     @FXML private ComboBox<String> cmbCategory;
     @FXML private ComboBox<String> cmbCondition;
     @FXML private TextField txtStartingPrice;
-    @FXML private TextField txtReservePrice;
     @FXML private Label lblCharCount;
     @FXML private TextArea txtDescription;
     @FXML private TextField txtLocation;
 
-    @FXML private ComboBox<String> cmbDuration;
     @FXML private DatePicker dpEndDate;
     @FXML private TextField txtBidIncrement;
     @FXML private Button btnAutoExtend;
 
-    @FXML private Button btnSaveDraft;
-    @FXML private Button btnCancel;
+    @FXML private Button btnReset;
     @FXML private Button btnListItem;
 
     // ========================== Initialization ==========================
 
     @FXML
     public void initialize() {
-        System.out.println("[SellItemController] Skeleton initialized successfully.");
+        System.out.println("[SellItemController] SellItem page initialized successfully.");
     }
 
     // ========================== Event Handlers ==========================
@@ -80,17 +77,38 @@ public class SellItemController extends NavigationController {
     }
 
     @FXML
-    private void handleSaveDraft(ActionEvent event) {
-        System.out.println("[SellItemController] handleSaveDraft clicked.");
-    }
-
-    @FXML
-    private void handleCancel(ActionEvent event) {
-        System.out.println("[SellItemController] handleCancel clicked.");
+    private void handleReset(ActionEvent event) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Confirm Reset");
+        alert.setHeaderText("Reset Item Form");
+        alert.setContentText("Are you sure you want to clear all entered details?");
+        
+        alert.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                txtItemName.clear();
+                if (cmbCategory != null) cmbCategory.setValue(null);
+                if (cmbCondition != null) cmbCondition.setValue(null);
+                txtStartingPrice.clear();
+                txtDescription.clear();
+                txtLocation.clear();
+                if (dpEndDate != null) dpEndDate.setValue(null);
+                txtBidIncrement.clear();
+                System.out.println("[SellItemController] Form has been reset.");
+            }
+        });
     }
 
     @FXML
     private void handleListItem(ActionEvent event) {
-        System.out.println("[SellItemController] handleListItem clicked.");
+        String bidIncrement = txtBidIncrement.getText();
+        if (bidIncrement == null || bidIncrement.trim().isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Validation Error");
+            alert.setHeaderText("Validation Failed");
+            alert.setContentText("Minimum Bid Increment is a must, can't be left empty.");
+            alert.showAndWait();
+            return;
+        }
+        System.out.println("[SellItemController] handleListItem clicked. Validation passed.");
     }
 }

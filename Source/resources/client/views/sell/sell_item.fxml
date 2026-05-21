@@ -78,7 +78,7 @@
                             styleClass="nav-button" text="Browse Auctions" />
                     <Button fx:id="btnMyBids" onAction="#switchToMyBids"
                             styleClass="nav-button" text="My Bids" />
-                    <Button fx:id="btnSellItem" styleClass="nav-button nav-button-active" text="Sell Item" />
+                    <Button fx:id="btnSellItem" styleClass="nav-button" text="Sell Item" />
                 </HBox>
 
                 <!-- Icon buttons -->
@@ -133,7 +133,6 @@
                                    onMouseClicked="#handleMainUpload"
                                    styleClass="drop-zone">
                             <VBox alignment="CENTER" spacing="10">
-                                <Region styleClass="upload-icon" />
                                 <Label styleClass="drop-zone-title" text="Drag &amp; Drop or Click to Upload" />
                                 <Label styleClass="drop-zone-hint" text="JPG, PNG · Max 5 MB each" />
                             </VBox>
@@ -248,32 +247,17 @@
                             </VBox>
                         </HBox>
 
-                        <!-- Starting Price + Reserve Price (Balanced Row) -->
-                        <HBox spacing="12">
-                            <VBox spacing="6" styleClass="form-field" HBox.hgrow="ALWAYS">
-                                <Label styleClass="field-label" text="Starting Price" />
-                                <HBox alignment="CENTER_LEFT" styleClass="price-input-wrapper">
-                                    <Label styleClass="currency-label" text="₫" />
-                                    <TextField fx:id="txtStartingPrice"
-                                               promptText="0"
-                                               styleClass="price-input"
-                                               HBox.hgrow="ALWAYS" />
-                                </HBox>
-                            </VBox>
-                            <VBox spacing="6" styleClass="form-field" HBox.hgrow="ALWAYS">
-                                <HBox>
-                                    <Label styleClass="field-label" text="Reserve Price" HBox.hgrow="ALWAYS" />
-                                    <Label styleClass="field-optional" text="optional" />
-                                </HBox>
-                                <HBox alignment="CENTER_LEFT" styleClass="price-input-wrapper">
-                                    <Label styleClass="currency-label" text="₫" />
-                                    <TextField fx:id="txtReservePrice"
-                                               promptText="0"
-                                               styleClass="price-input"
-                                               HBox.hgrow="ALWAYS" />
-                                </HBox>
-                            </VBox>
-                        </HBox>
+                        <!-- Starting Price (Full Row) -->
+                        <VBox spacing="6" styleClass="form-field">
+                            <Label styleClass="field-label" text="Starting Price" />
+                            <HBox alignment="CENTER_LEFT" styleClass="price-input-wrapper">
+                                <Label styleClass="currency-label" text="₫" />
+                                <TextField fx:id="txtStartingPrice"
+                                           promptText="0"
+                                           styleClass="price-input"
+                                           HBox.hgrow="ALWAYS" />
+                            </HBox>
+                        </VBox>
 
                         <!-- Description -->
                         <VBox spacing="6" styleClass="form-field">
@@ -303,17 +287,11 @@
 
                         <Label styleClass="section-title" text="AUCTION SETTINGS" />
 
-                        <!-- Duration + End Date (Balanced Row) -->
-                        <HBox spacing="12">
-                            <VBox spacing="6" styleClass="form-field" HBox.hgrow="ALWAYS">
-                                <Label styleClass="field-label" text="Duration" />
-                                <ComboBox fx:id="cmbDuration" maxWidth="Infinity" styleClass="form-combo" />
-                            </VBox>
-                            <VBox spacing="6" styleClass="form-field" HBox.hgrow="ALWAYS">
-                                <Label styleClass="field-label" text="End Date" />
-                                <DatePicker fx:id="dpEndDate" maxWidth="Infinity" styleClass="form-datepicker" />
-                            </VBox>
-                        </HBox>
+                        <!-- End Date (Full Row) -->
+                        <VBox spacing="6" styleClass="form-field">
+                            <Label styleClass="field-label" text="End Date" />
+                            <DatePicker fx:id="dpEndDate" maxWidth="Infinity" styleClass="form-datepicker" />
+                        </VBox>
 
                         <!-- Min Bid Increment -->
                         <VBox spacing="6" styleClass="form-field">
@@ -343,10 +321,8 @@
 
                     <!-- ACTION BUTTONS -->
                     <HBox spacing="12" styleClass="form-actions" alignment="CENTER_RIGHT">
-                        <Button fx:id="btnSaveDraft" onAction="#handleSaveDraft"
-                                styleClass="draft-button" text="SAVE DRAFT" />
-                        <Button fx:id="btnCancel" onAction="#handleCancel"
-                                styleClass="cancel-button" text="CANCEL" />
+                        <Button fx:id="btnReset" onAction="#handleReset"
+                                styleClass="cancel-button" text="RESET" />
                         <Button fx:id="btnListItem" onAction="#handleListItem"
                                 styleClass="list-item-button" text="LIST ITEM" />
                     </HBox>

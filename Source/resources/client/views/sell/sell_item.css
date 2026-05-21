@@ -429,6 +429,14 @@
     -fx-background-color: transparent;
 }
 
+.form-textarea .scroll-pane {
+    -fx-background-color: transparent;
+}
+
+.form-textarea .scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
 .char-count {
     -fx-font-size: 10px;
     -fx-text-fill: #7c7c7c;
@@ -601,25 +609,7 @@
     -fx-padding: 10 0 0 0;
 }
 
-/* SAVE DRAFT - OUTLINED PILL */
-.draft-button {
-    -fx-background-color: transparent;
-    -fx-border-color: #4d4d4d;
-    -fx-border-width: 1;
-    -fx-text-fill: #ffffff;
-    -fx-font-size: 12px;
-    -fx-font-weight: 700;
-    -fx-cursor: hand;
-    -fx-padding: 12 24;
-    -fx-background-radius: 9999;
-    -fx-border-radius: 9999;
-    -fx-letter-spacing: 1.4;
-}
-
-.draft-button:hover {
-    -fx-background-color: #1f1f1f;
-    -fx-border-color: #7c7c7c;
-}
+/* (Save Draft button removed) */
 
 /* CANCEL - MUTED OUTLINED */
 .cancel-button {
