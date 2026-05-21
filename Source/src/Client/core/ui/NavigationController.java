@@ -24,9 +24,14 @@ public abstract class NavigationController extends BaseController {
     private static final String SIGNUP = "/client/views/auth/signup.fxml";
     private static final String LOGIN = "/client/views/auth/login.fxml";
     private static final String USER_PROFILE = "/client/views/profile/user_profile.fxml";
+    private static final String SELL_ITEM = "/client/views/sell/sell_item.fxml";
 
     public void switchToDashboard(ActionEvent event) throws IOException {
         switchScene(event, DASHBOARD);
+    }
+
+    public void switchToSellItem(ActionEvent event) throws IOException {
+        switchScene(event, SELL_ITEM);
     }
 
     public void switchToBiddingDetails(ActionEvent event) throws IOException {
