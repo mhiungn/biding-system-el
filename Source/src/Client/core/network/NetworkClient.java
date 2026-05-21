@@ -133,7 +133,9 @@ public class NetworkClient implements Closeable {
                 try {
                     Object received = inputStream.readObject();
                     if (received instanceof PacketMessage && packetListener != null) {
-                        packetListener.accept((PacketMessage) received);
+                        PacketMessage packet = (PacketMessage) received;
+                        System.out.println("[Network] Received " + packet.getMessageType());
+                        packetListener.accept(packet);
                     }
                 } catch (SocketTimeoutException e) {
                     notifyStatus("WAITING_FOR_SERVER_DATA");
@@ -194,6 +196,7 @@ public class NetworkClient implements Closeable {
     }
 
     private void notifyStatus(String status) {
+        System.out.println("[Network] " + status);
         if (statusListener != null) {
             statusListener.accept(status);
         }
