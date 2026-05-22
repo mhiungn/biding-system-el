@@ -28,7 +28,7 @@ public class DashboardService {
             );
             return new DashboardPageResult(rows, total);
         } catch (Exception e) {
-            System.err.println("Lỗi khi tải auction page từ database: " + e.getMessage());
+            System.err.println("Lỗi khi tải auction page từ database: " + rootMessage(e));
             return new DashboardPageResult(new ArrayList<>(), 0);
         }
     }
@@ -42,8 +42,17 @@ public class DashboardService {
                     auctionDAO.countTotalBids()
             );
         } catch (Exception e) {
-            System.err.println("Lỗi khi tải dashboard stats từ database: " + e.getMessage());
+            System.err.println("Lỗi khi tải dashboard stats từ database: " + rootMessage(e));
             return new DashboardStats(0, 0, 0);
         }
+    }
+
+    private String rootMessage(Exception exception) {
+        Throwable current = exception;
+        while (current.getCause() != null) {
+            current = current.getCause();
+        }
+        String message = current.getMessage();
+        return message == null || message.isBlank() ? exception.getMessage() : message;
     }
 }

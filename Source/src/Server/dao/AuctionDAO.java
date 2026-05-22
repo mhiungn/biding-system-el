@@ -122,6 +122,7 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
      * và {@code auction_participants} nếu chưa tồn tại.
      */
     private AuctionDAO() {
+        ItemDAO.getInstance();
         createTablesIfNotExist();
         System.out.println("[AuctionDAO] Đã khởi tạo với MySQL. Hiện có " + count() + " phiên đấu giá.");
     }

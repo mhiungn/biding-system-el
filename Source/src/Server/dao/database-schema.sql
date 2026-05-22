@@ -10,6 +10,7 @@
 -- COLLATE utf8mb4_unicode_ci;
 
 USE blbsc98ma5stojowrgcs;
+SET SQL_SAFE_UPDATES = 0;
 
 -- ============================================================================
 -- Table 1: users - Quản lý người dùng (Bidder, Seller, Admin)
@@ -142,6 +143,8 @@ CREATE TABLE IF NOT EXISTS bid_transactions (
     INDEX idx_successful (successful)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Bảng ghi nhận chi tiết tất cả các giao dịch bid';
+
+SET SQL_SAFE_UPDATES = 1;
 
 SELECT * FROM items LIMIT 10;
 SELECT * FROM users LIMIT 10;

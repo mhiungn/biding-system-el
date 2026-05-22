@@ -360,13 +360,14 @@
 }
 
 .tip-dot {
-    -fx-min-width: 6;
-    -fx-min-height: 6;
-    -fx-pref-width: 6;
-    -fx-pref-height: 6;
+    -fx-min-width: 6px;
+    -fx-min-height: 6px;
+    -fx-pref-width: 6px;
+    -fx-pref-height: 6px;
+    -fx-max-width: 6px;
+    -fx-max-height: 6px;
     -fx-background-color: #1ed760;
-    -fx-background-radius: 50%;
-    -fx-margin: 5 0 0 0;
+    -fx-background-radius: 999px;
 }
 
 .tip-text {
