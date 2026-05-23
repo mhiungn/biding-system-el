@@ -1,7 +1,7 @@
 package Client.core.network;
 
 import CommonClasses.Auction;
-import CommonClasses.Bidder;
+import CommonClasses.User;
 import Packets.MessageType;
 import Packets.PacketMessage;
 
@@ -77,7 +77,7 @@ public class NetworkClient implements Closeable {
     public void login(String username, String password) throws IOException {
         this.lastUsername = username;
         this.lastPassword = password;
-        send(new PacketMessage(MessageType.LOGIN_REQUEST, new Bidder(username, password, null)));
+        send(new PacketMessage(MessageType.LOGIN_REQUEST, new User(username, password, null, "USER")));
     }
 
     public void listAuctions() throws IOException {
@@ -191,7 +191,7 @@ public class NetworkClient implements Closeable {
 
     private void restoreLoginIfPossible() throws IOException {
         if (lastUsername != null && lastPassword != null) {
-            send(new PacketMessage(MessageType.LOGIN_REQUEST, new Bidder(lastUsername, lastPassword, null)));
+            send(new PacketMessage(MessageType.LOGIN_REQUEST, new User(lastUsername, lastPassword, null, "USER")));
         }
     }
 
