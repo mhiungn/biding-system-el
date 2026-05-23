@@ -61,20 +61,24 @@ public class DatabaseConnection {
      */
     private static Connection instance;
     public static Connection getConnection() throws SQLException {
-        if (instance == null || instance.isClosed()) {
-            try {
-                // Đăng ký Driver
-                Class.forName("com.mysql.cj.jdbc.Driver");
-                if (URL == null || USER == null || PASSWORD == null) {
-                    throw new SQLException("Cấu hình database chưa được tải!");
-                }
-                instance = DriverManager.getConnection(URL, USER, PASSWORD);
-            } catch (ClassNotFoundException e) {
-
-                System.err.println("Không tìm thấy MySQL Driver!");
-                e.printStackTrace();
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            if (URL == null || USER == null || PASSWORD == null) {
+                throw new SQLException("Cấu hình database chưa được tải!");
             }
+            return DriverManager.getConnection(URL, USER, PASSWORD);
+        } catch (ClassNotFoundException e) {
+            throw new SQLException("Không tìm thấy MySQL Driver!", e);
         }
-        return instance;
+    }
+
+    public static void setConnectionParams(String url, String user, String password) throws SQLException {
+        URL = url;
+        USER = user;
+        PASSWORD = password;
+        if (instance != null && !instance.isClosed()) {
+            instance.close();
+        }
+        instance = null;
     }
 }

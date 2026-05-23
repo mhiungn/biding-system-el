@@ -95,7 +95,7 @@ public class ItemDAO implements GenericDAO<String, Item> {
      * Tạo bảng {@code items} trong MySQL nếu chưa tồn tại.
      */
     private void createTableIfNotExists() {
-        String sql = "CREATE TABLE IF NOT EXISTS items ("
+        String sqlItems = "CREATE TABLE IF NOT EXISTS items ("
                 + "item_id         VARCHAR(36)    PRIMARY KEY, "
                 + "name            VARCHAR(255)   NOT NULL, "
                 + "starting_price  FLOAT          NOT NULL, "
@@ -104,14 +104,48 @@ public class ItemDAO implements GenericDAO<String, Item> {
                 + "description     TEXT, "
                 + "auction_start_time DATETIME    NULL, "
                 + "auction_end_time DATETIME      NULL, "
-                + "seller_username VARCHAR(50)"
+                + "seller_username VARCHAR(50), "
+                + "item_condition  VARCHAR(255)   NULL, "
+                + "location        VARCHAR(255)   NULL"
+                + ")";
+
+        String sqlImages = "CREATE TABLE IF NOT EXISTS item_images ("
+                + "image_id        VARCHAR(36)    PRIMARY KEY, "
+                + "item_id         VARCHAR(36)    NOT NULL, "
+                + "image_path      VARCHAR(500)   NOT NULL, "
+                + "is_primary      BOOLEAN        DEFAULT FALSE, "
+                + "created_at      TIMESTAMP      DEFAULT CURRENT_TIMESTAMP, "
+                + "FOREIGN KEY (item_id) REFERENCES items(item_id) ON DELETE CASCADE"
                 + ")";
 
         try (Connection conn = DatabaseConnection.getConnection();
              Statement stmt = conn.createStatement()) {
-            stmt.execute(sql);
+            stmt.execute(sqlItems);
+            stmt.execute(sqlImages);
+
+            addColumnIfMissing(conn, "items", "current_highest_price", "FLOAT NOT NULL DEFAULT 0");
+            addColumnIfMissing(conn, "items", "auction_start_time", "DATETIME NULL");
+            addColumnIfMissing(conn, "items", "auction_end_time", "DATETIME NULL");
+            addColumnIfMissing(conn, "items", "seller_username", "VARCHAR(50) NULL");
+            addColumnIfMissing(conn, "items", "item_condition", "VARCHAR(255) NULL");
+            addColumnIfMissing(conn, "items", "location", "VARCHAR(255) NULL");
+            stmt.executeUpdate("UPDATE items SET current_highest_price = starting_price "
+                    + "WHERE current_highest_price IS NULL OR current_highest_price = 0");
         } catch (SQLException e) {
-            throw new RuntimeException("[ItemDAO] Không thể tạo bảng items", e);
+            throw new RuntimeException("[ItemDAO] Không thể tạo/nâng cấp bảng items hoặc item_images", e);
+        }
+    }
+
+    private void addColumnIfMissing(Connection conn, String tableName, String columnName, String definition)
+            throws SQLException {
+        DatabaseMetaData meta = conn.getMetaData();
+        try (ResultSet rs = meta.getColumns(null, null, tableName, columnName)) {
+            if (rs.next()) {
+                return;
+            }
+        }
+        try (Statement alterStmt = conn.createStatement()) {
+            alterStmt.execute("ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + definition);
         }
     }
 
@@ -121,12 +155,8 @@ public class ItemDAO implements GenericDAO<String, Item> {
      * Lưu một item với ID đã cho sẵn (không ghi nhận seller).
      * <p>
      * Để lưu item <b>kèm theo dõi quyền sở hữu seller</b>, sử dụng
-     * {@link #saveItem(Item, String)} — tự động sinh ID.
+     * {@link #saveItem(Item, String)}.
      * </p>
-     *
-     * @param itemId ID duy nhất của item
-     * @param item   đối tượng Item cần lưu
-     * @throws IllegalArgumentException nếu itemId rỗng/null hoặc item là null
      */
     @Override
     public void save(String itemId, Item item) {
@@ -137,11 +167,11 @@ public class ItemDAO implements GenericDAO<String, Item> {
             throw new IllegalArgumentException("San pham khong duoc NULL");
         }
 
-        String sql = "INSERT INTO items (item_id, name, starting_price, current_highest_price, item_type, description, auction_start_time, auction_end_time) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO items (item_id, name, starting_price, current_highest_price, item_type, description, auction_start_time, auction_end_time, item_condition, location) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, itemId);
             ps.setString(2, item.getName());
             ps.setFloat(3, item.getStartingPrice());
@@ -150,7 +180,10 @@ public class ItemDAO implements GenericDAO<String, Item> {
             ps.setString(6, item.getDescription());
             ps.setTimestamp(7, toTimestamp(item.getAuctionStartTime()));
             ps.setTimestamp(8, toTimestamp(item.getAuctionEndTime()));
+            ps.setString(9, item.getItemCondition());
+            ps.setString(10, item.getLocation());
             ps.executeUpdate();
+            item.setId(itemId);
             System.out.println("[ItemDAO] Da luu san pham: " + itemId + " (" + item.getName() + ")");
         } catch (SQLException e) {
             throw new RuntimeException("[ItemDAO] Loi khi luu san pham: " + itemId, e);
@@ -191,8 +224,8 @@ public class ItemDAO implements GenericDAO<String, Item> {
         List<Item> result = new ArrayList<>();
 
         try (Connection conn = DatabaseConnection.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql);
-                ResultSet rs = ps.executeQuery()) {
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 result.add(mapResultSetToItem(rs));
             }
@@ -211,11 +244,11 @@ public class ItemDAO implements GenericDAO<String, Item> {
      */
     @Override
     public boolean update(String itemId, Item item) {
-        String sql = "UPDATE items SET name = ?, starting_price = ?, current_highest_price = ?, description = ?, item_type = ?, auction_start_time = ?, auction_end_time = ? "
+        String sql = "UPDATE items SET name = ?, starting_price = ?, current_highest_price = ?, description = ?, item_type = ?, auction_start_time = ?, auction_end_time = ?, item_condition = ?, location = ? "
                 + "WHERE item_id = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, item.getName());
             ps.setFloat(2, item.getStartingPrice());
             ps.setFloat(3, item.getCurrentHighestPrice());
@@ -223,7 +256,9 @@ public class ItemDAO implements GenericDAO<String, Item> {
             ps.setString(5, getItemType(item));
             ps.setTimestamp(6, toTimestamp(item.getAuctionStartTime()));
             ps.setTimestamp(7, toTimestamp(item.getAuctionEndTime()));
-            ps.setString(8, itemId);
+            ps.setString(8, item.getItemCondition());
+            ps.setString(9, item.getLocation());
+            ps.setString(10, itemId);
             int rows = ps.executeUpdate();
             if (rows > 0) {
                 System.out.println("[ItemDAO] Update sp: " + itemId + " (" + item.getName() + ")");
@@ -327,18 +362,24 @@ public class ItemDAO implements GenericDAO<String, Item> {
         }
 
         String itemId = UUID.randomUUID().toString();
-        String sql = "INSERT INTO items (item_id, name, starting_price, description, item_type, seller_username) "
-                + "VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO items (item_id, name, starting_price, current_highest_price, description, item_type, seller_username, item_condition, location, auction_start_time, auction_end_time) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, itemId);
             ps.setString(2, item.getName());
             ps.setFloat(3, item.getStartingPrice());
-            ps.setString(4, item.getDescription());
-            ps.setString(5, getItemType(item));
-            ps.setString(6, sellerUsername);
+            ps.setFloat(4, item.getCurrentHighestPrice());
+            ps.setString(5, item.getDescription());
+            ps.setString(6, getItemType(item));
+            ps.setString(7, sellerUsername);
+            ps.setString(8, item.getItemCondition());
+            ps.setString(9, item.getLocation());
+            ps.setTimestamp(10, toTimestamp(item.getAuctionStartTime()));
+            ps.setTimestamp(11, toTimestamp(item.getAuctionEndTime()));
             ps.executeUpdate();
+            item.setId(itemId);
             System.out.println("[ItemDAO] Đã lưu sản phẩm: " + itemId
                     + " (" + item.getName() + ") thuộc sở hữu của " + sellerUsername);
             return itemId;
@@ -489,16 +530,28 @@ public class ItemDAO implements GenericDAO<String, Item> {
         String name = rs.getString("name");
         String desc = rs.getString("description");
 
+        Item item;
         switch (type.toUpperCase()) {
             case "ELECTRONICS":
-                return new Electronics(price, name, desc);
+                item = new Electronics(price, name, desc);
+                break;
             case "ART":
-                return new Art(price, name, desc);
+                item = new Art(price, name, desc);
+                break;
             case "VEHICLE":
-                return new Vehicle(price, name, desc);
+                item = new Vehicle(price, name, desc);
+                break;
             default:
                 throw new RuntimeException("Loại sản phẩm không xác định trong database: " + type);
         }
+
+        item.setId(rs.getString("item_id"));
+        item.setCurrentHighestPrice(rs.getFloat("current_highest_price"));
+        item.setAuctionStartTime(rs.getTimestamp("auction_start_time"));
+        item.setAuctionEndTime(rs.getTimestamp("auction_end_time"));
+        item.setItemCondition(rs.getString("item_condition"));
+        item.setLocation(rs.getString("location"));
+        return item;
     }
 
     /**
@@ -516,5 +569,65 @@ public class ItemDAO implements GenericDAO<String, Item> {
 
     private Timestamp toTimestamp(Date date) {
         return date == null ? null : new Timestamp(date.getTime());
+    }
+
+    /**
+     * Lưu một đường dẫn ảnh cho sản phẩm.
+     *
+     * @param itemId ID của sản phẩm
+     * @param imagePath Đường dẫn đến file ảnh hoặc URL ảnh
+     * @param isPrimary Có phải là ảnh chính đại diện cho sản phẩm không
+     */
+    public void saveItemImage(String itemId, String imagePath, boolean isPrimary) {
+        String sql = "INSERT INTO item_images (image_id, item_id, image_path, is_primary) VALUES (?, ?, ?, ?)";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, java.util.UUID.randomUUID().toString());
+            ps.setString(2, itemId);
+            ps.setString(3, imagePath);
+            ps.setBoolean(4, isPrimary);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("[ItemDAO] Lỗi khi lưu ảnh sản phẩm: " + itemId, e);
+        }
+    }
+
+    /**
+     * Lấy tất cả đường dẫn ảnh của một sản phẩm.
+     *
+     * @param itemId ID của sản phẩm
+     * @return Danh sách các đường dẫn ảnh
+     */
+    public List<String> getItemImages(String itemId) {
+        List<String> images = new ArrayList<>();
+        String sql = "SELECT image_path FROM item_images WHERE item_id = ? ORDER BY is_primary DESC, created_at ASC";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, itemId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    images.add(rs.getString("image_path"));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[ItemDAO] Lỗi khi lấy ảnh sản phẩm: " + itemId, e);
+        }
+        return images;
+    }
+
+    /**
+     * Xóa tất cả ảnh của một sản phẩm.
+     *
+     * @param itemId ID của sản phẩm
+     */
+    public void deleteItemImages(String itemId) {
+        String sql = "DELETE FROM item_images WHERE item_id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, itemId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("[ItemDAO] Lỗi khi xóa ảnh sản phẩm: " + itemId, e);
+        }
     }
 }

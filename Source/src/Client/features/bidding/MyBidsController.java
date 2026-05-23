@@ -38,6 +38,7 @@ public class MyBidsController extends NavigationController {
     @FXML private Button btnFilterAll;
     @FXML private Button btnFilterWinning;
     @FXML private Button btnFilterOutbid;
+    @FXML private Label lblCurrentUserQuickInfo;
 
     // ========================== Service & State ==========================
 
@@ -52,6 +53,8 @@ public class MyBidsController extends NavigationController {
 
     @FXML
     public void initialize() {
+        applyCurrentUserQuickInfo(lblCurrentUserQuickInfo);
+
         User user = SessionManager.getCurrentUser();
         if (user == null) {
             showEmptyState(activeBidsList, "Please log in to see your bids");

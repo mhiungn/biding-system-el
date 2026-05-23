@@ -1,9 +1,7 @@
 package Client.features.dashboard;
 
 import Client.core.ui.NavigationController;
-import Client.features.auth.SessionManager;
 import CommonClasses.Items.Item;
-import CommonClasses.User;
 import Server.dao.DashboardAuctionRow;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
@@ -58,12 +56,7 @@ public class DashboardController extends NavigationController {
 
     @FXML
     public void initialize() {
-        User currentUser = SessionManager.getCurrentUser();
-        if (lblCurrentUserQuickInfo != null) {
-            lblCurrentUserQuickInfo.setText(currentUser == null
-                    ? "Guest"
-                    : currentUser.getUsername() + " | " + currentUser.getEmail());
-        }
+        applyCurrentUserQuickInfo(lblCurrentUserQuickInfo);
         setupFilters();
         setupPaginationButtons();
         refreshStats();

@@ -41,6 +41,12 @@ public abstract class Item extends Entity implements Serializable {
     /** Planned auction end time for this item. */
     private Date auctionEndTime;
 
+    /** The condition of the item (e.g. New, Like New, Good, etc.). */
+    private String itemCondition;
+
+    /** The geographic location of the item (e.g. Hanoi, Vietnam). */
+    private String location;
+
     // ========================== Constructors ==========================
 
     /**
@@ -134,6 +140,22 @@ public abstract class Item extends Entity implements Serializable {
         this.auctionEndTime = auctionEndTime;
     }
 
+    public String getItemCondition() {
+        return itemCondition;
+    }
+
+    public void setItemCondition(String itemCondition) {
+        this.itemCondition = itemCondition;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
     // ========================== Object Overrides ==========================
 
     @Override
@@ -145,6 +167,8 @@ public abstract class Item extends Entity implements Serializable {
                 ", currentHighestPrice=" + currentHighestPrice +
                 ", auctionStartTime=" + auctionStartTime +
                 ", auctionEndTime=" + auctionEndTime +
+                ", itemCondition='" + itemCondition + '\'' +
+                ", location='" + location + '\'' +
                 '}';
     }
 
@@ -158,11 +182,13 @@ public abstract class Item extends Entity implements Serializable {
                 Objects.equals(name, item.name) &&
                 Objects.equals(description, item.description) &&
                 Objects.equals(auctionStartTime, item.auctionStartTime) &&
-                Objects.equals(auctionEndTime, item.auctionEndTime);
+                Objects.equals(auctionEndTime, item.auctionEndTime) &&
+                Objects.equals(itemCondition, item.itemCondition) &&
+                Objects.equals(location, item.location);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(startingPrice, name, description, currentHighestPrice, auctionStartTime, auctionEndTime);
+        return Objects.hash(startingPrice, name, description, currentHighestPrice, auctionStartTime, auctionEndTime, itemCondition, location);
     }
 }
