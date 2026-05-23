@@ -1,6 +1,5 @@
 package Client.features.auth;
 
-import CommonClasses.Bidder;
 import CommonClasses.User;
 import Server.dao.UserDAO;
 
@@ -39,7 +38,7 @@ public final class AuthService {
             return "Email already exists.";
         }
 
-        User newUser = new Bidder(normalizedUsername, password, normalizedEmail);
+        User newUser = new User(normalizedUsername, password, normalizedEmail, "USER");
         userDAO.save(normalizedUsername, newUser);
         SessionManager.setCurrentUser(newUser);
         return null;

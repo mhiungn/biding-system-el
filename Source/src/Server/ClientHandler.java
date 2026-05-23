@@ -18,16 +18,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
 /**
- * Handles the communication with a single connected client.
- * <p>
- * Each {@code ClientHandler} runs on its own thread and manages sending/receiving
- * packets to/from the associated {@link Client}.
- * </p>
+ * Handles socket communication for one connected client.
+ * The handler reads PacketMessage objects, routes them by MessageType,
+ * and sends direct responses or broadcast auction updates.
  */
 public class ClientHandler implements Runnable {
 
-    private Client client;
-    private Socket socket;
+    private final Client client;
+    private final Socket socket;
     private ObjectOutputStream outputStream;
 
     /**
@@ -61,12 +59,14 @@ public class ClientHandler implements Runnable {
      * @param packet the packet to send
      * @throws IOException if an I/O error occurs
      */
-    public synchronized  void sendPacket(PacketMessage packet) throws IOException {
-        if (outputStream != null) {
-            outputStream.writeObject(packet);
-            outputStream.flush();
-            outputStream.reset();
+    public synchronized void sendPacket(PacketMessage packet) throws IOException {
+        if (outputStream == null) {
+            throw new IOException("Output stream is not ready");
         }
+        outputStream.writeObject(packet);
+        outputStream.flush();
+        outputStream.reset();
+        System.out.println("[Network] Sent " + packet.getMessageType() + " to " + client.getUsername());
     }
 
     @Override
@@ -74,7 +74,7 @@ public class ClientHandler implements Runnable {
         try (ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream())) {
             System.out.println(" [Network] Listening to client: " + client.getUsername());
 
-            while (true) {
+            while (!socket.isClosed()) {
                 Object received;
                 try {
                     received = inputStream.readObject();
@@ -86,7 +86,7 @@ public class ClientHandler implements Runnable {
                 }
             }
         } catch (EOFException e) {
-            System.out.println(" [Network] Client disconnected.");
+            System.out.println(" [Network] Client disconnected." + client.getUsername());
         } catch (Exception e) {
             System.err.println(" [Network] Connection error: " + e.getMessage());
         } finally {
@@ -99,13 +99,16 @@ public class ClientHandler implements Runnable {
     private void handlePacket(PacketMessage request) throws IOException {
         try {
             MessageType type = request.getMessageType();
+            if (type == null) {
+                throw new IllegalArgumentException("Message type is required");
+            }
 
             if (type == MessageType.LOGIN_REQUEST) {
                 handleLogin(request);
             } else if (type == MessageType.LIST_AUCTIONS) {
                 requireLogin();
                 sendPacket(new PacketMessage(MessageType.LIST_AUCTIONS,
-                        new ArrayList<>(Server.getInstance().getAuctions().values())));
+                        new ArrayList<>(CommonClasses.AuctionManager.getInstance().getAllAuctions().values())));
             } else if (type == MessageType.CREATE_AUCTION) {
                 requireLogin();
                 handleCreateAuction(request);
@@ -122,7 +125,7 @@ public class ClientHandler implements Runnable {
                 requireLogin();
                 handleCancelAuction(request);
             } else {
-                sendTextResponse("Unsupported message type: " + type);
+                sendTextResponse("ERROR: Unsupported message type: " + type);
             }
         } catch (Exception e) {
             sendTextResponse("ERROR: " + e.getMessage());
@@ -130,6 +133,10 @@ public class ClientHandler implements Runnable {
     }
 
     private void handleLogin(PacketMessage request) throws IOException {
+        if (!(request.getPayload() instanceof User)) {
+            throw new IllegalArgumentException("LOGIN_REQUEST payload must be a User");
+        }
+
         User loginInfo = (User) request.getPayload();
         User userResult = UserDAO.getInstance().authenticate(loginInfo.getUsername(), loginInfo.getPassword());
 
@@ -137,15 +144,20 @@ public class ClientHandler implements Runnable {
             client.setUsername(userResult.getUsername());
             Server.getInstance().getClientHandlers().put(userResult.getUsername(), this);
             System.out.println(" [Network] User '" + userResult.getUsername() + "' logged in.");
+        }else {
+            System.out.println("[Network] Login failed for username: " + loginInfo.getUsername());
         }
-
         sendPacket(new PacketMessage(MessageType.LOGIN_RESPONSE, userResult));
     }
 
     private void handleCreateAuction(PacketMessage request) throws IOException {
+        if (!(request.getPayload() instanceof Auction)) {
+            throw new IllegalArgumentException("CREATE_AUCTION payload must be an Auction");
+        }
+
         Auction auction = (Auction) request.getPayload();
         auction.setOwnerUsername(client.getUsername());
-        Server.getInstance().addAuction(auction);
+        CommonClasses.AuctionManager.getInstance().addAuction(auction);
 
         sendPacket(new PacketMessage(MessageType.CREATE_AUCTION, auction));
         broadcastAuctionUpdate(auction);
@@ -172,9 +184,18 @@ public class ClientHandler implements Runnable {
     }
 
     private void handlePlaceBid(PacketMessage request) throws Exception {
+        if (!(request.getPayload() instanceof Map<?, ?>)) {
+            throw new IllegalArgumentException("PLACE_BID payload must be a Map");
+        }
+
         Map<?, ?> payload = (Map<?, ?>) request.getPayload();
-        int auctionId = ((Number) payload.get("auctionId")).intValue();
-        float bidAmount = ((Number) payload.get("bid")).floatValue();
+        Object auctionIdValue = payload.get("auctionId");
+        Object bidValue = payload.get("bid");
+        if (!(auctionIdValue instanceof Number) || !(bidValue instanceof Number)) {
+            throw new IllegalArgumentException("PLACE_BID requires numeric auctionId and bid");
+        }
+        int auctionId = ((Number) auctionIdValue).intValue();
+        float bidAmount = ((Number) bidValue).floatValue();
 
         Auction auction = getAuctionOrThrow(auctionId);
         String previousHighestBidder = auction.findHighestBid().getBidderUsername();
@@ -212,7 +233,7 @@ public class ClientHandler implements Runnable {
     }
 
     private Auction getAuctionOrThrow(int auctionId) {
-        Auction auction = Server.getInstance().getAuctions().get(auctionId);
+        Auction auction = CommonClasses.AuctionManager.getInstance().getAuction(auctionId);
         if (auction == null) {
             throw new IllegalArgumentException("Auction not found: " + auctionId);
         }
@@ -270,5 +291,14 @@ public class ClientHandler implements Runnable {
 
     private void sendTextResponse(String message) throws IOException {
         sendPacket(new PacketMessage(MessageType.AUCTION_ACTION_RESPONSE, message));
+    }
+    private void cleanupClient() {
+        if (client.getUsername() != null) {
+            Server.getInstance().getClientHandlers().remove(client.getUsername());
+        }
+        try {
+            socket.close();
+        } catch (IOException ignored) {
+        }
     }
 }

@@ -1,7 +1,7 @@
 package CommonClasses;
 import java.io.Serializable;
 
-public abstract class User extends Entity {
+public class User extends Entity {
     protected String username;
     protected String email;
     protected String password;
@@ -29,7 +29,10 @@ public abstract class User extends Entity {
 
     @Override
     public String getDisplayInfo() {
-        return String.format("[%s] ID: %s | User: %s | Email: %s", role, id, username, email);
+        if ("ADMIN".equalsIgnoreCase(role)) {
+            return "Quản trị viên: " + username + " (Quyền cao nhất)";
+        }
+        return "Người dùng: " + username + " (ID: " + id + ")";
     }
 
 }

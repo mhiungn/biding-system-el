@@ -178,8 +178,8 @@ public class SellItemController extends NavigationController {
             throw new IllegalArgumentException("Please log in before listing an item.");
         }
         String role = user.getRole();
-        if (role != null && !"SELLER".equalsIgnoreCase(role) && !"ADMIN".equalsIgnoreCase(role)) {
-            throw new IllegalArgumentException("Only seller accounts can list items.");
+        if (role != null && !"USER".equalsIgnoreCase(role) && !"ADMIN".equalsIgnoreCase(role)) {
+            throw new IllegalArgumentException("Only user accounts can list items.");
         }
 
         SellItemRequest request = new SellItemRequest();

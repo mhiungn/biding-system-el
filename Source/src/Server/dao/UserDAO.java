@@ -392,14 +392,10 @@ public class UserDAO implements GenericDAO<String, User> {
     // ========================== Phương thức Private ==========================
 
     /**
-     * Chuyển đổi một dòng {@link ResultSet} thành đối tượng {@link User} đúng kiểu.
-     * <p>
-     * Dựa vào cột {@code role} để xác định tạo {@link Bidder}, {@link Seller},
-     * hay {@link Admin}.
-     * </p>
+     * Chuyển đổi một dòng {@link ResultSet} thành đối tượng {@link User}.
      *
      * @param rs ResultSet đang trỏ tới dòng cần đọc
-     * @return đối tượng User đúng kiểu
+     * @return đối tượng User
      * @throws SQLException nếu lỗi đọc dữ liệu
      */
     private User mapResultSetToUser(ResultSet rs) throws SQLException {
@@ -408,15 +404,9 @@ public class UserDAO implements GenericDAO<String, User> {
         String email = rs.getString("email");
         String role = rs.getString("role");
 
-        switch (role.toUpperCase()) {
-            case "BIDDER":
-                return new Bidder(username, password, email);
-            case "SELLER":
-                return new Seller(username, password, email);
-            case "ADMIN":
-                return new Admin(username, password, email);
-            default:
-                throw new RuntimeException("Vai trò không xác định trong database: " + role);
-        }
+        // Chuẩn hóa vai trò về USER hoặc ADMIN
+        String normalizedRole = "ADMIN".equalsIgnoreCase(role) ? "ADMIN" : "USER";
+
+        return new User(username, password, email, normalizedRole);
     }
 }
