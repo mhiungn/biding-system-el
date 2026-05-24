@@ -190,7 +190,7 @@ public class DashboardController extends NavigationController {
         if (categoryFilter == null) {
             return;
         }
-        categoryFilter.getItems().setAll("All", "ELECTRONICS", "ART", "VEHICLE");
+        categoryFilter.getItems().setAll("All", "ELECTRONICS", "ART", "VEHICLE", "REAL_ESTATE", "FASHION", "COLLECTIBLES");
         categoryFilter.setEditable(false);
         categoryFilter.setPromptText(null);
         categoryFilter.setButtonCell(new ListCell<>() {

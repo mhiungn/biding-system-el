@@ -74,7 +74,7 @@ public class SellItemController extends NavigationController {
     public void initialize() {
         applyCurrentUserQuickInfo(lblCurrentUserQuickInfo);
 
-        cmbCategory.getItems().setAll("ELECTRONICS", "ART", "VEHICLE");
+        cmbCategory.getItems().setAll("ELECTRONICS", "ART", "VEHICLE", "REAL_ESTATE", "FASHION", "COLLECTIBLES");
         thumbnailSlots.clear();
         thumbnailSlots.addAll(Arrays.asList(thumb1, thumb2, thumb3, thumb4, thumb5));
 

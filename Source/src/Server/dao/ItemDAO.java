@@ -541,6 +541,15 @@ public class ItemDAO implements GenericDAO<String, Item> {
             case "VEHICLE":
                 item = new Vehicle(price, name, desc);
                 break;
+            case "REAL_ESTATE":
+                item = new RealEstate(price, name, desc);
+                break;
+            case "FASHION":
+                item = new Fashion(price, name, desc);
+                break;
+            case "COLLECTIBLES":
+                item = new Collectibles(price, name, desc);
+                break;
             default:
                 throw new RuntimeException("Loại sản phẩm không xác định trong database: " + type);
         }
@@ -564,6 +573,9 @@ public class ItemDAO implements GenericDAO<String, Item> {
         if (item instanceof Electronics) return "ELECTRONICS";
         if (item instanceof Art) return "ART";
         if (item instanceof Vehicle) return "VEHICLE";
+        if (item instanceof RealEstate) return "REAL_ESTATE";
+        if (item instanceof Fashion) return "FASHION";
+        if (item instanceof Collectibles) return "COLLECTIBLES";
         return item.getClass().getSimpleName().toUpperCase();
     }
 

@@ -37,6 +37,12 @@ public class ItemFactory {
                 return new Art(price, name, desc);
             case "VEHICLE":
                 return new Vehicle(price, name, desc);
+            case "REAL_ESTATE":
+                return new RealEstate(price, name, desc);
+            case "FASHION":
+                return new Fashion(price, name, desc);
+            case "COLLECTIBLES":
+                return new Collectibles(price, name, desc);
             default:
                 throw new IllegalArgumentException("Unknown item type: " + type);
         }

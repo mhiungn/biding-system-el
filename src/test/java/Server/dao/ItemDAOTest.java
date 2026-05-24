@@ -84,6 +84,42 @@ public class ItemDAOTest {
 
     @Test
     @Order(4)
+    @DisplayName("save() - Lưu Real Estate thành công")
+    void testSaveRealEstate() {
+        RealEstate house = new RealEstate(500000f, "Penthouse Quận 1", "Căn hộ cao cấp 3 phòng ngủ");
+        itemDAO.save("item-004", house);
+
+        Item found = itemDAO.findById("item-004");
+        assertNotNull(found);
+        assertInstanceOf(RealEstate.class, found, "Item phải được map đúng kiểu RealEstate");
+    }
+
+    @Test
+    @Order(5)
+    @DisplayName("save() - Lưu Fashion thành công")
+    void testSaveFashion() {
+        Fashion dress = new Fashion(1200f, "Gucci Dress", "Váy dạ hội bộ sưu tập mới");
+        itemDAO.save("item-005", dress);
+
+        Item found = itemDAO.findById("item-005");
+        assertNotNull(found);
+        assertInstanceOf(Fashion.class, found, "Item phải được map đúng kiểu Fashion");
+    }
+
+    @Test
+    @Order(6)
+    @DisplayName("save() - Lưu Collectibles thành công")
+    void testSaveCollectibles() {
+        Collectibles coin = new Collectibles(2500f, "Đồng xu cổ", "Đồng xu vàng thế kỷ 18");
+        itemDAO.save("item-006", coin);
+
+        Item found = itemDAO.findById("item-006");
+        assertNotNull(found);
+        assertInstanceOf(Collectibles.class, found, "Item phải được map đúng kiểu Collectibles");
+    }
+
+    @Test
+    @Order(7)
     @DisplayName("save() - Từ chối khi itemId null")
     void testSaveNullId() {
         Electronics item = new Electronics(100f, "Test", "Desc");
@@ -92,7 +128,7 @@ public class ItemDAOTest {
     }
 
     @Test
-    @Order(5)
+    @Order(8)
     @DisplayName("save() - Từ chối khi itemId rỗng")
     void testSaveEmptyId() {
         Electronics item = new Electronics(100f, "Test", "Desc");
@@ -101,7 +137,7 @@ public class ItemDAOTest {
     }
 
     @Test
-    @Order(6)
+    @Order(9)
     @DisplayName("save() - Từ chối khi item null")
     void testSaveNullItem() {
         assertThrows(IllegalArgumentException.class,
