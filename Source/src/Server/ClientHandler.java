@@ -3,19 +3,27 @@ package Server;
 import CommonClasses.Auction;
 import CommonClasses.Bid;
 import CommonClasses.User;
+import Client.features.dashboard.DashboardPageResult;
+import Client.features.dashboard.DashboardStats;
 import Packets.MessageType;
+import Packets.PacketFactory;
 import Packets.PacketMessage;
 import Payload.AuctionUpdatePayload;
+import Server.dao.AuctionDAO;
+import Server.dao.DashboardAuctionRow;
 import Server.dao.UserDAO;
+import Server.service.AuthenticationService;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.Serializable;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 /**
  * Handles socket communication for one connected client.
@@ -90,9 +98,7 @@ public class ClientHandler implements Runnable {
         } catch (Exception e) {
             System.err.println(" [Network] Connection error: " + e.getMessage());
         } finally {
-            if (client != null && client.getUsername() != null) {
-                Server.getInstance().getClientHandlers().remove(client.getUsername());
-            }
+            cleanupClient();
         }
     }
 
@@ -103,8 +109,32 @@ public class ClientHandler implements Runnable {
                 throw new IllegalArgumentException("Message type is required");
             }
 
-            if (type == MessageType.LOGIN_REQUEST) {
+            if (type == MessageType.PING) {
+                sendPacket(PacketFactory.of(MessageType.PONG, "OK"));
+            } else if (type == MessageType.LOGIN_REQUEST) {
                 handleLogin(request);
+            }else if (type == MessageType.REGISTER_REQUEST) {
+                handleRegister(request);
+            } else if (type == MessageType.DASHBOARD_PAGE_REQUEST) {
+                handleDashboardPage(request);
+            } else if (type == MessageType.DASHBOARD_STATS_REQUEST) {
+                handleDashboardStats();
+            } else if (type == MessageType.AUCTION_DETAIL_REQUEST) {
+                handleAuctionDetail(request);
+            } else if (type == MessageType.AUCTION_OWNER_REQUEST) {
+                handleAuctionOwner(request);
+            } else if (type == MessageType.BID_HISTORY_REQUEST) {
+                handleBidHistory(request);
+            } else if (type == MessageType.PARTICIPANT_COUNT_REQUEST) {
+                handleParticipantCount(request);
+            } else if (type == MessageType.HIGHEST_BIDDER_REQUEST) {
+                handleHighestBidder(request);
+            } else if (type == MessageType.MY_ACTIVE_BIDS_REQUEST) {
+                handleMyActiveBids(request);
+            } else if (type == MessageType.MY_COMPLETED_BIDS_REQUEST) {
+                handleMyCompletedBids(request);
+            } else if (type == MessageType.USER_HIGHEST_BID_REQUEST) {
+                handleUserHighestBid(request);
             } else if (type == MessageType.LIST_AUCTIONS) {
                 requireLogin();
                 sendPacket(new PacketMessage(MessageType.LIST_AUCTIONS,
@@ -119,16 +149,21 @@ public class ClientHandler implements Runnable {
                 requireLogin();
                 handleLeaveAuction(request);
             } else if (type == MessageType.PLACE_BID) {
-                requireLogin();
-                handlePlaceBid(request);
+                if (request.getPayload() instanceof Map<?, ?>
+                        && ((Map<?, ?>) request.getPayload()).containsKey("username")) {
+                    handleDatabasePlaceBid(request);
+                } else {
+                    requireLogin();
+                    handlePlaceBid(request);
+                }
             } else if (type == MessageType.CANCEL_AUCTION) {
                 requireLogin();
                 handleCancelAuction(request);
             } else {
-                sendTextResponse("ERROR: Unsupported message type: " + type);
+                sendErrorResponse("UNSUPPORTED_MESSAGE", "Unsupported message type: " + type, type);
             }
         } catch (Exception e) {
-            sendTextResponse("ERROR: " + e.getMessage());
+            sendErrorResponse("REQUEST_FAILED", e.getMessage(), request.getMessageType());
         }
     }
 
@@ -148,6 +183,105 @@ public class ClientHandler implements Runnable {
             System.out.println("[Network] Login failed for username: " + loginInfo.getUsername());
         }
         sendPacket(new PacketMessage(MessageType.LOGIN_RESPONSE, userResult));
+    }
+
+    private void handleRegister(PacketMessage request) throws IOException {
+        if (!(request.getPayload() instanceof User)) {
+            throw new IllegalArgumentException("REGISTER_REQUEST payload must be a User");
+        }
+
+        User user = (User) request.getPayload();
+        boolean success = AuthenticationService.getInstance().register(user);
+        if (success) {
+            client.setUsername(user.getUsername());
+            Server.getInstance().getClientHandlers().put(user.getUsername(), this);
+            sendPacket(new PacketMessage(MessageType.REGISTER_RESPONSE, user));
+        } else {
+            sendPacket(new PacketMessage(MessageType.REGISTER_RESPONSE, null));
+        }
+    }
+
+    private void handleDashboardPage(PacketMessage request) throws IOException {
+        Map<?, ?> payload = requireMapPayload(request);
+        int page = readInt(payload, "page", 0);
+        String category = readString(payload, "category", "ALL");
+        boolean endingSoon = readBoolean(payload, "endingSoon", false);
+        Float minPrice = readFloatObject(payload, "minPrice");
+        Float maxPrice = readFloatObject(payload, "maxPrice");
+        int pageSize = readInt(payload, "pageSize", 12);
+
+        AuctionDAO dao = AuctionDAO.getInstance();
+        int total = dao.countDashboardAuctions(category, endingSoon, minPrice, maxPrice);
+        int safePage = Math.max(page, 0);
+        int offset = safePage * pageSize;
+        if (offset >= total && total > 0) {
+            safePage = (int) Math.ceil((double) total / pageSize) - 1;
+            offset = safePage * pageSize;
+        }
+        List<DashboardAuctionRow> rows = dao.findDashboardAuctions(
+                category, endingSoon, minPrice, maxPrice, pageSize, offset);
+        sendPacket(new PacketMessage(MessageType.DASHBOARD_PAGE_RESPONSE,
+                new DashboardPageResult(rows, total)));
+    }
+
+    private void handleDashboardStats() throws IOException {
+        AuctionDAO dao = AuctionDAO.getInstance();
+        DashboardStats stats = new DashboardStats(
+                dao.countActiveAuctions(),
+                dao.countEndingTodayAuctions(),
+                dao.countTotalBids());
+        sendPacket(new PacketMessage(MessageType.DASHBOARD_STATS_RESPONSE, stats));
+    }
+
+    private void handleAuctionDetail(PacketMessage request) throws IOException {
+        int auctionId = readAuctionId(request.getPayload());
+        sendPacket(new PacketMessage(MessageType.AUCTION_DETAIL_RESPONSE,
+                (Serializable) AuctionDAO.getInstance().findFullAuctionDetail(auctionId)));
+    }
+
+    private void handleAuctionOwner(PacketMessage request) throws IOException {
+        int auctionId = readAuctionId(request.getPayload());
+        sendPacket(new PacketMessage(MessageType.AUCTION_OWNER_RESPONSE,
+                AuctionDAO.getInstance().findAuctionOwner(auctionId)));
+    }
+
+    private void handleBidHistory(PacketMessage request) throws IOException {
+        int auctionId = readAuctionId(request.getPayload());
+        sendPacket(new PacketMessage(MessageType.BID_HISTORY_RESPONSE,
+                (Serializable) new ArrayList<>(AuctionDAO.getInstance().getBidHistoryForAuction(auctionId))));
+    }
+
+    private void handleParticipantCount(PacketMessage request) throws IOException {
+        int auctionId = readAuctionId(request.getPayload());
+        var snapshot = AuctionDAO.getInstance().findById(String.valueOf(auctionId));
+        int count = snapshot == null ? 0 : snapshot.getRegisteredUsernames().size();
+        sendPacket(new PacketMessage(MessageType.PARTICIPANT_COUNT_RESPONSE, count));
+    }
+
+    private void handleHighestBidder(PacketMessage request) throws IOException {
+        int auctionId = readAuctionId(request.getPayload());
+        sendPacket(new PacketMessage(MessageType.HIGHEST_BIDDER_RESPONSE,
+                AuctionDAO.getInstance().getHighestBidderUsername(auctionId)));
+    }
+
+    private void handleMyActiveBids(PacketMessage request) throws IOException {
+        String username = readUsername(request.getPayload());
+        sendPacket(new PacketMessage(MessageType.MY_ACTIVE_BIDS_RESPONSE,
+                (Serializable) new ArrayList<>(AuctionDAO.getInstance().findActiveAuctionsByParticipant(username))));
+    }
+
+    private void handleMyCompletedBids(PacketMessage request) throws IOException {
+        String username = readUsername(request.getPayload());
+        sendPacket(new PacketMessage(MessageType.MY_COMPLETED_BIDS_RESPONSE,
+                (Serializable) new ArrayList<>(AuctionDAO.getInstance().findCompletedAuctionsByBidder(username))));
+    }
+
+    private void handleUserHighestBid(PacketMessage request) throws IOException {
+        Map<?, ?> payload = requireMapPayload(request);
+        int auctionId = readInt(payload, "auctionId", -1);
+        String username = readString(payload, "username", null);
+        sendPacket(new PacketMessage(MessageType.USER_HIGHEST_BID_RESPONSE,
+                AuctionDAO.getInstance().getUserHighestBid(auctionId, username)));
     }
 
     private void handleCreateAuction(PacketMessage request) throws IOException {
@@ -209,6 +343,30 @@ public class ClientHandler implements Runnable {
         broadcastAuctionUpdate(auction);
     }
 
+    private void handleDatabasePlaceBid(PacketMessage request) throws IOException {
+        Map<?, ?> payload = requireMapPayload(request);
+        int auctionId = readInt(payload, "auctionId", -1);
+        float bidAmount = readFloat(payload, "bid", 0);
+        String username = readString(payload, "username", client.getUsername());
+
+        AuctionDAO dao = AuctionDAO.getInstance();
+        DashboardAuctionRow detail = dao.findFullAuctionDetail(auctionId);
+        if (username == null || username.isBlank()) {
+            sendPacket(new PacketMessage(MessageType.PLACE_BID, false));
+            return;
+        }
+        if (detail == null || detail.getItem() == null || detail.getEndTime() == null
+                || detail.getEndTime().getTime() <= System.currentTimeMillis()
+                || bidAmount <= detail.getItem().getCurrentHighestPrice()) {
+            sendPacket(new PacketMessage(MessageType.PLACE_BID, false));
+            return;
+        }
+
+        dao.addParticipant(String.valueOf(auctionId), username);
+        dao.addBid(String.valueOf(auctionId), new Bid(new Date(), bidAmount, username));
+        sendPacket(new PacketMessage(MessageType.PLACE_BID, true));
+    }
+
     private void handleCancelAuction(PacketMessage request) throws Exception {
         Auction auction = getAuctionOrThrow(readAuctionId(request.getPayload()));
         auction.cancel(client.getUsername());
@@ -238,6 +396,45 @@ public class ClientHandler implements Runnable {
             throw new IllegalArgumentException("Auction not found: " + auctionId);
         }
         return auction;
+    }
+
+    private Map<?, ?> requireMapPayload(PacketMessage request) {
+        if (request.getPayload() instanceof Map<?, ?>) {
+            return (Map<?, ?>) request.getPayload();
+        }
+        throw new IllegalArgumentException(request.getMessageType() + " payload must be a Map");
+    }
+
+    private String readUsername(Object payload) {
+        if (payload instanceof String && !((String) payload).isBlank()) {
+            return (String) payload;
+        }
+        throw new IllegalArgumentException("Payload must be a username");
+    }
+
+    private int readInt(Map<?, ?> payload, String key, int defaultValue) {
+        Object value = payload.get(key);
+        return value instanceof Number ? ((Number) value).intValue() : defaultValue;
+    }
+
+    private float readFloat(Map<?, ?> payload, String key, float defaultValue) {
+        Object value = payload.get(key);
+        return value instanceof Number ? ((Number) value).floatValue() : defaultValue;
+    }
+
+    private Float readFloatObject(Map<?, ?> payload, String key) {
+        Object value = payload.get(key);
+        return value instanceof Number ? ((Number) value).floatValue() : null;
+    }
+
+    private boolean readBoolean(Map<?, ?> payload, String key, boolean defaultValue) {
+        Object value = payload.get(key);
+        return value instanceof Boolean ? (Boolean) value : defaultValue;
+    }
+
+    private String readString(Map<?, ?> payload, String key, String defaultValue) {
+        Object value = payload.get(key);
+        return value instanceof String ? (String) value : defaultValue;
     }
 
     private AuctionUpdatePayload buildAuctionUpdatePayload(Auction auction) {
@@ -292,6 +489,11 @@ public class ClientHandler implements Runnable {
     private void sendTextResponse(String message) throws IOException {
         sendPacket(new PacketMessage(MessageType.AUCTION_ACTION_RESPONSE, message));
     }
+
+    private void sendErrorResponse(String code, String message, MessageType requestType) throws IOException {
+        sendPacket(PacketFactory.error(code, message, requestType));
+    }
+
     private void cleanupClient() {
         if (client.getUsername() != null) {
             Server.getInstance().getClientHandlers().remove(client.getUsername());

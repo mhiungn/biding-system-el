@@ -3,6 +3,8 @@ package Client.core.network;
 import CommonClasses.Auction;
 import CommonClasses.User;
 import Packets.MessageType;
+import Packets.NetworkConfig;
+import Packets.NetworkErrorPayload;
 import Packets.PacketMessage;
 
 import java.io.Closeable;
@@ -23,8 +25,6 @@ import java.util.function.Consumer;
  */
 public class NetworkClient implements Closeable {
 
-    private static final int DEFAULT_CONNECT_TIMEOUT_MS = 3000;
-    private static final int DEFAULT_READ_TIMEOUT_MS = 10000;
     private static final int DEFAULT_RECONNECT_DELAY_MS = 2000;
     private static final int DEFAULT_MAX_RECONNECT_ATTEMPTS = 5;
 
@@ -37,8 +37,8 @@ public class NetworkClient implements Closeable {
 
     private String host;
     private int port;
-    private int connectTimeoutMs = DEFAULT_CONNECT_TIMEOUT_MS;
-    private int readTimeoutMs = DEFAULT_READ_TIMEOUT_MS;
+    private int connectTimeoutMs = NetworkConfig.DEFAULT_CONNECT_TIMEOUT_MS;
+    private int readTimeoutMs = NetworkConfig.DEFAULT_READ_TIMEOUT_MS;
     private int reconnectDelayMs = DEFAULT_RECONNECT_DELAY_MS;
     private int maxReconnectAttempts = DEFAULT_MAX_RECONNECT_ATTEMPTS;
 
@@ -78,6 +78,10 @@ public class NetworkClient implements Closeable {
         this.lastUsername = username;
         this.lastPassword = password;
         send(new PacketMessage(MessageType.LOGIN_REQUEST, new User(username, password, null, "USER")));
+    }
+
+    public void ping() throws IOException {
+        send(new PacketMessage(MessageType.PING, null));
     }
 
     public void listAuctions() throws IOException {
@@ -134,6 +138,9 @@ public class NetworkClient implements Closeable {
                     Object received = inputStream.readObject();
                     if (received instanceof PacketMessage && packetListener != null) {
                         PacketMessage packet = (PacketMessage) received;
+                        if (packet.getMessageType() == MessageType.NETWORK_ERROR) {
+                            notifyStatus("SERVER_ERROR: " + formatNetworkError(packet));
+                        }
                         System.out.println("[Network] Received " + packet.getMessageType());
                         packetListener.accept(packet);
                     }
@@ -200,6 +207,14 @@ public class NetworkClient implements Closeable {
         if (statusListener != null) {
             statusListener.accept(status);
         }
+    }
+
+    private String formatNetworkError(PacketMessage packet) {
+        if (packet.getPayload() instanceof NetworkErrorPayload) {
+            NetworkErrorPayload error = (NetworkErrorPayload) packet.getPayload();
+            return error.getCode() + ": " + error.getMessage();
+        }
+        return "Unknown server error";
     }
 
     private void sleepQuietly(int millis) {
