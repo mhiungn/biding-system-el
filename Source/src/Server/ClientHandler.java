@@ -6,6 +6,7 @@ import CommonClasses.User;
 import Client.features.dashboard.DashboardPageResult;
 import Client.features.dashboard.DashboardStats;
 import Packets.MessageType;
+import Packets.PacketFactory;
 import Packets.PacketMessage;
 import Payload.AuctionUpdatePayload;
 import Server.dao.AuctionDAO;
@@ -22,7 +23,6 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 /**
@@ -98,9 +98,7 @@ public class ClientHandler implements Runnable {
         } catch (Exception e) {
             System.err.println(" [Network] Connection error: " + e.getMessage());
         } finally {
-            if (client != null && client.getUsername() != null) {
-                Server.getInstance().getClientHandlers().remove(client.getUsername());
-            }
+            cleanupClient();
         }
     }
 
@@ -111,7 +109,9 @@ public class ClientHandler implements Runnable {
                 throw new IllegalArgumentException("Message type is required");
             }
 
-            if (type == MessageType.LOGIN_REQUEST) {
+            if (type == MessageType.PING) {
+                sendPacket(PacketFactory.of(MessageType.PONG, "OK"));
+            } else if (type == MessageType.LOGIN_REQUEST) {
                 handleLogin(request);
             }else if (type == MessageType.REGISTER_REQUEST) {
                 handleRegister(request);
@@ -160,10 +160,10 @@ public class ClientHandler implements Runnable {
                 requireLogin();
                 handleCancelAuction(request);
             } else {
-                sendTextResponse("ERROR: Unsupported message type: " + type);
+                sendErrorResponse("UNSUPPORTED_MESSAGE", "Unsupported message type: " + type, type);
             }
         } catch (Exception e) {
-            sendTextResponse("ERROR: " + e.getMessage());
+            sendErrorResponse("REQUEST_FAILED", e.getMessage(), request.getMessageType());
         }
     }
 
@@ -489,6 +489,11 @@ public class ClientHandler implements Runnable {
     private void sendTextResponse(String message) throws IOException {
         sendPacket(new PacketMessage(MessageType.AUCTION_ACTION_RESPONSE, message));
     }
+
+    private void sendErrorResponse(String code, String message, MessageType requestType) throws IOException {
+        sendPacket(PacketFactory.error(code, message, requestType));
+    }
+
     private void cleanupClient() {
         if (client.getUsername() != null) {
             Server.getInstance().getClientHandlers().remove(client.getUsername());

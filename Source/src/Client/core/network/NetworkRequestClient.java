@@ -1,6 +1,8 @@
 package Client.core.network;
 
 import Packets.MessageType;
+import Packets.NetworkConfig;
+import Packets.NetworkErrorPayload;
 import Packets.PacketMessage;
 
 import java.io.Closeable;
@@ -19,16 +21,20 @@ import java.util.Set;
  */
 public final class NetworkRequestClient {
 
-    private static final String DEFAULT_HOST = "127.0.0.1";
-    private static final int DEFAULT_PORT = 12345;
-    private static final int CONNECT_TIMEOUT_MS = 1200;
-    private static final int READ_TIMEOUT_MS = 5000;
-
     private NetworkRequestClient() {
     }
 
     public static boolean isEnabled() {
-        return Boolean.parseBoolean(System.getProperty("auction.network.enabled", "true"));
+        return NetworkConfig.networkEnabled();
+    }
+
+    public static boolean ping() {
+        try {
+            PacketMessage response = request(MessageType.PING, null, MessageType.PONG);
+            return response.getMessageType() == MessageType.PONG;
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     public static PacketMessage request(MessageType requestType, Serializable payload,
@@ -38,15 +44,15 @@ public final class NetworkRequestClient {
 
     public static PacketMessage request(MessageType requestType, Serializable payload,
                                         Set<MessageType> expectedResponses) throws IOException {
-        String host = System.getProperty("auction.server.host", DEFAULT_HOST);
-        int port = Integer.getInteger("auction.server.port", DEFAULT_PORT);
-
-        try (RequestConnection connection = new RequestConnection(host, port)) {
+        try (RequestConnection connection = new RequestConnection(NetworkConfig.host(), NetworkConfig.port())) {
             connection.send(new PacketMessage(requestType, payload));
             while (true) {
                 PacketMessage response = connection.read();
                 if (expectedResponses.contains(response.getMessageType())) {
                     return response;
+                }
+                if (response.getMessageType() == MessageType.NETWORK_ERROR) {
+                    throw new IOException(formatNetworkError(response));
                 }
                 if (response.getMessageType() == MessageType.AUCTION_ACTION_RESPONSE) {
                     return response;
@@ -64,8 +70,8 @@ public final class NetworkRequestClient {
 
         private RequestConnection(String host, int port) throws IOException {
             socket = new Socket();
-            socket.connect(new InetSocketAddress(host, port), CONNECT_TIMEOUT_MS);
-            socket.setSoTimeout(READ_TIMEOUT_MS);
+            socket.connect(new InetSocketAddress(host, port), NetworkConfig.DEFAULT_CONNECT_TIMEOUT_MS);
+            socket.setSoTimeout(NetworkConfig.DEFAULT_READ_TIMEOUT_MS);
             outputStream = new ObjectOutputStream(socket.getOutputStream());
             inputStream = new ObjectInputStream(socket.getInputStream());
         }
@@ -92,5 +98,13 @@ public final class NetworkRequestClient {
         public void close() throws IOException {
             socket.close();
         }
+    }
+
+    private static String formatNetworkError(PacketMessage response) {
+        if (response.getPayload() instanceof NetworkErrorPayload) {
+            NetworkErrorPayload error = (NetworkErrorPayload) response.getPayload();
+            return error.getCode() + ": " + error.getMessage();
+        }
+        return "Network request failed";
     }
 }

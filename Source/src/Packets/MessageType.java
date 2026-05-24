@@ -4,6 +4,9 @@ package Packets;
  * Defines the types of messages exchanged between client and server.
  */
 public enum MessageType {
+    PING,
+    PONG,
+    NETWORK_ERROR,
     AUCTION_UPDATE,
     HIGHEST_BID_OWNER_LOST,
     AUCTION_CANCELLED,
