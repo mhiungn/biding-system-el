@@ -1,10 +1,16 @@
 package Client.features.bidding;
 
+import Client.core.network.NetworkRequestClient;
+import Packets.MessageType;
+import Packets.PacketMessage;
 import Server.dao.AuctionDAO;
 import Server.dao.DashboardAuctionRow;
 
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Service layer for the My Bids screen.
@@ -22,6 +28,19 @@ public class MyBidsService {
      * @return list of active auction rows
      */
     public List<DashboardAuctionRow> loadActiveBids(String username) {
+        if (NetworkRequestClient.isEnabled()) {
+            try {
+                PacketMessage response = NetworkRequestClient.request(
+                        MessageType.MY_ACTIVE_BIDS_REQUEST, username, MessageType.MY_ACTIVE_BIDS_RESPONSE);
+                if (response.getPayload() instanceof List<?>) {
+                    return (List<DashboardAuctionRow>) response.getPayload();
+                }
+            } catch (IOException e) {
+                System.err.println("[MyBidsService] Network active bids unavailable, using DAO fallback: "
+                        + e.getMessage());
+            }
+        }
+
         try {
             return AuctionDAO.getInstance().findActiveAuctionsByParticipant(username);
         } catch (Exception e) {
@@ -37,6 +56,19 @@ public class MyBidsService {
      * @return list of completed auction rows
      */
     public List<DashboardAuctionRow> loadCompletedBids(String username) {
+        if (NetworkRequestClient.isEnabled()) {
+            try {
+                PacketMessage response = NetworkRequestClient.request(
+                        MessageType.MY_COMPLETED_BIDS_REQUEST, username, MessageType.MY_COMPLETED_BIDS_RESPONSE);
+                if (response.getPayload() instanceof List<?>) {
+                    return (List<DashboardAuctionRow>) response.getPayload();
+                }
+            } catch (IOException e) {
+                System.err.println("[MyBidsService] Network completed bids unavailable, using DAO fallback: "
+                        + e.getMessage());
+            }
+        }
+
         try {
             return AuctionDAO.getInstance().findCompletedAuctionsByBidder(username);
         } catch (Exception e) {
@@ -53,6 +85,24 @@ public class MyBidsService {
      * @return the user's highest bid amount, or 0
      */
     public float getUserHighestBid(int auctionId, String username) {
+        if (NetworkRequestClient.isEnabled()) {
+            try {
+                Map<String, Object> payload = new HashMap<>();
+                payload.put("auctionId", auctionId);
+                payload.put("username", username);
+                PacketMessage response = NetworkRequestClient.request(
+                        MessageType.USER_HIGHEST_BID_REQUEST,
+                        (HashMap<String, Object>) payload,
+                        MessageType.USER_HIGHEST_BID_RESPONSE);
+                if (response.getPayload() instanceof Number) {
+                    return ((Number) response.getPayload()).floatValue();
+                }
+            } catch (IOException e) {
+                System.err.println("[MyBidsService] Network user highest bid unavailable, using DAO fallback: "
+                        + e.getMessage());
+            }
+        }
+
         try {
             return AuctionDAO.getInstance().getUserHighestBid(auctionId, username);
         } catch (Exception e) {
@@ -68,6 +118,17 @@ public class MyBidsService {
      * @return highest bidder username, or null
      */
     public String getHighestBidder(int auctionId) {
+        if (NetworkRequestClient.isEnabled()) {
+            try {
+                PacketMessage response = NetworkRequestClient.request(
+                        MessageType.HIGHEST_BIDDER_REQUEST, auctionId, MessageType.HIGHEST_BIDDER_RESPONSE);
+                return response.getPayload() instanceof String ? (String) response.getPayload() : null;
+            } catch (IOException e) {
+                System.err.println("[MyBidsService] Network highest bidder unavailable, using DAO fallback: "
+                        + e.getMessage());
+            }
+        }
+
         try {
             return AuctionDAO.getInstance().getHighestBidderUsername(auctionId);
         } catch (Exception e) {

@@ -1,8 +1,13 @@
 package Client.features.auth;
 
+import Client.core.network.NetworkRequestClient;
 import CommonClasses.Bidder;
 import CommonClasses.User;
+import Packets.MessageType;
+import Packets.PacketMessage;
 import Server.dao.UserDAO;
+
+import java.io.IOException;
 
 /**
  * Handles auth validation and persistence through MySQL-backed DAO.
@@ -40,6 +45,21 @@ public final class AuthService {
         }
 
         User newUser = new Bidder(normalizedUsername, password, normalizedEmail);
+        if (NetworkRequestClient.isEnabled()) {
+            try {
+                PacketMessage response = NetworkRequestClient.request(
+                        MessageType.REGISTER_REQUEST, newUser, MessageType.REGISTER_RESPONSE);
+                if (response.getPayload() instanceof User) {
+                    SessionManager.setCurrentUser((User) response.getPayload());
+                    return null;
+                }
+                return "Signup failed on server.";
+            } catch (IOException e) {
+                System.err.println("[AuthService] Network register unavailable, using DAO fallback: "
+                        + e.getMessage());
+            }
+        }
+
         userDAO.save(normalizedUsername, newUser);
         SessionManager.setCurrentUser(newUser);
         return null;
@@ -51,6 +71,24 @@ public final class AuthService {
             return null;
         }
 
+        if (NetworkRequestClient.isEnabled()) {
+            try {
+                PacketMessage response = NetworkRequestClient.request(
+                        MessageType.LOGIN_REQUEST,
+                        new Bidder(normalizedUsername, password, null),
+                        MessageType.LOGIN_RESPONSE);
+                if (response.getPayload() instanceof User) {
+                    User user = (User) response.getPayload();
+                    SessionManager.setCurrentUser(user);
+                    return user;
+                }
+                SessionManager.setCurrentUser(null);
+                return null;
+            } catch (IOException e) {
+                System.err.println("[AuthService] Network login unavailable, using DAO fallback: "
+                        + e.getMessage());
+            }
+        }
         User user = userDAO.authenticate(normalizedUsername, password);
         SessionManager.setCurrentUser(user);
         return user;
