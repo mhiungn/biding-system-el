@@ -1,8 +1,7 @@
 package Server.dao;
 
 import CommonClasses.Bid;
-import CommonClasses.Bidder;
-import CommonClasses.Seller;
+import CommonClasses.User;
 import CommonClasses.Items.Electronics;
 import CommonClasses.Items.Item;
 
@@ -60,10 +59,10 @@ public class AuctionDAOTest {
         TestDatabaseHelper.clearAllTables();
 
         // Tạo dữ liệu nền (User và Item) cho các FK constraints
-        Seller seller = new Seller("seller_john", "pass", "john@mail.com");
+        User seller = new User("seller_john", "pass", "john@mail.com", "USER");
         userDAO.save("seller_john", seller);
 
-        Bidder bidder1 = new Bidder("bidder1", "pass", "b1@mail.com");
+        User bidder1 = new User("bidder1", "pass", "b1@mail.com", "USER");
         userDAO.save("bidder1", bidder1);
 
         // Dùng Electronics (concrete class) thay vì Item (abstract)

@@ -48,9 +48,9 @@ public class UserDAOTest {
 
     @Test
     @Order(1)
-    @DisplayName("save() - Lưu Bidder mới thành công")
+    @DisplayName("save() - Lưu User mới thành công")
     void testSaveBidder() {
-        Bidder bidder = new Bidder("john", "pass123", "john@mail.com");
+        User bidder = new User("john", "pass123", "john@mail.com", "USER");
         userDAO.save("john", bidder);
 
         User found = userDAO.findById("john");
@@ -58,41 +58,41 @@ public class UserDAOTest {
         assertEquals("john", found.getUsername());
         assertEquals("pass123", found.getPassword());
         assertEquals("john@mail.com", found.getEmail());
-        assertEquals("BIDDER", found.getRole());
-        assertInstanceOf(Bidder.class, found, "User phải được map đúng kiểu Bidder");
+        assertEquals("USER", found.getRole());
+        assertInstanceOf(User.class, found, "User phải được map đúng kiểu User");
     }
 
     @Test
     @Order(2)
     @DisplayName("save() - Lưu Seller mới thành công")
     void testSaveSeller() {
-        Seller seller = new Seller("anna", "pass456", "anna@mail.com");
+        User seller = new User("anna", "pass456", "anna@mail.com", "USER");
         userDAO.save("anna", seller);
 
         User found = userDAO.findById("anna");
         assertNotNull(found);
-        assertEquals("SELLER", found.getRole());
-        assertInstanceOf(Seller.class, found, "User phải được map đúng kiểu Seller");
+        assertEquals("USER", found.getRole());
+        assertInstanceOf(User.class, found, "User phải được map đúng kiểu User");
     }
 
     @Test
     @Order(3)
     @DisplayName("save() - Lưu Admin mới thành công")
     void testSaveAdmin() {
-        Admin admin = new Admin("root", "admin123", "root@mail.com");
+        User admin = new User("root", "admin123", "root@mail.com", "ADMIN");
         userDAO.save("root", admin);
 
         User found = userDAO.findById("root");
         assertNotNull(found);
         assertEquals("ADMIN", found.getRole());
-        assertInstanceOf(Admin.class, found, "User phải được map đúng kiểu Admin");
+        assertInstanceOf(User.class, found, "User phải được map đúng kiểu User");
     }
 
     @Test
     @Order(4)
     @DisplayName("save() - Từ chối khi username null")
     void testSaveNullUsername() {
-        Bidder bidder = new Bidder("test", "pass", "test@mail.com");
+        User bidder = new User("test", "pass", "test@mail.com", "USER");
         assertThrows(IllegalArgumentException.class,
                 () -> userDAO.save(null, bidder),
                 "Phải ném IllegalArgumentException khi username null");
@@ -102,7 +102,7 @@ public class UserDAOTest {
     @Order(5)
     @DisplayName("save() - Từ chối khi username rỗng")
     void testSaveEmptyUsername() {
-        Bidder bidder = new Bidder("test", "pass", "test@mail.com");
+        User bidder = new User("test", "pass", "test@mail.com", "USER");
         assertThrows(IllegalArgumentException.class,
                 () -> userDAO.save("   ", bidder),
                 "Phải ném IllegalArgumentException khi username rỗng");
@@ -121,8 +121,8 @@ public class UserDAOTest {
     @Order(7)
     @DisplayName("save() - Bỏ qua khi username đã tồn tại")
     void testSaveDuplicate() {
-        Bidder bidder1 = new Bidder("john", "pass1", "john@mail.com");
-        Bidder bidder2 = new Bidder("john", "pass2", "john2@mail.com");
+        User bidder1 = new User("john", "pass1", "john@mail.com", "USER");
+        User bidder2 = new User("john", "pass2", "john2@mail.com", "USER");
 
         userDAO.save("john", bidder1);
         userDAO.save("john", bidder2); // Phải bị bỏ qua
@@ -146,7 +146,7 @@ public class UserDAOTest {
     @Order(11)
     @DisplayName("findById() - Tìm thấy user đã lưu")
     void testFindByIdSuccess() {
-        userDAO.save("bob", new Bidder("bob", "pass", "bob@mail.com"));
+        userDAO.save("bob", new User("bob", "pass", "bob@mail.com", "USER"));
         User found = userDAO.findById("bob");
         assertNotNull(found);
         assertEquals("bob", found.getUsername());
@@ -167,9 +167,9 @@ public class UserDAOTest {
     @Order(21)
     @DisplayName("findAll() - Trả về đầy đủ tất cả user")
     void testFindAllMultiple() {
-        userDAO.save("user1", new Bidder("user1", "p1", "u1@mail.com"));
-        userDAO.save("user2", new Seller("user2", "p2", "u2@mail.com"));
-        userDAO.save("user3", new Admin("user3", "p3", "u3@mail.com"));
+        userDAO.save("user1", new User("user1", "p1", "u1@mail.com", "USER"));
+        userDAO.save("user2", new User("user2", "p2", "u2@mail.com", "USER"));
+        userDAO.save("user3", new User("user3", "p3", "u3@mail.com", "ADMIN"));
 
         List<User> users = userDAO.findAll();
         assertEquals(3, users.size(), "Phải trả về đúng 3 user");
@@ -181,9 +181,9 @@ public class UserDAOTest {
     @Order(30)
     @DisplayName("update() - Cập nhật password và email thành công")
     void testUpdateSuccess() {
-        userDAO.save("john", new Bidder("john", "oldpass", "old@mail.com"));
+        userDAO.save("john", new User("john", "oldpass", "old@mail.com", "USER"));
 
-        Bidder updated = new Bidder("john", "newpass", "new@mail.com");
+        User updated = new User("john", "newpass", "new@mail.com", "USER");
         boolean result = userDAO.update("john", updated);
 
         assertTrue(result, "update phải trả về true khi thành công");
@@ -197,7 +197,7 @@ public class UserDAOTest {
     @Order(31)
     @DisplayName("update() - Trả về false khi user không tồn tại")
     void testUpdateNotFound() {
-        Bidder bidder = new Bidder("ghost", "pass", "ghost@mail.com");
+        User bidder = new User("ghost", "pass", "ghost@mail.com", "USER");
         boolean result = userDAO.update("ghost", bidder);
         assertFalse(result, "update phải trả về false khi user không tồn tại");
     }
@@ -208,7 +208,7 @@ public class UserDAOTest {
     @Order(40)
     @DisplayName("delete() - Xóa user thành công")
     void testDeleteSuccess() {
-        userDAO.save("john", new Bidder("john", "pass", "john@mail.com"));
+        userDAO.save("john", new User("john", "pass", "john@mail.com", "USER"));
         assertTrue(userDAO.exists("john"), "User phải tồn tại trước khi xóa");
 
         boolean result = userDAO.delete("john");
@@ -230,7 +230,7 @@ public class UserDAOTest {
     @Order(50)
     @DisplayName("exists() - Trả về true khi user tồn tại")
     void testExistsTrue() {
-        userDAO.save("john", new Bidder("john", "pass", "john@mail.com"));
+        userDAO.save("john", new User("john", "pass", "john@mail.com", "USER"));
         assertTrue(userDAO.exists("john"));
     }
 
@@ -254,8 +254,8 @@ public class UserDAOTest {
     @Order(61)
     @DisplayName("count() - Đếm đúng số lượng user")
     void testCountMultiple() {
-        userDAO.save("u1", new Bidder("u1", "p1", "e1@mail.com"));
-        userDAO.save("u2", new Seller("u2", "p2", "e2@mail.com"));
+        userDAO.save("u1", new User("u1", "p1", "e1@mail.com", "USER"));
+        userDAO.save("u2", new User("u2", "p2", "e2@mail.com", "USER"));
         assertEquals(2, userDAO.count());
     }
 
@@ -265,7 +265,7 @@ public class UserDAOTest {
     @Order(70)
     @DisplayName("authenticate() - Đăng nhập thành công")
     void testAuthenticateSuccess() {
-        userDAO.save("john", new Bidder("john", "pass123", "john@mail.com"));
+        userDAO.save("john", new User("john", "pass123", "john@mail.com", "USER"));
 
         User authenticated = userDAO.authenticate("john", "pass123");
         assertNotNull(authenticated, "Xác thực phải thành công với đúng username/password");
@@ -276,7 +276,7 @@ public class UserDAOTest {
     @Order(71)
     @DisplayName("authenticate() - Thất bại khi sai password")
     void testAuthenticateWrongPassword() {
-        userDAO.save("john", new Bidder("john", "pass123", "john@mail.com"));
+        userDAO.save("john", new User("john", "pass123", "john@mail.com", "USER"));
 
         User result = userDAO.authenticate("john", "wrongpass");
         assertNull(result, "Xác thực phải thất bại khi sai password");
@@ -296,7 +296,7 @@ public class UserDAOTest {
     @Order(80)
     @DisplayName("findByEmail() - Tìm thấy user theo email")
     void testFindByEmailFound() {
-        userDAO.save("john", new Bidder("john", "pass", "john@mail.com"));
+        userDAO.save("john", new User("john", "pass", "john@mail.com", "USER"));
 
         User found = userDAO.findByEmail("john@mail.com");
         assertNotNull(found);
@@ -315,16 +315,16 @@ public class UserDAOTest {
 
     @Test
     @Order(90)
-    @DisplayName("findByRole() - Lọc đúng user theo vai trò BIDDER")
+    @DisplayName("findByRole() - Lọc đúng user theo vai trò USER")
     void testFindByRole() {
-        userDAO.save("b1", new Bidder("b1", "p", "b1@m.com"));
-        userDAO.save("b2", new Bidder("b2", "p", "b2@m.com"));
-        userDAO.save("s1", new Seller("s1", "p", "s1@m.com"));
+        userDAO.save("b1", new User("b1", "p", "b1@m.com", "USER"));
+        userDAO.save("b2", new User("b2", "p", "b2@m.com", "USER"));
+        userDAO.save("s1", new User("s1", "p", "s1@m.com", "USER"));
 
-        List<User> bidders = userDAO.findByRole("BIDDER");
-        assertEquals(2, bidders.size(), "Phải tìm thấy đúng 2 BIDDER");
+        List<User> bidders = userDAO.findByRole("USER");
+        assertEquals(3, bidders.size(), "Phải tìm thấy đúng 3 USER");
         for (User u : bidders) {
-            assertInstanceOf(Bidder.class, u);
+            assertInstanceOf(User.class, u);
         }
     }
 
@@ -334,7 +334,7 @@ public class UserDAOTest {
     @Order(100)
     @DisplayName("isEmailTaken() - Trả về true khi email đã được dùng")
     void testIsEmailTakenTrue() {
-        userDAO.save("john", new Bidder("john", "pass", "taken@mail.com"));
+        userDAO.save("john", new User("john", "pass", "taken@mail.com", "USER"));
         assertTrue(userDAO.isEmailTaken("taken@mail.com"));
     }
 
