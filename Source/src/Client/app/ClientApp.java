@@ -11,7 +11,7 @@ import javafx.stage.StageStyle;
 
 public class ClientApp extends Application {
 
-    private static final String LOGIN_FXML = "/client/views/sell/sell_item.fxml";
+    private static final String LOGIN_FXML = "/client/views/auth/login.fxml";
 
     public static void main(String[] args) {
         launch(args);
