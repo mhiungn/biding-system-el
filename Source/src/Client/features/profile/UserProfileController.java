@@ -177,9 +177,9 @@ public class UserProfileController extends NavigationController {
     private void clearProfile() {
         if (lblUsername != null) lblUsername.setText("Not logged in");
         if (lblMemberSince != null) lblMemberSince.setText("");
-        if (lblEmail != null) lblEmail.setText("—");
-        if (lblPhone != null) lblPhone.setText("—");
-        if (lblLocation != null) lblLocation.setText("—");
+        if (lblEmail != null) lblEmail.setText("-");
+        if (lblPhone != null) lblPhone.setText("-");
+        if (lblLocation != null) lblLocation.setText("-");
         if (lblActiveBids != null) lblActiveBids.setText("0 ongoing");
         if (lblRoleStatus != null) lblRoleStatus.setText("");
         if (lblBidsPlaced != null) lblBidsPlaced.setText("0");

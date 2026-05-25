@@ -244,7 +244,7 @@ public class DashboardController extends NavigationController {
                     setText(LABEL_CATEGORY);
                 } else {
                     setText(item);
-                    //LABEL_CATEGORY + " · " + (display choice)
+                    // LABEL_CATEGORY + " - " + (display choice)
                 }
             }
         });
@@ -322,7 +322,7 @@ public class DashboardController extends NavigationController {
                 if (empty || item == null || "Any".equalsIgnoreCase(item)) {
                     setText(LABEL_PRICE_RANGE);
                 } else {
-                    setText(LABEL_PRICE_RANGE + " · " + item);
+                    setText(LABEL_PRICE_RANGE + " - " + item);
                 }
             }
         });

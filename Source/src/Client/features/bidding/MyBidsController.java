@@ -287,7 +287,7 @@ public class MyBidsController extends NavigationController {
         status.setMinWidth(90); status.setPrefWidth(90);
 
         // Date
-        Label dateLabel = new Label(row.getEndTime() != null ? dateFormat.format(row.getEndTime()) : "—");
+        Label dateLabel = new Label(row.getEndTime() != null ? dateFormat.format(row.getEndTime()) : "-");
         dateLabel.getStyleClass().add("table-value");
         dateLabel.setMinWidth(110); dateLabel.setPrefWidth(110);
 
@@ -488,7 +488,7 @@ public class MyBidsController extends NavigationController {
     }
 
     private String formatTimeRemaining(DashboardAuctionRow row) {
-        if (row.getEndTime() == null) return "—";
+        if (row.getEndTime() == null) return "-";
 
         long remaining = row.getEndTime().getTime() - System.currentTimeMillis();
         if (remaining <= 0) return "Ended";

@@ -38,7 +38,7 @@ import java.util.TimerTask;
  * <p>
  * Loads auction data from {@link AuctionDetailService} and populates FXML
  * fields. Manages a countdown timer and dynamically builds bid history.
- * When NetworkClient integration is ready, only the service layer changes —
+ * When NetworkClient integration is ready, only the service layer changes -
  * this controller stays the same.
  * </p>
  */
@@ -192,9 +192,9 @@ public class BiddingDetailController extends NavigationController {
         lblItemId.setText("AUC-" + auctionDetail.getAuctionId());
 
         lblCondition.setText(item.getItemCondition() != null && !item.getItemCondition().isBlank()
-                ? item.getItemCondition() : "—");
+                ? item.getItemCondition() : "-");
         lblLocation.setText(item.getLocation() != null && !item.getLocation().isBlank()
-                ? item.getLocation() : "—");
+                ? item.getLocation() : "-");
     }
 
     /**
@@ -235,7 +235,7 @@ public class BiddingDetailController extends NavigationController {
         List<Bid> bids = bidHistory;
 
         if (bids.isEmpty()) {
-            Label noBids = new Label("No bids yet — be the first!");
+            Label noBids = new Label("No bids yet - be the first!");
             noBids.getStyleClass().add("bid-time");
             bidHistoryList.getChildren().add(noBids);
             return;
@@ -432,7 +432,7 @@ public class BiddingDetailController extends NavigationController {
     }
 
     /**
-     * Masks a username for privacy display (e.g. "seller_john" → "sell****ohn").
+     * Masks a username for privacy display (e.g. "seller_john" -> "sell****ohn").
      */
     private String maskUsername(String username) {
         if (username == null || username.length() <= 4) {
@@ -489,7 +489,7 @@ public class BiddingDetailController extends NavigationController {
      * Formats a Date as a relative "time ago" string.
      */
     private String formatTimeAgo(Date date) {
-        if (date == null) return "—";
+        if (date == null) return "-";
 
         long diff = System.currentTimeMillis() - date.getTime();
         long minutes = diff / 60_000;

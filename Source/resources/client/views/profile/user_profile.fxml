@@ -135,7 +135,7 @@
                             <Insets left="12.0" />
                         </HBox.margin>
                         <Label styleClass="info-label" text="Email" />
-                        <Label fx:id="lblEmail" styleClass="info-value" text="—" />
+                        <Label fx:id="lblEmail" styleClass="info-value" text="-" />
                     </VBox>
                     <Button onAction="#handleEditEmail" styleClass="info-edit-btn" text="Edit" />
                 </HBox>

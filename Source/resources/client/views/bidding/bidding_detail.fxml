@@ -100,16 +100,16 @@
                         <Label styleClass="section-title" text="SPECIFICATIONS" />
                         <GridPane hgap="20" styleClass="specs-grid" vgap="12">
                             <Label styleClass="spec-label" text="Condition:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-                            <Label fx:id="lblCondition" styleClass="spec-value" text="—" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                            <Label fx:id="lblCondition" styleClass="spec-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
                             <Label styleClass="spec-label" text="Category:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                            <Label fx:id="lblCategory" styleClass="spec-value" text="—" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                            <Label fx:id="lblCategory" styleClass="spec-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
                             <Label styleClass="spec-label" text="Location:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-                            <Label fx:id="lblLocation" styleClass="spec-value" text="—" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                            <Label fx:id="lblLocation" styleClass="spec-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
                             <Label styleClass="spec-label" text="Item ID:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
-                            <Label fx:id="lblItemId" styleClass="spec-value" text="—" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                            <Label fx:id="lblItemId" styleClass="spec-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="3" />
                             <columnConstraints>
                                 <ColumnConstraints />
                                 <ColumnConstraints />
@@ -175,7 +175,7 @@
                     <!-- PLACE YOUR BID BOX -->
                     <VBox styleClass="place-bid-box">
                         <Label styleClass="place-bid-label" text="PLACE YOUR BID" />
-                        <Label fx:id="lblMinBid" styleClass="min-bid-notice" text="Minimum bid: —" />
+                        <Label fx:id="lblMinBid" styleClass="min-bid-notice" text="Minimum bid: -" />
                         <TextField fx:id="txtBidAmount" promptText="Enter your bid amount" styleClass="bid-input" />
                         <Button fx:id="btnPlaceBid" maxWidth="Infinity" styleClass="place-bid-button" text="PLACE BID" />
                         <Button fx:id="btnAddWatchlist" maxWidth="Infinity" styleClass="watchlist-button" text="ADD TO WATCHLIST" />
