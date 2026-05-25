@@ -367,6 +367,11 @@ public class BiddingDetailController extends NavigationController {
             return;
         }
 
+        if (auctionOwner != null && auctionOwner.equals(user.getUsername())) {
+            showError("You cannot bid on your own auction.");
+            return;
+        }
+
         String rawAmount = txtBidAmount.getText() == null ? "" : txtBidAmount.getText().trim();
         float amount;
         try {
