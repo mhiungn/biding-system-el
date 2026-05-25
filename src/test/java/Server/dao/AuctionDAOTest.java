@@ -9,7 +9,9 @@ import CommonClasses.dto.SellerAuctionRowDTO;
 
 import org.junit.jupiter.api.*;
 
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -436,6 +438,41 @@ public class AuctionDAOTest {
 
     @Test
     @Order(75)
+    @DisplayName("searchAuctionsByName() - still returns auctions when image lookup fails")
+    void testSearchAuctionsByNameToleratesImageLookupFailure() throws SQLException {
+        Item phone = new Electronics(500f, "Smart Phone", "New phone");
+        itemDAO.save("item-phone", phone);
+        AuctionSnapshot phoneAuction = new AuctionSnapshot(
+                123,
+                "seller_john",
+                new Date(),
+                new Date(System.currentTimeMillis() + 86400000),
+                "Time_Fixed",
+                "OPEN",
+                phone,
+                new LinkedList<>(),
+                new ArrayList<>(),
+                false);
+        auctionDAO.save("123", phoneAuction);
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.execute("DROP TABLE item_images");
+        }
+
+        try {
+            List<DashboardAuctionRow> rows = auctionDAO.searchAuctionsByName("phone", 10);
+
+            assertEquals(1, rows.size());
+            assertEquals(123, rows.get(0).getAuctionId());
+            assertTrue(rows.get(0).getImagePaths().isEmpty());
+        } finally {
+            TestDatabaseHelper.createAllTables();
+        }
+    }
+
+    @Test
+    @Order(76)
     @DisplayName("findExpiredOpenRunningAuctions() - returns only expired OPEN/RUNNING auctions")
     void testFindExpiredOpenRunningAuctions() {
         AuctionSnapshot expiredOpen = createSampleSnapshot(25);

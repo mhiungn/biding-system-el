@@ -813,7 +813,7 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                     int bidCount = rs.getInt("bid_count");
                     float minimumBidIncrement = rs.getFloat("minimum_bid_increment");
                     result.add(new DashboardAuctionRow(auctionId, status, startTime, endTime, item, bidCount,
-                            minimumBidIncrement, ItemDAO.getInstance().getItemImages(item.getId())));
+                            minimumBidIncrement, loadItemImagesSafely(item.getId())));
                 }
             }
             return result;
@@ -900,7 +900,7 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                     int bidCount = rs.getInt("bid_count");
                     float minimumBidIncrement = rs.getFloat("minimum_bid_increment");
                     return new DashboardAuctionRow(auctionId, status, startTime, endTime, item, bidCount,
-                            minimumBidIncrement, ItemDAO.getInstance().getItemImages(item.getId()));
+                            minimumBidIncrement, loadItemImagesSafely(item.getId()));
                 }
                 return null;
             }
@@ -1021,7 +1021,7 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                             toDate(rs.getTimestamp("created_at")),
                             toDate(rs.getTimestamp("terminate_at")),
                             item, rs.getInt("bid_count"), rs.getFloat("minimum_bid_increment"),
-                            ItemDAO.getInstance().getItemImages(item.getId())));
+                            loadItemImagesSafely(item.getId())));
                 }
             }
             return result;
@@ -1063,7 +1063,7 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                             toDate(rs.getTimestamp("created_at")),
                             toDate(rs.getTimestamp("terminate_at")),
                             item, rs.getInt("bid_count"), rs.getFloat("minimum_bid_increment"),
-                            ItemDAO.getInstance().getItemImages(item.getId())));
+                            loadItemImagesSafely(item.getId())));
                 }
             }
             return result;
@@ -1115,7 +1115,7 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                             rs.getFloat("current_price"),
                             rs.getInt("bid_count"),
                             rs.getString("highest_bidder"),
-                            ItemDAO.getInstance().getItemImages(itemId)));
+                            loadItemImagesSafely(itemId)));
                 }
             }
             return result;
@@ -1167,7 +1167,7 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                             item,
                             rs.getInt("bid_count"),
                             rs.getFloat("minimum_bid_increment"),
-                            ItemDAO.getInstance().getItemImages(item.getId())));
+                            loadItemImagesSafely(item.getId())));
                 }
             }
             return result;
@@ -1766,6 +1766,19 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
             return usernames;
         } catch (SQLException e) {
             throw new RuntimeException("[AuctionDAO] Lỗi khi tải danh sách username cho auction", e);
+        }
+    }
+
+    private List<String> loadItemImagesSafely(String itemId) {
+        if (itemId == null || itemId.isBlank()) {
+            return Collections.emptyList();
+        }
+        try {
+            return ItemDAO.getInstance().getItemImages(itemId);
+        } catch (RuntimeException e) {
+            System.err.println("[AuctionDAO] Could not load images for item " + itemId
+                    + "; returning auction without images: " + e.getMessage());
+            return Collections.emptyList();
         }
     }
 
