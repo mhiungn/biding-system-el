@@ -1,8 +1,10 @@
 package Client.features.sell;
 
 import Client.core.ui.NavigationController;
+import Client.components.LoadingOverlay;
 import Client.features.auth.SessionManager;
 import CommonClasses.User;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -63,8 +65,11 @@ public class SellItemController extends NavigationController {
     @FXML private Button btnReset;
     @FXML private Button btnListItem;
     @FXML private Label lblCurrentUserQuickInfo;
+    @FXML private Button btnNotifications;
+    @FXML private Button btnSearch;
 
     private final SellItemService sellItemService = new SellItemService();
+    private final LoadingOverlay loadingOverlay = new LoadingOverlay();
     private final List<StackPane> thumbnailSlots = new ArrayList<>();
     private final List<File> galleryImages = new ArrayList<>();
     private File mainImage;
@@ -73,6 +78,8 @@ public class SellItemController extends NavigationController {
     @FXML
     public void initialize() {
         applyCurrentUserQuickInfo(lblCurrentUserQuickInfo);
+        setupNotificationButton(btnNotifications);
+        setupSearchButton(btnSearch);
 
         cmbCategory.getItems().setAll("ELECTRONICS", "ART", "VEHICLE");
         thumbnailSlots.clear();
@@ -158,18 +165,35 @@ public class SellItemController extends NavigationController {
         }
 
         btnListItem.setDisable(true);
-        try {
-            SellItemResult result = sellItemService.listItem(request);
+        Task<SellItemResult> task = new Task<>() {
+            @Override
+            protected SellItemResult call() {
+                return sellItemService.listItem(request);
+            }
+        };
+        task.setOnSucceeded(taskEvent -> {
+            loadingOverlay.hide();
+            btnListItem.setDisable(false);
+            SellItemResult result = task.getValue();
             showInfo("Item listed", "Auction AUC-" + result.getAuctionId() + " has been added to the dashboard.");
             clearForm();
-            switchToDashboard(event);
-        } catch (IOException e) {
-            showError("Navigation Error", "The item was listed, but the dashboard could not be opened.");
-        } catch (RuntimeException e) {
-            showError("Listing Failed", e.getMessage());
-        } finally {
+            try {
+                switchToDashboard(event);
+            } catch (IOException e) {
+                showError("Navigation Error", "The item was listed, but the dashboard could not be opened.");
+            }
+        });
+        task.setOnFailed(taskEvent -> {
+            loadingOverlay.hide();
             btnListItem.setDisable(false);
-        }
+            Throwable error = task.getException();
+            showError("Listing Failed", error == null ? "Could not list item." : error.getMessage());
+        });
+
+        loadingOverlay.show(btnListItem, "Listing item...");
+        Thread thread = new Thread(task, "sell-item-submit");
+        thread.setDaemon(true);
+        thread.start();
     }
 
     private SellItemRequest buildRequest() {

@@ -1,5 +1,6 @@
 package Client.core.network;
 
+import Client.features.auth.SessionManager;
 import Packets.MessageType;
 import Packets.NetworkConfig;
 import Packets.NetworkErrorPayload;
@@ -37,6 +38,12 @@ public final class NetworkRequestClient {
         }
     }
 
+    public static boolean isAuthenticationFailure(IOException exception) {
+        String message = exception.getMessage();
+        return message != null
+                && (message.startsWith("AUTH_REQUIRED:") || message.startsWith("AUTH_INVALID:"));
+    }
+
     public static PacketMessage request(MessageType requestType, Serializable payload,
                                         MessageType expectedResponse) throws IOException {
         return request(requestType, payload, EnumSet.of(expectedResponse));
@@ -45,7 +52,7 @@ public final class NetworkRequestClient {
     public static PacketMessage request(MessageType requestType, Serializable payload,
                                         Set<MessageType> expectedResponses) throws IOException {
         try (RequestConnection connection = new RequestConnection(NetworkConfig.host(), NetworkConfig.port())) {
-            connection.send(new PacketMessage(requestType, payload));
+            connection.send(new PacketMessage(requestType, payload, SessionManager.getAuthToken()));
             while (true) {
                 PacketMessage response = connection.read();
                 if (expectedResponses.contains(response.getMessageType())) {
@@ -60,6 +67,24 @@ public final class NetworkRequestClient {
             }
         } catch (SocketTimeoutException e) {
             throw new IOException("Timed out waiting for server response", e);
+        }
+    }
+
+    public static boolean logout() {
+        String token = SessionManager.getAuthToken();
+        if (token == null || token.isBlank()) {
+            SessionManager.clear();
+            return true;
+        }
+
+        try {
+            request(MessageType.LOGOUT_REQUEST, null, MessageType.LOGOUT_RESPONSE);
+            return true;
+        } catch (IOException e) {
+            System.err.println("[NetworkRequestClient] Network logout failed: " + e.getMessage());
+            return false;
+        } finally {
+            SessionManager.clear();
         }
     }
 

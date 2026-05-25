@@ -1,10 +1,11 @@
 package Client.features.bidding;
 
 import Client.core.network.NetworkRequestClient;
+import CommonClasses.dto.DashboardAuctionRow;
+import CommonClasses.dto.SellerAuctionRowDTO;
 import Packets.MessageType;
 import Packets.PacketMessage;
 import Server.dao.AuctionDAO;
-import Server.dao.DashboardAuctionRow;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -31,11 +32,15 @@ public class MyBidsService {
         if (NetworkRequestClient.isEnabled()) {
             try {
                 PacketMessage response = NetworkRequestClient.request(
-                        MessageType.MY_ACTIVE_BIDS_REQUEST, username, MessageType.MY_ACTIVE_BIDS_RESPONSE);
+                        MessageType.MY_ACTIVE_BIDS_REQUEST, null, MessageType.MY_ACTIVE_BIDS_RESPONSE);
                 if (response.getPayload() instanceof List<?>) {
                     return (List<DashboardAuctionRow>) response.getPayload();
                 }
             } catch (IOException e) {
+                if (NetworkRequestClient.isAuthenticationFailure(e)) {
+                    System.err.println("[MyBidsService] Network active bids rejected: " + e.getMessage());
+                    return new ArrayList<>();
+                }
                 System.err.println("[MyBidsService] Network active bids unavailable, using DAO fallback: "
                         + e.getMessage());
             }
@@ -59,11 +64,15 @@ public class MyBidsService {
         if (NetworkRequestClient.isEnabled()) {
             try {
                 PacketMessage response = NetworkRequestClient.request(
-                        MessageType.MY_COMPLETED_BIDS_REQUEST, username, MessageType.MY_COMPLETED_BIDS_RESPONSE);
+                        MessageType.MY_COMPLETED_BIDS_REQUEST, null, MessageType.MY_COMPLETED_BIDS_RESPONSE);
                 if (response.getPayload() instanceof List<?>) {
                     return (List<DashboardAuctionRow>) response.getPayload();
                 }
             } catch (IOException e) {
+                if (NetworkRequestClient.isAuthenticationFailure(e)) {
+                    System.err.println("[MyBidsService] Network completed bids rejected: " + e.getMessage());
+                    return new ArrayList<>();
+                }
                 System.err.println("[MyBidsService] Network completed bids unavailable, using DAO fallback: "
                         + e.getMessage());
             }
@@ -73,6 +82,38 @@ public class MyBidsService {
             return AuctionDAO.getInstance().findCompletedAuctionsByBidder(username);
         } catch (Exception e) {
             System.err.println("[MyBidsService] Error loading completed bids: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Returns auctions created by the current user for the selling/sold section.
+     *
+     * @param username the logged-in user's username
+     * @return list of seller auction rows
+     */
+    public List<SellerAuctionRowDTO> loadSellingItems(String username) {
+        if (NetworkRequestClient.isEnabled()) {
+            try {
+                PacketMessage response = NetworkRequestClient.request(
+                        MessageType.MY_SELLING_ITEMS_REQUEST, null, MessageType.MY_SELLING_ITEMS_RESPONSE);
+                if (response.getPayload() instanceof List<?>) {
+                    return (List<SellerAuctionRowDTO>) response.getPayload();
+                }
+            } catch (IOException e) {
+                if (NetworkRequestClient.isAuthenticationFailure(e)) {
+                    System.err.println("[MyBidsService] Network seller items rejected: " + e.getMessage());
+                    return new ArrayList<>();
+                }
+                System.err.println("[MyBidsService] Network seller items unavailable, using DAO fallback: "
+                        + e.getMessage());
+            }
+        }
+
+        try {
+            return AuctionDAO.getInstance().findSellerAuctionRows(username);
+        } catch (Exception e) {
+            System.err.println("[MyBidsService] Error loading seller items: " + e.getMessage());
             return new ArrayList<>();
         }
     }
@@ -89,7 +130,6 @@ public class MyBidsService {
             try {
                 Map<String, Object> payload = new HashMap<>();
                 payload.put("auctionId", auctionId);
-                payload.put("username", username);
                 PacketMessage response = NetworkRequestClient.request(
                         MessageType.USER_HIGHEST_BID_REQUEST,
                         (HashMap<String, Object>) payload,
@@ -98,6 +138,10 @@ public class MyBidsService {
                     return ((Number) response.getPayload()).floatValue();
                 }
             } catch (IOException e) {
+                if (NetworkRequestClient.isAuthenticationFailure(e)) {
+                    System.err.println("[MyBidsService] Network user highest bid rejected: " + e.getMessage());
+                    return 0;
+                }
                 System.err.println("[MyBidsService] Network user highest bid unavailable, using DAO fallback: "
                         + e.getMessage());
             }

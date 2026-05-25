@@ -1,11 +1,13 @@
 package Client.features.auth;
 
 import Client.core.network.NetworkRequestClient;
-import CommonClasses.Bidder;
+import Client.core.network.NetworkPushManager;
 import CommonClasses.User;
+import CommonClasses.dto.AuthResponse;
 import Packets.MessageType;
 import Packets.PacketMessage;
 import Server.dao.UserDAO;
+import Server.service.WalletApplicationService;
 
 import java.io.IOException;
 
@@ -49,8 +51,8 @@ public final class AuthService {
             try {
                 PacketMessage response = NetworkRequestClient.request(
                         MessageType.REGISTER_REQUEST, newUser, MessageType.REGISTER_RESPONSE);
-                if (response.getPayload() instanceof User) {
-                    SessionManager.setCurrentUser((User) response.getPayload());
+                User authenticatedUser = applyAuthPayload(response.getPayload());
+                if (authenticatedUser != null) {
                     return null;
                 }
                 return "Signup failed on server.";
@@ -61,6 +63,8 @@ public final class AuthService {
         }
 
         userDAO.save(normalizedUsername, newUser);
+        WalletApplicationService.getInstance().ensureWallet(normalizedUsername);
+        SessionManager.clearToken();
         SessionManager.setCurrentUser(newUser);
         return null;
     }
@@ -75,12 +79,11 @@ public final class AuthService {
             try {
                 PacketMessage response = NetworkRequestClient.request(
                         MessageType.LOGIN_REQUEST,
-                        new Bidder(normalizedUsername, password, null),
+                        new User(normalizedUsername, password, null,"USER"),
                         MessageType.LOGIN_RESPONSE);
-                if (response.getPayload() instanceof User) {
-                    User user = (User) response.getPayload();
-                    SessionManager.setCurrentUser(user);
-                    return user;
+                User authenticatedUser = applyAuthPayload(response.getPayload());
+                if (authenticatedUser != null) {
+                    return authenticatedUser;
                 }
                 SessionManager.setCurrentUser(null);
                 return null;
@@ -90,7 +93,35 @@ public final class AuthService {
             }
         }
         User user = userDAO.authenticate(normalizedUsername, password);
+        SessionManager.clearToken();
         SessionManager.setCurrentUser(user);
         return user;
+    }
+
+    private User applyAuthPayload(Object payload) {
+        if (payload instanceof AuthResponse) {
+            AuthResponse authResponse = (AuthResponse) payload;
+            if (authResponse.isSuccess() && authResponse.getUser() != null
+                    && authResponse.getToken() != null && !authResponse.getToken().isBlank()) {
+                SessionManager.setCurrentSession(
+                        authResponse.getUser(),
+                        authResponse.getToken(),
+                        authResponse.getExpiresAt());
+                NetworkPushManager.getInstance().startIfPossible();
+                return authResponse.getUser();
+            }
+            SessionManager.setCurrentUser(null);
+            return null;
+        }
+
+        if (payload instanceof User) {
+            User user = (User) payload;
+            SessionManager.clearToken();
+            SessionManager.setCurrentUser(user);
+            return user;
+        }
+
+        SessionManager.setCurrentUser(null);
+        return null;
     }
 }

@@ -137,6 +137,32 @@
             </VBox>
         </VBox>
 
+        <!-- SELLING / SOLD ITEMS SECTION -->
+        <VBox styleClass="selling-items-section">
+            <HBox styleClass="section-header">
+                <Label fx:id="lblSellingHeading" styleClass="section-heading" text="SELLING / SOLD ITEMS (0)" />
+            </HBox>
+
+            <VBox styleClass="completed-table-container">
+                <HBox alignment="CENTER_LEFT" spacing="12" styleClass="table-header">
+                    <Region maxWidth="42" minWidth="42" prefWidth="42" />
+                    <Label maxWidth="Infinity" styleClass="table-header-label" text="ITEM" HBox.hgrow="ALWAYS" />
+                    <Label minWidth="110" prefWidth="110" styleClass="table-header-label" text="PRICE" />
+                    <Label minWidth="70" prefWidth="70" styleClass="table-header-label" text="BIDS" />
+                    <Label minWidth="110" prefWidth="110" styleClass="table-header-label" text="WINNER" />
+                    <Label alignment="CENTER" minWidth="90" prefWidth="90" styleClass="table-header-label" text="STATUS" />
+                    <Label minWidth="110" prefWidth="110" styleClass="table-header-label" text="ENDS" />
+                    <Label minWidth="70" prefWidth="70" styleClass="table-header-label" text="" />
+                </HBox>
+
+                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" prefHeight="225" styleClass="completed-table-scroll" vbarPolicy="AS_NEEDED">
+                    <VBox fx:id="sellingItemsList" spacing="0" styleClass="completed-table-rows">
+                        <!-- Populated dynamically by MyBidsController -->
+                    </VBox>
+                </ScrollPane>
+            </VBox>
+        </VBox>
+
     </VBox>
 
     </ScrollPane>

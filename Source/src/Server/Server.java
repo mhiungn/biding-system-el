@@ -1,13 +1,17 @@
 package Server;
 
+import Packets.NetworkConfig;
 import Packets.PacketMessage;
+import Server.service.AuctionFinalizationService;
 
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Singleton server managing connected clients and network broadcasting.
@@ -23,14 +27,14 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Server {
 
-    private static final int PORT = 12345;
-    private static final int CLIENT_READ_TIMEOUT_MS = 10000;
     private static Server instance;
 
     private Map<String, ClientHandler> clientHandlers;
+    private Map<String, ClientHandler> pushClientHandlers;
 
     private Server() {
         clientHandlers = new ConcurrentHashMap<>();
+        pushClientHandlers = new ConcurrentHashMap<>();
     }
 
     /**
@@ -54,6 +58,22 @@ public class Server {
         return clientHandlers;
     }
 
+    public Map<String, ClientHandler> getPushClientHandlers() {
+        return pushClientHandlers;
+    }
+
+    public void registerPushClient(String username, ClientHandler handler) {
+        if (username != null && handler != null) {
+            pushClientHandlers.put(username, handler);
+        }
+    }
+
+    public void unregisterPushClient(String username, ClientHandler handler) {
+        if (username != null && handler != null) {
+            pushClientHandlers.remove(username, handler);
+        }
+    }
+
     /**
      * Sends a packet to a list of clients.
      *
@@ -75,8 +95,10 @@ public class Server {
     }
 
     public static void main(String[] args) {
-        int port = 12345; //
+        int port = NetworkConfig.port();
         Server serverInstance = Server.getInstance();
+        runAuctionFinalizer("server startup");
+        startAuctionFinalizationScheduler();
 
         try (java.net.ServerSocket serverSocket = new java.net.ServerSocket(port)) {
             System.out.println(" Server Đấu Giá đã khởi động tại cổng: " + port);
@@ -84,7 +106,7 @@ public class Server {
 
             while (true) {
                 Socket socket = serverSocket.accept();
-                socket.setSoTimeout(CLIENT_READ_TIMEOUT_MS);
+                socket.setSoTimeout(NetworkConfig.DEFAULT_CLIENT_READ_TIMEOUT_MS);
                 System.out.println("[Network] Client connected from " + socket.getRemoteSocketAddress());
 
                 Client guestClient = new Client("Guest_" + socket.getPort());
@@ -94,5 +116,21 @@ public class Server {
         } catch (java.io.IOException e) {
             System.err.println(" Lỗi khởi động Server: " + e.getMessage());
         }
+    }
+    private static void runAuctionFinalizer(String trigger) {
+        AuctionFinalizationService.getInstance().finalizeEndedAuctionsSafely(trigger);
+    }
+
+    private static void startAuctionFinalizationScheduler() {
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "auction-finalization-scheduler");
+            thread.setDaemon(true);
+            return thread;
+        });
+        scheduler.scheduleAtFixedRate(
+                () -> runAuctionFinalizer("server scheduler"),
+                60,
+                60,
+                TimeUnit.SECONDS);
     }
 }

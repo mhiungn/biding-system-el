@@ -2,10 +2,12 @@ package Client.features.bidding;
 
 import Client.core.network.NetworkRequestClient;
 import CommonClasses.Bid;
+import CommonClasses.dto.DashboardAuctionRow;
 import Packets.MessageType;
 import Packets.PacketMessage;
 import Server.dao.AuctionDAO;
-import Server.dao.DashboardAuctionRow;
+import Server.service.AuctionFinalizationService;
+import Server.service.BiddingApplicationService;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,6 +47,7 @@ public class AuctionDetailService {
         }
 
         try {
+            finalizeExpiredAuctions("auction detail load");
             return AuctionDAO.getInstance().findFullAuctionDetail(auctionId);
         } catch (Exception e) {
             System.err.println("[AuctionDetailService] Error loading auction detail: " + e.getMessage());
@@ -179,7 +182,6 @@ public class AuctionDetailService {
             try {
                 Map<String, Object> payload = new HashMap<>();
                 payload.put("auctionId", auctionId);
-                payload.put("username", username);
                 payload.put("bid", amount);
                 PacketMessage response = NetworkRequestClient.request(
                         MessageType.PLACE_BID,
@@ -189,36 +191,17 @@ public class AuctionDetailService {
                     return (Boolean) response.getPayload();
                 }
             } catch (IOException e) {
+                if (NetworkRequestClient.isAuthenticationFailure(e)) {
+                    System.err.println("[AuctionDetailService] Network bid rejected: " + e.getMessage());
+                    return false;
+                }
                 System.err.println("[AuctionDetailService] Network bid unavailable, using DAO fallback: "
                         + e.getMessage());
             }
         }
 
         try {
-            if (username == null || username.isBlank() || amount <= 0) {
-                return false;
-            }
-
-            AuctionDAO dao = AuctionDAO.getInstance();
-            String id = String.valueOf(auctionId);
-            if (!dao.exists(id)) {
-                return false;
-            }
-
-            DashboardAuctionRow detail = dao.findFullAuctionDetail(auctionId);
-            if (detail == null || detail.getItem() == null || isEnded(detail)) {
-                return false;
-            }
-
-            float currentPrice = detail.getItem().getCurrentHighestPrice();
-            if (amount < currentPrice + detail.getMinimumBidIncrement()) {
-                return false;
-            }
-
-            dao.addBid(id, new Bid(new Date(), amount, username));
-            dao.addParticipant(id, username);
-            applyAutoExtendIfNeeded(dao, id);
-            return true;
+            return BiddingApplicationService.getInstance().placeBid(username, auctionId, amount);
         } catch (Exception e) {
             System.err.println("[AuctionDetailService] Error placing bid: " + e.getMessage());
             return false;
@@ -240,5 +223,9 @@ public class AuctionDetailService {
 
     private boolean isEnded(DashboardAuctionRow detail) {
         return detail.getEndTime() == null || detail.getEndTime().getTime() <= System.currentTimeMillis();
+    }
+
+    private void finalizeExpiredAuctions(String trigger) {
+        AuctionFinalizationService.getInstance().finalizeEndedAuctionsSafely(trigger);
     }
 }

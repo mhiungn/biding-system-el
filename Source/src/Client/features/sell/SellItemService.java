@@ -5,17 +5,12 @@ import CommonClasses.Items.ItemFactory;
 import Server.dao.AuctionDAO;
 import Server.dao.AuctionSnapshot;
 import Server.dao.ItemDAO;
+import Server.service.ImageStorageService;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedList;
-import java.util.Locale;
-import java.util.UUID;
 
 public class SellItemService {
     private static final String TIME_FIXED = "Time_Fixed";
@@ -23,6 +18,7 @@ public class SellItemService {
 
     private final ItemDAO itemDAO;
     private final AuctionDAO auctionDAO;
+    private final ImageStorageService imageStorageService = ImageStorageService.getInstance();
 
     public SellItemService() {
         this(null, null);
@@ -104,9 +100,9 @@ public class SellItemService {
         if (request.getMainImage() == null) {
             throw new IllegalArgumentException("Main picture is required.");
         }
-        validateImageFile(request.getMainImage());
+        imageStorageService.validateImageFile(request.getMainImage());
         for (File file : request.getGalleryImages()) {
-            validateImageFile(file);
+            imageStorageService.validateImageFile(file);
         }
     }
 
@@ -116,46 +112,13 @@ public class SellItemService {
         }
     }
 
-    private void validateImageFile(File file) {
-        if (file == null || !file.isFile()) {
-            throw new IllegalArgumentException("Selected image file is not valid.");
-        }
-        String name = file.getName().toLowerCase(Locale.ROOT);
-        if (!name.endsWith(".jpg") && !name.endsWith(".jpeg") && !name.endsWith(".png")) {
-            throw new IllegalArgumentException("Only JPG and PNG images are supported.");
-        }
-        if (file.length() > 5L * 1024L * 1024L) {
-            throw new IllegalArgumentException("Each picture must be 5 MB or smaller.");
-        }
-    }
-
     private void saveImages(ItemDAO items, String itemId, SellItemRequest request) {
-        try {
-            String mainPath = copyImage(itemId, request.getMainImage());
-            items.saveItemImage(itemId, mainPath, true);
+        String mainPath = imageStorageService.saveItemImage(itemId, request.getMainImage());
+        items.saveItemImage(itemId, mainPath, true);
 
-            for (File file : request.getGalleryImages()) {
-                String imagePath = copyImage(itemId, file);
-                items.saveItemImage(itemId, imagePath, false);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Could not copy uploaded pictures.", e);
+        for (File file : request.getGalleryImages()) {
+            String imagePath = imageStorageService.saveItemImage(itemId, file);
+            items.saveItemImage(itemId, imagePath, false);
         }
-    }
-
-    private String copyImage(String itemId, File source) throws IOException {
-        Path uploadDir = Path.of(System.getProperty("user.dir"), "uploads", "items", itemId);
-        Files.createDirectories(uploadDir);
-
-        String originalName = source.getName();
-        String extension = "";
-        int dot = originalName.lastIndexOf('.');
-        if (dot >= 0) {
-            extension = originalName.substring(dot).toLowerCase(Locale.ROOT);
-        }
-
-        Path target = uploadDir.resolve(UUID.randomUUID() + extension);
-        Files.copy(source.toPath(), target, StandardCopyOption.REPLACE_EXISTING);
-        return target.toAbsolutePath().toString();
     }
 }

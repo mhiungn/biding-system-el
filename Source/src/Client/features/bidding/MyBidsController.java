@@ -1,9 +1,17 @@
 package Client.features.bidding;
 
 import Client.core.ui.NavigationController;
+import Client.components.LoadingOverlay;
 import Client.features.auth.SessionManager;
+import CommonClasses.dto.AuctionUpdatePushDTO;
+import CommonClasses.dto.DashboardAuctionRow;
+import CommonClasses.dto.NotificationPushDTO;
+import CommonClasses.dto.SellerAuctionRowDTO;
 import CommonClasses.User;
-import Server.dao.DashboardAuctionRow;
+import CommonClasses.dto.WalletUpdatePushDTO;
+import javafx.application.Platform;
+import javafx.event.ActionEvent;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
@@ -15,6 +23,8 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.List;
@@ -35,16 +45,23 @@ public class MyBidsController extends NavigationController {
 
     @FXML private VBox activeBidsList;
     @FXML private VBox completedBidsList;
+    @FXML private VBox sellingItemsList;
     @FXML private Button btnFilterAll;
     @FXML private Button btnFilterWinning;
     @FXML private Button btnFilterOutbid;
+    @FXML private Label lblActiveBidsHeading;
+    @FXML private Label lblCompletedHeading;
+    @FXML private Label lblSellingHeading;
     @FXML private Label lblCurrentUserQuickInfo;
+    @FXML private Button btnNotifications;
+    @FXML private Button btnSearch;
 
     // ========================== Service & State ==========================
 
     private final MyBidsService service = new MyBidsService();
     private final NumberFormat currencyFormat = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy");
+    private final LoadingOverlay loadingOverlay = new LoadingOverlay();
 
     private List<DashboardAuctionRow> allActiveBids;
     private String currentFilter = "ALL";
@@ -54,16 +71,19 @@ public class MyBidsController extends NavigationController {
     @FXML
     public void initialize() {
         applyCurrentUserQuickInfo(lblCurrentUserQuickInfo);
+        setupNotificationButton(btnNotifications);
+        setupSearchButton(btnSearch);
 
         User user = SessionManager.getCurrentUser();
         if (user == null) {
             showEmptyState(activeBidsList, "Please log in to see your bids");
             showEmptyState(completedBidsList, "Please log in to see your history");
+            showEmptyState(sellingItemsList, "Please log in to see your selling items");
             return;
         }
 
-        loadActiveBids(user.getUsername());
-        loadCompletedBids(user.getUsername());
+        registerForPushUpdates();
+        Platform.runLater(() -> loadMyBidsData(user.getUsername()));
         setupFilterButtons();
     }
 
@@ -77,11 +97,43 @@ public class MyBidsController extends NavigationController {
         renderActiveBids(allActiveBids);
     }
 
+    private void loadMyBidsData(String username) {
+        Task<MyBidsLoad> task = new Task<>() {
+            @Override
+            protected MyBidsLoad call() {
+                return new MyBidsLoad(
+                        service.loadActiveBids(username),
+                        service.loadCompletedBids(username),
+                        service.loadSellingItems(username));
+            }
+        };
+        task.setOnSucceeded(event -> {
+            loadingOverlay.hide();
+            MyBidsLoad data = task.getValue();
+            allActiveBids = data.active;
+            renderActiveBids(data.active);
+            renderCompletedBids(data.completed, username);
+            renderSellingItems(data.selling);
+        });
+        task.setOnFailed(event -> {
+            loadingOverlay.hide();
+            showError("Could not load your bids.");
+        });
+
+        loadingOverlay.show(activeBidsList, "Loading bids...");
+        Thread thread = new Thread(task, "my-bids-load");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
     /**
      * Renders active bids into the activeBidsList container.
      */
     private void renderActiveBids(List<DashboardAuctionRow> bids) {
         activeBidsList.getChildren().clear();
+        if (lblActiveBidsHeading != null) {
+            lblActiveBidsHeading.setText("ACTIVE BIDS (" + bids.size() + ")");
+        }
 
         if (bids.isEmpty()) {
             showEmptyState(activeBidsList, "No active bids");
@@ -107,6 +159,7 @@ public class MyBidsController extends NavigationController {
         // Image placeholder
         Region image = new Region();
         image.getStyleClass().add("bid-item-image");
+        applyImageBackground(image, firstImagePath(row));
 
         // Info section
         VBox info = new VBox(5);
@@ -164,6 +217,7 @@ public class MyBidsController extends NavigationController {
         actionBox.getStyleClass().add("bid-item-action");
         Button increaseBtn = new Button("INCREASE BID");
         increaseBtn.getStyleClass().add("increase-bid-button");
+        increaseBtn.setOnAction(event -> openAuctionDetail(event, row.getAuctionId()));
         actionBox.getChildren().add(increaseBtn);
 
         item.getChildren().addAll(image, info, right, actionBox);
@@ -175,7 +229,14 @@ public class MyBidsController extends NavigationController {
      */
     private void loadCompletedBids(String username) {
         List<DashboardAuctionRow> completed = service.loadCompletedBids(username);
+        renderCompletedBids(completed, username);
+    }
+
+    private void renderCompletedBids(List<DashboardAuctionRow> completed, String username) {
         completedBidsList.getChildren().clear();
+        if (lblCompletedHeading != null) {
+            lblCompletedHeading.setText("COMPLETED BIDS (" + completed.size() + ")");
+        }
 
         if (completed.isEmpty()) {
             showEmptyState(completedBidsList, "No completed bids yet");
@@ -200,6 +261,7 @@ public class MyBidsController extends NavigationController {
         Region thumb = new Region();
         thumb.setMinWidth(42); thumb.setMaxWidth(42); thumb.setPrefWidth(42);
         thumb.getStyleClass().add("table-item-image");
+        applyImageBackground(thumb, firstImagePath(row));
 
         // Item name
         Label name = new Label(row.getItem() != null ? row.getItem().getName() : "Unknown");
@@ -233,6 +295,82 @@ public class MyBidsController extends NavigationController {
         dateLabel.setMinWidth(110); dateLabel.setPrefWidth(110);
 
         tableRow.getChildren().addAll(thumb, name, yourBid, finalPriceLabel, status, dateLabel);
+        return tableRow;
+    }
+
+    /**
+     * Loads and displays auctions created by the user.
+     */
+    private void loadSellingItems(String username) {
+        List<SellerAuctionRowDTO> sellerItems = service.loadSellingItems(username);
+        renderSellingItems(sellerItems);
+    }
+
+    private void renderSellingItems(List<SellerAuctionRowDTO> sellerItems) {
+        sellingItemsList.getChildren().clear();
+        if (lblSellingHeading != null) {
+            lblSellingHeading.setText("SELLING / SOLD ITEMS (" + sellerItems.size() + ")");
+        }
+
+        if (sellerItems.isEmpty()) {
+            showEmptyState(sellingItemsList, "No selling items yet");
+            return;
+        }
+
+        for (SellerAuctionRowDTO row : sellerItems) {
+            sellingItemsList.getChildren().add(createSellerAuctionRow(row));
+        }
+    }
+
+    /**
+     * Creates a seller-owned auction row for active and sold items.
+     */
+    private HBox createSellerAuctionRow(SellerAuctionRowDTO row) {
+        HBox tableRow = new HBox(12);
+        tableRow.setAlignment(Pos.CENTER_LEFT);
+        tableRow.getStyleClass().add("table-row");
+
+        Region thumb = new Region();
+        thumb.setMinWidth(42); thumb.setMaxWidth(42); thumb.setPrefWidth(42);
+        thumb.getStyleClass().add("table-item-image");
+        applyImageBackground(thumb, firstImagePath(row));
+
+        Label name = new Label(row.getItemName() != null ? row.getItemName() : "Unknown");
+        name.getStyleClass().add("table-item-name");
+        name.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(name, Priority.ALWAYS);
+
+        Label price = new Label(formatCurrency(row.getCurrentPrice()));
+        price.getStyleClass().add("table-value");
+        price.setMinWidth(110); price.setPrefWidth(110);
+
+        Label bids = new Label(String.valueOf(row.getBidCount()));
+        bids.getStyleClass().add("table-value");
+        bids.setMinWidth(70); bids.setPrefWidth(70);
+
+        Label winner = new Label(row.getHighestBidderUsername() == null ? "-" : row.getHighestBidderUsername());
+        winner.getStyleClass().add("table-value");
+        winner.setMinWidth(110); winner.setPrefWidth(110);
+
+        Label status = new Label(formatSellerStatus(row));
+        status.setAlignment(Pos.CENTER);
+        status.getStyleClass().addAll("status-badge", isSellerAuctionActive(row) ? "status-active" : "status-ended");
+        status.setMinWidth(90); status.setPrefWidth(90);
+
+        Label dateLabel = new Label(row.getEndTime() != null ? dateFormat.format(row.getEndTime()) : "-");
+        dateLabel.getStyleClass().add("table-value");
+        dateLabel.setMinWidth(110); dateLabel.setPrefWidth(110);
+
+        Button viewButton = new Button("VIEW");
+        viewButton.getStyleClass().add("table-action-button");
+        viewButton.setOnAction(event -> openAuctionDetail(event, row.getAuctionId()));
+
+        tableRow.getChildren().addAll(thumb, name, price, bids, winner, status, dateLabel, viewButton);
+        tableRow.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2) {
+                openAuctionDetail(new ActionEvent(tableRow, tableRow), row.getAuctionId());
+            }
+        });
         return tableRow;
     }
 
@@ -299,6 +437,55 @@ public class MyBidsController extends NavigationController {
 
     // ========================== Utility ==========================
 
+    private void openAuctionDetail(ActionEvent event, int auctionId) {
+        try {
+            switchToBiddingDetails(event, auctionId);
+        } catch (IOException e) {
+            showError("Could not open auction detail.");
+        }
+    }
+
+    private String formatSellerStatus(SellerAuctionRowDTO row) {
+        if (isSellerAuctionActive(row)) {
+            return "ACTIVE";
+        }
+        if ("CANCELED".equalsIgnoreCase(row.getStatus())) {
+            return "CANCELED";
+        }
+        return row.getBidCount() > 0 ? "SOLD" : "ENDED";
+    }
+
+    private boolean isSellerAuctionActive(SellerAuctionRowDTO row) {
+        String status = row.getStatus();
+        boolean openStatus = "OPEN".equalsIgnoreCase(status) || "RUNNING".equalsIgnoreCase(status);
+        return openStatus && row.getEndTime() != null && row.getEndTime().getTime() > System.currentTimeMillis();
+    }
+
+    private String firstImagePath(DashboardAuctionRow rowData) {
+        List<String> imagePaths = rowData.getImagePaths();
+        return imagePaths.isEmpty() ? null : imagePaths.get(0);
+    }
+
+    private String firstImagePath(SellerAuctionRowDTO rowData) {
+        List<String> imagePaths = rowData.getImagePaths();
+        return imagePaths.isEmpty() ? null : imagePaths.get(0);
+    }
+
+    private void applyImageBackground(Region region, String path) {
+        if (region == null || path == null || path.isBlank()) {
+            return;
+        }
+        region.setStyle("-fx-background-image: url(\"" + toCssImageUrl(path) + "\"); "
+                + "-fx-background-size: cover; -fx-background-position: center;");
+    }
+
+    private String toCssImageUrl(String path) {
+        if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("file:")) {
+            return path;
+        }
+        return Path.of(path).toUri().toString();
+    }
+
     private String formatCurrency(float amount) {
         return currencyFormat.format((long) amount) + "VND";
     }
@@ -320,10 +507,53 @@ public class MyBidsController extends NavigationController {
     }
 
     private void showEmptyState(VBox container, String message) {
+        if (container == null) {
+            return;
+        }
         container.getChildren().clear();
         Label empty = new Label(message);
         empty.getStyleClass().add("bid-time");
         container.getChildren().add(empty);
+    }
+
+    private void showError(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR, message, ButtonType.OK);
+        alert.showAndWait();
+    }
+
+    private void refreshCurrentUserBids() {
+        User user = SessionManager.getCurrentUser();
+        if (user != null) {
+            loadMyBidsData(user.getUsername());
+        }
+    }
+
+    private static final class MyBidsLoad {
+        private final List<DashboardAuctionRow> active;
+        private final List<DashboardAuctionRow> completed;
+        private final List<SellerAuctionRowDTO> selling;
+
+        private MyBidsLoad(List<DashboardAuctionRow> active, List<DashboardAuctionRow> completed,
+                           List<SellerAuctionRowDTO> selling) {
+            this.active = active == null ? List.of() : active;
+            this.completed = completed == null ? List.of() : completed;
+            this.selling = selling == null ? List.of() : selling;
+        }
+    }
+
+    @Override
+    public void onAuctionUpdatePush(AuctionUpdatePushDTO payload) {
+        refreshCurrentUserBids();
+    }
+
+    @Override
+    public void onNotificationPush(NotificationPushDTO payload) {
+        refreshNotificationBadge(btnNotifications);
+    }
+
+    @Override
+    public void onWalletUpdatePush(WalletUpdatePushDTO payload) {
+        applyCurrentUserQuickInfo(lblCurrentUserQuickInfo);
     }
 
     @Override

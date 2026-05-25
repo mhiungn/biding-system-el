@@ -44,6 +44,7 @@ public class NetworkClient implements Closeable {
 
     private String lastUsername;
     private String lastPassword;
+    private String lastAuthToken;
     private volatile boolean closed = true;
     private volatile boolean reconnecting;
 
@@ -78,6 +79,23 @@ public class NetworkClient implements Closeable {
         this.lastUsername = username;
         this.lastPassword = password;
         send(new PacketMessage(MessageType.LOGIN_REQUEST, new User(username, password, null, "USER")));
+    }
+
+    public synchronized void connectForPush(String host, int port, String authToken,
+                                            Consumer<PacketMessage> packetListener,
+                                            Consumer<String> statusListener) throws IOException {
+        this.lastAuthToken = authToken;
+        this.readTimeoutMs = NetworkConfig.DEFAULT_CLIENT_READ_TIMEOUT_MS;
+        connect(host, port, packetListener, statusListener);
+        subscribeForPush(authToken);
+    }
+
+    public void subscribeForPush(String authToken) throws IOException {
+        if (authToken == null || authToken.isBlank()) {
+            throw new IOException("Authentication token is required for push subscription");
+        }
+        this.lastAuthToken = authToken;
+        send(new PacketMessage(MessageType.PUSH_SUBSCRIBE_REQUEST, null, authToken));
     }
 
     public void ping() throws IOException {
@@ -197,7 +215,9 @@ public class NetworkClient implements Closeable {
     }
 
     private void restoreLoginIfPossible() throws IOException {
-        if (lastUsername != null && lastPassword != null) {
+        if (lastAuthToken != null && !lastAuthToken.isBlank()) {
+            subscribeForPush(lastAuthToken);
+        } else if (lastUsername != null && lastPassword != null) {
             send(new PacketMessage(MessageType.LOGIN_REQUEST, new User(lastUsername, lastPassword, null, "USER")));
         }
     }

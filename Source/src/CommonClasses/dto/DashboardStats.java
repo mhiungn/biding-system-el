@@ -1,4 +1,4 @@
-package Client.features.dashboard;
+package CommonClasses.dto;
 
 import java.io.Serializable;
 

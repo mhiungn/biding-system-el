@@ -1,10 +1,13 @@
 package Client.features.dashboard;
 
 import Client.core.network.NetworkRequestClient;
+import CommonClasses.dto.DashboardAuctionRow;
+import CommonClasses.dto.DashboardPageResult;
+import CommonClasses.dto.DashboardStats;
 import Packets.MessageType;
 import Packets.PacketMessage;
 import Server.dao.AuctionDAO;
-import Server.dao.DashboardAuctionRow;
+import Server.service.AuctionFinalizationService;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,6 +46,7 @@ public class DashboardService {
         }
 
         try {
+            finalizeExpiredAuctions("dashboard page load");
             AuctionDAO auctionDAO = AuctionDAO.getInstance();
             int total = auctionDAO.countDashboardAuctions(category, endingSoon, minPrice, maxPrice);
             int safePage = Math.max(pageNumber, 0);
@@ -76,6 +80,7 @@ public class DashboardService {
         }
 
         try {
+            finalizeExpiredAuctions("dashboard stats load");
             AuctionDAO auctionDAO = AuctionDAO.getInstance();
             return new DashboardStats(
                     auctionDAO.countActiveAuctions(),
@@ -95,5 +100,9 @@ public class DashboardService {
         }
         String message = current.getMessage();
         return message == null || message.isBlank() ? exception.getMessage() : message;
+    }
+
+    private void finalizeExpiredAuctions(String trigger) {
+        AuctionFinalizationService.getInstance().finalizeEndedAuctionsSafely(trigger);
     }
 }

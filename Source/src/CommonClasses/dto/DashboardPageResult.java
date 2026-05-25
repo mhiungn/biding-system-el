@@ -1,6 +1,4 @@
-package Client.features.dashboard;
-
-import Server.dao.DashboardAuctionRow;
+package CommonClasses.dto;
 
 import java.io.Serializable;
 import java.util.List;

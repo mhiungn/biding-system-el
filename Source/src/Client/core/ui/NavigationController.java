@@ -1,27 +1,43 @@
 package Client.core.ui;
 
+import Client.components.NotificationPopup;
+import Client.components.HeaderSearchPopup;
+import Client.core.network.NetworkRequestClient;
+import Client.core.network.NetworkPushManager;
+import Client.core.network.PushEventListener;
 import Client.features.bidding.BiddingDetailController;
 import Client.features.auth.SessionManager;
+import Client.features.notifications.NotificationClientService;
+import Client.features.profile.ProfileService;
+import Client.features.search.SearchService;
 import CommonClasses.User;
+import CommonClasses.dto.NotificationDTO;
+import CommonClasses.dto.WalletDTO;
+import Server.service.NotificationApplicationService;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
 
 import java.io.IOException;
+import java.text.NumberFormat;
+import java.util.Locale;
 
 /**
  * Loads other feature FXML roots onto the current {@link Stage}.
  */
-public abstract class NavigationController extends BaseController {
+public abstract class NavigationController extends BaseController implements PushEventListener {
 
     private static final String CONTROLLER_KEY = "client.controller";
 
@@ -32,6 +48,11 @@ public abstract class NavigationController extends BaseController {
     private static final String LOGIN = "/client/views/auth/login.fxml";
     private static final String USER_PROFILE = "/client/views/profile/user_profile.fxml";
     private static final String SELL_ITEM = "/client/views/sell/sell_item.fxml";
+    private static final String NOTIFICATION_BADGE_KEY = "notification.badge";
+
+    private final NotificationClientService notificationClientService = new NotificationClientService();
+    private final SearchService searchService = new SearchService();
+    private final ProfileService profileService = new ProfileService();
 
     public void switchToDashboard(ActionEvent event) throws IOException {
         switchScene(event, DASHBOARD);
@@ -49,10 +70,9 @@ public abstract class NavigationController extends BaseController {
         LoadedView loadedView = loadView(BIDDING_DETAIL);
 
         BiddingDetailController controller = (BiddingDetailController) loadedView.controller;
-        controller.setAuctionId(auctionId);
-
         Stage stage = getEventStage(event);
         replaceCurrentScene(stage, loadedView.root);
+        controller.setAuctionId(auctionId);
     }
 
     public void switchToMyBids(ActionEvent event) throws IOException {
@@ -90,7 +110,12 @@ public abstract class NavigationController extends BaseController {
     }
 
     protected void handleLogoutToLogin(ActionEvent event) throws IOException {
-        SessionManager.clear();
+        NetworkPushManager.getInstance().stop();
+        if (NetworkRequestClient.isEnabled()) {
+            NetworkRequestClient.logout();
+        } else {
+            SessionManager.clear();
+        }
 
         Stage logoutStage = getEventStage(event);
         Stage ownerStage = getOwnerStage(logoutStage);
@@ -111,14 +136,140 @@ public abstract class NavigationController extends BaseController {
         }
 
         User currentUser = SessionManager.getCurrentUser();
-        label.setText(currentUser == null
-                ? "Guest"
-                : currentUser.getUsername() + " | " + currentUser.getEmail());
+        if (currentUser == null) {
+            label.setText("Guest");
+            return;
+        }
+
+        try {
+            WalletDTO wallet = profileService.getWallet(currentUser.getUsername());
+            NumberFormat format = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
+            label.setText(currentUser.getUsername() + " | Available: " + format.format(wallet.getAvailableBalance()));
+        } catch (Exception e) {
+            label.setText(currentUser.getUsername());
+        }
+    }
+
+    protected void setupNotificationButton(Button button) {
+        if (button == null) {
+            return;
+        }
+        Label badge = ensureNotificationBadge(button);
+        refreshNotificationBadge(button, badge);
+        button.setOnAction(event -> showNotificationPopup(button));
+    }
+
+    protected void setupSearchButton(Button button) {
+        if (button == null) {
+            return;
+        }
+        button.setOnAction(event -> showSearchPopup(button));
+    }
+
+    protected void registerForPushUpdates() {
+        NetworkPushManager.getInstance().register(this);
+    }
+
+    protected void unregisterFromPushUpdates() {
+        NetworkPushManager.getInstance().unregister(this);
+    }
+
+    protected void refreshNotificationBadge(Button button) {
+        if (button == null) {
+            return;
+        }
+        Object badge = button.getProperties().get(NOTIFICATION_BADGE_KEY);
+        if (badge instanceof Label) {
+            refreshNotificationBadge(button, (Label) badge);
+        }
+    }
+
+    private Label ensureNotificationBadge(Button button) {
+        Object existing = button.getProperties().get(NOTIFICATION_BADGE_KEY);
+        if (existing instanceof Label) {
+            return (Label) existing;
+        }
+
+        Node originalGraphic = button.getGraphic();
+        StackPane wrapper = new StackPane();
+        if (originalGraphic != null) {
+            wrapper.getChildren().add(originalGraphic);
+        }
+
+        Label badge = new Label();
+        badge.setMinSize(16, 16);
+        badge.setPrefSize(16, 16);
+        badge.setAlignment(Pos.CENTER);
+        badge.setStyle("-fx-background-color: #e02424; -fx-background-radius: 999; "
+                + "-fx-text-fill: white; -fx-font-size: 9px; -fx-font-weight: 700;");
+        StackPane.setAlignment(badge, Pos.TOP_RIGHT);
+        badge.setTranslateX(7);
+        badge.setTranslateY(-6);
+        wrapper.getChildren().add(badge);
+        button.setGraphic(wrapper);
+        button.getProperties().put(NOTIFICATION_BADGE_KEY, badge);
+        return badge;
+    }
+
+    private void refreshNotificationBadge(Button button, Label badge) {
+        User currentUser = SessionManager.getCurrentUser();
+        int unread = currentUser == null ? 0 : notificationClientService.countUnread(currentUser.getUsername());
+        badge.setVisible(unread > 0);
+        badge.setManaged(unread > 0);
+        badge.setText(unread > 9 ? "9+" : String.valueOf(unread));
+    }
+
+    private void showNotificationPopup(Button anchor) {
+        User currentUser = SessionManager.getCurrentUser();
+        if (currentUser == null) {
+            return;
+        }
+
+        NotificationPopup popup = new NotificationPopup(
+                notificationClientService,
+                currentUser.getUsername(),
+                notification -> openNotificationTarget(anchor, notification),
+                () -> refreshNotificationBadge(anchor));
+        popup.show(anchor);
+    }
+
+    private void showSearchPopup(Button anchor) {
+        HeaderSearchPopup popup = new HeaderSearchPopup(
+                searchService,
+                row -> {
+                    try {
+                        switchToBiddingDetails(new ActionEvent(anchor, anchor), row.getAuctionId());
+                    } catch (IOException e) {
+                        System.err.println("[NavigationController] Cannot open search result: " + e.getMessage());
+                    }
+                });
+        popup.show(anchor);
+    }
+
+    private void openNotificationTarget(Button anchor, NotificationDTO notification) {
+        try {
+            ActionEvent event = new ActionEvent(anchor, anchor);
+            if (NotificationApplicationService.ACTION_AUCTION_DETAIL.equals(notification.getActionTarget())
+                    && notification.getAuctionId() != null) {
+                switchToBiddingDetails(event, notification.getAuctionId());
+                return;
+            }
+            if (NotificationApplicationService.ACTION_MY_BIDS.equals(notification.getActionTarget())) {
+                switchToMyBids(event);
+            }
+        } catch (IOException e) {
+            System.err.println("[NavigationController] Cannot open notification target: " + e.getMessage());
+        }
     }
 
     private void replaceCurrentScene(Stage stage, Parent root) {
         onBeforeNavigate();
         applyScene(stage, root);
+    }
+
+    @Override
+    protected void onBeforeNavigate() {
+        unregisterFromPushUpdates();
     }
 
     private void applyScene(Stage stage, Parent root) {

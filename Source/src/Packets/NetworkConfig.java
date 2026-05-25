@@ -11,7 +11,7 @@ public final class NetworkConfig {
     public static final String DEFAULT_HOST = "127.0.0.1";
     public static final int DEFAULT_PORT = 12345;
     public static final int DEFAULT_CONNECT_TIMEOUT_MS = 1200;
-    public static final int DEFAULT_READ_TIMEOUT_MS = 5000;
+    public static final int DEFAULT_READ_TIMEOUT_MS = 1500;
     public static final int DEFAULT_CLIENT_READ_TIMEOUT_MS = 10000;
 
     private NetworkConfig() {
@@ -26,6 +26,6 @@ public final class NetworkConfig {
     }
 
     public static boolean networkEnabled() {
-        return Boolean.parseBoolean(System.getProperty(NETWORK_ENABLED_PROPERTY, "true"));
+        return Boolean.parseBoolean(System.getProperty(NETWORK_ENABLED_PROPERTY, "false"));
     }
 }
