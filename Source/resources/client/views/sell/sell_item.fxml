@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import Client.components.AppHeader?>
 <?import java.lang.String?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
@@ -51,39 +52,7 @@
             <!-- ─────────────────────────────────────────────────────
                  HEADER (matching dashboard/bidding_detail)
                  ───────────────────────────────────────────────────── -->
-            <HBox alignment="CENTER_LEFT" spacing="20" styleClass="header">
-
-                <!-- Logo + Title -->
-                <HBox alignment="CENTER_LEFT" spacing="10" HBox.hgrow="ALWAYS">
-                    <Region minHeight="40" minWidth="40" prefHeight="40" prefWidth="40" styleClass="logo" />
-                    <Label styleClass="app-title" text="Bidify" />
-                </HBox>
-
-                <!-- Navigation -->
-                <HBox alignment="CENTER" spacing="8" HBox.hgrow="ALWAYS">
-                    <Button fx:id="btnBrowseAuctions" onAction="#switchToDashboard" styleClass="nav-button" text="Browse Auctions" />
-                    <Button fx:id="btnMyBids" onAction="#switchToMyBids" styleClass="nav-button" text="My Bids" />
-                    <Button fx:id="btnSellItem" styleClass="nav-button" text="Sell Item" />
-                </HBox>
-
-                <!-- Icon buttons -->
-                <HBox alignment="CENTER_RIGHT" spacing="8">
-                    <Label fx:id="lblCurrentUserQuickInfo" styleClass="auth-footer-muted" text="Guest" />
-                    <Button fx:id="btnSearch" styleClass="icon-button">
-                        <graphic><Region styleClass="search-icon" /></graphic>
-                    </Button>
-                    <Button fx:id="btnNotifications" styleClass="icon-button-badge">
-                        <graphic><Region styleClass="notification-icon" /></graphic>
-                    </Button>
-                    <Button fx:id="btnUserProfile" onAction="#openUserProfile" styleClass="icon-button">
-                        <graphic>
-                            <ImageView fitHeight="24" fitWidth="24" preserveRatio="true">
-                                <image><Image url="@/client/images/user.png" /></image>
-                            </ImageView>
-                        </graphic>
-                    </Button>
-                </HBox>
-            </HBox>
+            <AppHeader fx:id="appHeader" activePage="SELL_ITEM" />
 
             <!-- ─────────────────────────────────────────────────────
                  BACK BUTTON SECTION (matching bidding_detail)

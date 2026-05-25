@@ -1,6 +1,7 @@
 package Client.features.dashboard;
 
 import Client.core.ui.NavigationController;
+import Client.components.AppHeader;
 import Client.components.LoadingOverlay;
 import CommonClasses.dto.AuctionUpdatePushDTO;
 import CommonClasses.dto.DashboardAuctionRow;
@@ -40,9 +41,7 @@ public class DashboardController extends NavigationController {
     @FXML private Label lblActiveAuctions;
     @FXML private Label lblEndingToday;
     @FXML private Label lblTotalBids;
-    @FXML private Label lblCurrentUserQuickInfo;
-    @FXML private Button btnNotifications;
-    @FXML private Button btnSearch;
+    @FXML private AppHeader appHeader;
     @FXML private ComboBox<String> categoryFilter;
     @FXML private ComboBox<String> sortFilter;
     @FXML private ComboBox<String> priceRangeFilter;
@@ -68,9 +67,7 @@ public class DashboardController extends NavigationController {
 
     @FXML
     public void initialize() {
-        applyCurrentUserQuickInfo(lblCurrentUserQuickInfo);
-        setupNotificationButton(btnNotifications);
-        setupSearchButton(btnSearch);
+        appHeader.configure(this);
         registerForPushUpdates();
         setupFilters();
         setupPaginationButtons();
@@ -456,12 +453,12 @@ public class DashboardController extends NavigationController {
 
     @Override
     public void onNotificationPush(NotificationPushDTO payload) {
-        refreshNotificationBadge(btnNotifications);
+        appHeader.refreshNotificationBadge();
     }
 
     @Override
     public void onWalletUpdatePush(WalletUpdatePushDTO payload) {
-        applyCurrentUserQuickInfo(lblCurrentUserQuickInfo);
+        appHeader.refreshWalletQuickInfo();
     }
 
     private String formatCurrency(float amount) {

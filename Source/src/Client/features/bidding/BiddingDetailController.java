@@ -1,6 +1,7 @@
 package Client.features.bidding;
 
 import Client.core.ui.NavigationController;
+import Client.components.AppHeader;
 import Client.components.LoadingOverlay;
 import Client.features.auth.SessionManager;
 import CommonClasses.Bid;
@@ -66,9 +67,7 @@ public class BiddingDetailController extends NavigationController {
     @FXML private Label lblMinBid;
     @FXML private TextField txtBidAmount;
     @FXML private Button btnPlaceBid;
-    @FXML private Label lblCurrentUserQuickInfo;
-    @FXML private Button btnNotifications;
-    @FXML private Button btnSearch;
+    @FXML private AppHeader appHeader;
     @FXML private Region mainImage;
     @FXML private Region thumbnail1;
     @FXML private Region thumbnail2;
@@ -101,9 +100,7 @@ public class BiddingDetailController extends NavigationController {
      */
     @FXML
     public void initialize() {
-        applyCurrentUserQuickInfo(lblCurrentUserQuickInfo);
-        setupNotificationButton(btnNotifications);
-        setupSearchButton(btnSearch);
+        appHeader.configure(this);
         registerForPushUpdates();
 
         if (btnPlaceBid != null) {
@@ -409,7 +406,7 @@ public class BiddingDetailController extends NavigationController {
 
             txtBidAmount.clear();
             loadAuctionData(currentAuctionId);
-            applyCurrentUserQuickInfo(lblCurrentUserQuickInfo);
+            appHeader.refreshWalletQuickInfo();
         });
         task.setOnFailed(event -> {
             loadingOverlay.hide();
@@ -520,12 +517,12 @@ public class BiddingDetailController extends NavigationController {
 
     @Override
     public void onNotificationPush(NotificationPushDTO payload) {
-        refreshNotificationBadge(btnNotifications);
+        appHeader.refreshNotificationBadge();
     }
 
     @Override
     public void onWalletUpdatePush(WalletUpdatePushDTO payload) {
-        applyCurrentUserQuickInfo(lblCurrentUserQuickInfo);
+        appHeader.refreshWalletQuickInfo();
     }
 
     /**

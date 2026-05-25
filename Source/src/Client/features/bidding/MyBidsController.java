@@ -1,6 +1,7 @@
 package Client.features.bidding;
 
 import Client.core.ui.NavigationController;
+import Client.components.AppHeader;
 import Client.components.LoadingOverlay;
 import Client.features.auth.SessionManager;
 import CommonClasses.dto.AuctionUpdatePushDTO;
@@ -52,9 +53,7 @@ public class MyBidsController extends NavigationController {
     @FXML private Label lblActiveBidsHeading;
     @FXML private Label lblCompletedHeading;
     @FXML private Label lblSellingHeading;
-    @FXML private Label lblCurrentUserQuickInfo;
-    @FXML private Button btnNotifications;
-    @FXML private Button btnSearch;
+    @FXML private AppHeader appHeader;
 
     // ========================== Service & State ==========================
 
@@ -70,9 +69,7 @@ public class MyBidsController extends NavigationController {
 
     @FXML
     public void initialize() {
-        applyCurrentUserQuickInfo(lblCurrentUserQuickInfo);
-        setupNotificationButton(btnNotifications);
-        setupSearchButton(btnSearch);
+        appHeader.configure(this);
 
         User user = SessionManager.getCurrentUser();
         if (user == null) {
@@ -548,12 +545,12 @@ public class MyBidsController extends NavigationController {
 
     @Override
     public void onNotificationPush(NotificationPushDTO payload) {
-        refreshNotificationBadge(btnNotifications);
+        appHeader.refreshNotificationBadge();
     }
 
     @Override
     public void onWalletUpdatePush(WalletUpdatePushDTO payload) {
-        applyCurrentUserQuickInfo(lblCurrentUserQuickInfo);
+        appHeader.refreshWalletQuickInfo();
     }
 
     @Override

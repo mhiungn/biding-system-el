@@ -1,6 +1,7 @@
 package Client.features.sell;
 
 import Client.core.ui.NavigationController;
+import Client.components.AppHeader;
 import Client.components.LoadingOverlay;
 import Client.features.auth.SessionManager;
 import CommonClasses.User;
@@ -62,9 +63,7 @@ public class SellItemController extends NavigationController {
     @FXML private Button btnAutoExtend;
     @FXML private Button btnReset;
     @FXML private Button btnListItem;
-    @FXML private Label lblCurrentUserQuickInfo;
-    @FXML private Button btnNotifications;
-    @FXML private Button btnSearch;
+    @FXML private AppHeader appHeader;
 
     private final SellItemService sellItemService = new SellItemService();
     private final LoadingOverlay loadingOverlay = new LoadingOverlay();
@@ -75,9 +74,7 @@ public class SellItemController extends NavigationController {
 
     @FXML
     public void initialize() {
-        applyCurrentUserQuickInfo(lblCurrentUserQuickInfo);
-        setupNotificationButton(btnNotifications);
-        setupSearchButton(btnSearch);
+        appHeader.configure(this);
 
         cmbCategory.getItems().setAll("ELECTRONICS", "ART", "VEHICLE");
         thumbnailSlots.clear();
