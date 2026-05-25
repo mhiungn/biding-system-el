@@ -112,20 +112,20 @@
                     <!-- PHOTO UPLOAD BOX -->
                     <VBox spacing="12" styleClass="upload-box">
 
-                        <Label styleClass="section-title" text="PHOTOS" />
+                        <Label styleClass="section-title" text="MAIN DISPLAY PICTURE" />
 
                         <!-- Main Drop Zone -->
                         <StackPane fx:id="mainDropZone" onMouseClicked="#handleMainUpload" styleClass="drop-zone">
                             <VBox alignment="CENTER" spacing="10">
-                                <Label styleClass="drop-zone-title" text="Drag &amp; Drop or Click to Upload" />
+                                <Label styleClass="drop-zone-title" text="Main picture required" />
                                 <Label styleClass="drop-zone-hint" text="JPG, PNG · Max 5 MB each" />
                             </VBox>
                         </StackPane>
 
                         <!-- Thumbnail Strip Label -->
-                        <Label styleClass="upload-sub-label" text="ADDITIONAL PICTURES (MAX 5)" />
+                        <Label styleClass="upload-sub-label" text="ADDITIONAL PICTURES (MAX 3)" />
 
-                        <!-- Thumbnail Strip: 1 Add Button + 5 slots -->
+                        <!-- Thumbnail Strip: 1 Add Button + 3 slots -->
                         <HBox fx:id="thumbnailRow" alignment="CENTER_LEFT" spacing="8" styleClass="thumbnail-row">
 
                             <!-- Add Photo Button -->
@@ -148,19 +148,9 @@
                                 <Region styleClass="thumb-placeholder" />
                             </StackPane>
 
-                            <!-- Slot 4 -->
-                            <StackPane fx:id="thumb4" styleClass="thumb-slot">
-                                <Region styleClass="thumb-placeholder" />
-                            </StackPane>
-
-                            <!-- Slot 5 -->
-                            <StackPane fx:id="thumb5" styleClass="thumb-slot">
-                                <Region styleClass="thumb-placeholder" />
-                            </StackPane>
-
                         </HBox>
 
-                        <Label styleClass="upload-tip" text="The main picture will be used as the cover image." />
+                        <Label styleClass="upload-tip" text="The main picture is required and will be used as the cover image." />
 
                     </VBox>
 

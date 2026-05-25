@@ -8,13 +8,16 @@ import Server.dao.ItemDAO;
 import Server.service.ImageStorageService;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.LinkedList;
 
 public class SellItemService {
     private static final String TIME_FIXED = "Time_Fixed";
     private static final String TIME_WITH_RESET = "Time_With_Reset";
+    private static final int MAX_GALLERY_IMAGES = 3;
 
     private final ItemDAO itemDAO;
     private final AuctionDAO auctionDAO;
@@ -98,10 +101,10 @@ public class SellItemService {
             throw new IllegalArgumentException("End date must be in the future.");
         }
         if (request.getMainImage() == null) {
-            throw new IllegalArgumentException("Main picture is required.");
+            throw new IllegalArgumentException("Please select a main picture for this item.");
         }
         imageStorageService.validateImageFile(request.getMainImage());
-        for (File file : request.getGalleryImages()) {
+        for (File file : selectGalleryImagesForSave(request)) {
             imageStorageService.validateImageFile(file);
         }
     }
@@ -116,9 +119,35 @@ public class SellItemService {
         String mainPath = imageStorageService.saveItemImage(itemId, request.getMainImage());
         items.saveItemImage(itemId, mainPath, true);
 
-        for (File file : request.getGalleryImages()) {
+        for (File file : selectGalleryImagesForSave(request)) {
             String imagePath = imageStorageService.saveItemImage(itemId, file);
             items.saveItemImage(itemId, imagePath, false);
+        }
+    }
+
+    List<File> selectGalleryImagesForSave(SellItemRequest request) {
+        List<File> selected = new ArrayList<>();
+        for (File file : request.getGalleryImages()) {
+            if (file == null || sameFile(request.getMainImage(), file)
+                    || selected.stream().anyMatch(existing -> sameFile(existing, file))) {
+                continue;
+            }
+            selected.add(file);
+            if (selected.size() >= MAX_GALLERY_IMAGES) {
+                break;
+            }
+        }
+        return selected;
+    }
+
+    private boolean sameFile(File first, File second) {
+        if (first == null || second == null) {
+            return false;
+        }
+        try {
+            return first.getCanonicalFile().equals(second.getCanonicalFile());
+        } catch (IOException e) {
+            return first.getAbsolutePath().equalsIgnoreCase(second.getAbsolutePath());
         }
     }
 }
