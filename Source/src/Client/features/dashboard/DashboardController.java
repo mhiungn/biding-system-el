@@ -206,7 +206,7 @@ public class DashboardController extends NavigationController {
         bidButton.setMaxWidth(Double.MAX_VALUE);
         bidButton.setOnAction(e -> {
             try {
-                switchToBiddingDetails(e, rowData.getAuctionId());
+                navigationService.openBiddingDetail(e, rowData.getAuctionId());
             } catch (Exception ex) {
                 ex.printStackTrace();
             }

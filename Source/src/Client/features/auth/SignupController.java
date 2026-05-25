@@ -53,7 +53,7 @@ public class SignupController extends NavigationController {
         }
         showError("Logged in successfully! Loading...");
         try {
-            switchToDashboard(event);
+            navigationService.openDashboard(event);
         } catch (Exception e) {
             showError("Signup succeeded, but cannot open dashboard.");
         }

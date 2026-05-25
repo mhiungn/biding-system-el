@@ -201,7 +201,7 @@ public class UserProfileController extends NavigationController {
     @FXML
     public void handleLogout(ActionEvent event) {
         try {
-            handleLogoutToLogin(event);
+            navigationService.logoutToLogin(event);
         } catch (IOException e) {
             System.err.println("[UserProfileController] Error navigating to login: " + e.getMessage());
         }

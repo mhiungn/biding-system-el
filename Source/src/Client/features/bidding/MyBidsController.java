@@ -436,7 +436,7 @@ public class MyBidsController extends NavigationController {
 
     private void openAuctionDetail(ActionEvent event, int auctionId) {
         try {
-            switchToBiddingDetails(event, auctionId);
+            navigationService.openBiddingDetail(event, auctionId);
         } catch (IOException e) {
             showError("Could not open auction detail.");
         }

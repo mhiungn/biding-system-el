@@ -175,7 +175,7 @@ public class SellItemController extends NavigationController {
             showInfo("Item listed", "Auction AUC-" + result.getAuctionId() + " has been added to the dashboard.");
             clearForm();
             try {
-                switchToDashboard(event);
+                navigationService.openDashboard(event);
             } catch (IOException e) {
                 showError("Navigation Error", "The item was listed, but the dashboard could not be opened.");
             }

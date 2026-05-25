@@ -71,7 +71,7 @@ public class LoginController extends NavigationController {
             return;
         }
         showError("Logged in successfully! Loading...");
-        switchToDashboard(event);
+        navigationService.openDashboard(event);
     }
 
     private void showError(String message) {

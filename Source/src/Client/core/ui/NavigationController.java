@@ -1,113 +1,54 @@
 package Client.core.ui;
 
-import Client.core.network.NetworkRequestClient;
 import Client.core.network.NetworkPushManager;
 import Client.core.network.PushEventListener;
-import Client.features.bidding.BiddingDetailController;
-import Client.features.auth.SessionManager;
-import javafx.application.Platform;
+import Client.navigation.NavigationService;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
-import javafx.stage.StageStyle;
-import javafx.stage.Window;
 
 import java.io.IOException;
 
 /**
- * Loads other feature FXML roots onto the current {@link Stage}.
+ * Compatibility base for FXML controllers that still expose navigation handlers.
  */
 public abstract class NavigationController extends BaseController implements PushEventListener {
-
-    private static final String CONTROLLER_KEY = "client.controller";
-
-    private static final String DASHBOARD = "/client/views/dashboard/dashboard.fxml";
-    private static final String BIDDING_DETAIL = "/client/views/bidding/bidding_detail.fxml";
-    private static final String MY_BIDS = "/client/views/bidding/mybids.fxml";
-    private static final String SIGNUP = "/client/views/auth/signup.fxml";
-    private static final String LOGIN = "/client/views/auth/login.fxml";
-    private static final String USER_PROFILE = "/client/views/profile/user_profile.fxml";
-    private static final String SELL_ITEM = "/client/views/sell/sell_item.fxml";
+    protected final NavigationService navigationService = new NavigationService();
 
     public void switchToDashboard(ActionEvent event) throws IOException {
-        switchScene(event, DASHBOARD);
+        navigationService.openDashboard(event);
     }
 
     public void switchToSellItem(ActionEvent event) throws IOException {
-        switchScene(event, SELL_ITEM);
+        navigationService.openSellItem(event);
     }
 
     public void switchToBiddingDetails(ActionEvent event) throws IOException {
-        switchScene(event, BIDDING_DETAIL);
+        navigationService.openBiddingDetail(event);
     }
 
     public void switchToBiddingDetails(ActionEvent event, int auctionId) throws IOException {
-        LoadedView loadedView = loadView(BIDDING_DETAIL);
-
-        BiddingDetailController controller = (BiddingDetailController) loadedView.controller;
-        Stage stage = getEventStage(event);
-        replaceCurrentScene(stage, loadedView.root);
-        controller.setAuctionId(auctionId);
+        navigationService.openBiddingDetail(event, auctionId);
     }
 
     public void switchToMyBids(ActionEvent event) throws IOException {
-        switchScene(event, MY_BIDS);
+        navigationService.openMyBids(event);
     }
 
     public void switchToSignup(ActionEvent event) throws IOException {
-        switchScene(event, SIGNUP);
+        navigationService.openSignup(event);
     }
 
     public void switchToLogin(ActionEvent event) throws IOException {
-        switchScene(event, LOGIN);
+        navigationService.openLogin(event);
     }
 
     @FXML
     public void openUserProfile(ActionEvent event) throws IOException {
-        LoadedView loadedView = loadView(USER_PROFILE);
-
-        Stage profileStage = new Stage();
-        profileStage.setTitle("User Profile");
-        profileStage.initOwner(getEventStage(event));
-        profileStage.initModality(Modality.WINDOW_MODAL);
-        profileStage.initStyle(StageStyle.UNDECORATED);
-        profileStage.setScene(new Scene(loadedView.root));
-        profileStage.setResizable(false);
-        profileStage.show();
-        profileStage.sizeToScene();
-        profileStage.centerOnScreen();
-    }
-
-    private void switchScene(ActionEvent event, String classpathFXML) throws IOException {
-        LoadedView loadedView = loadView(classpathFXML);
-        Stage stage = getEventStage(event);
-        replaceCurrentScene(stage, loadedView.root);
+        navigationService.openProfile(event);
     }
 
     protected void handleLogoutToLogin(ActionEvent event) throws IOException {
-        NetworkPushManager.getInstance().stop();
-        if (NetworkRequestClient.isEnabled()) {
-            NetworkRequestClient.logout();
-        } else {
-            SessionManager.clear();
-        }
-
-        Stage logoutStage = getEventStage(event);
-        Stage ownerStage = getOwnerStage(logoutStage);
-        Stage targetStage = ownerStage != null ? ownerStage : logoutStage;
-
-        LoadedView loadedView = loadView(LOGIN);
-        cleanupStageController(targetStage);
-        applyScene(targetStage, loadedView.root);
-
-        if (logoutStage != targetStage) {
-            logoutStage.close();
-        }
+        navigationService.logoutToLogin(event);
     }
 
     protected void registerForPushUpdates() {
@@ -118,66 +59,8 @@ public abstract class NavigationController extends BaseController implements Pus
         NetworkPushManager.getInstance().unregister(this);
     }
 
-    private void replaceCurrentScene(Stage stage, Parent root) {
-        onBeforeNavigate();
-        applyScene(stage, root);
-    }
-
     @Override
     protected void onBeforeNavigate() {
         unregisterFromPushUpdates();
-    }
-
-    private void applyScene(Stage stage, Parent root) {
-        Scene scene = new Scene(root);
-        stage.setScene(scene);
-        stage.sizeToScene();
-        if (!stage.isShowing()) {
-            stage.show();
-        }
-        stage.centerOnScreen();
-
-        Platform.runLater(() -> {
-            stage.sizeToScene();
-            stage.centerOnScreen();
-        });
-    }
-
-    private LoadedView loadView(String classpathFXML) throws IOException {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource(classpathFXML));
-        Parent root = loader.load();
-        Object controller = loader.getController();
-        root.getProperties().put(CONTROLLER_KEY, controller);
-        return new LoadedView(root, controller);
-    }
-
-    private Stage getEventStage(ActionEvent event) {
-        return (Stage) ((Node) event.getSource()).getScene().getWindow();
-    }
-
-    private Stage getOwnerStage(Stage stage) {
-        Window owner = stage.getOwner();
-        return owner instanceof Stage ? (Stage) owner : null;
-    }
-
-    private void cleanupStageController(Stage stage) {
-        if (stage == null || stage.getScene() == null || stage.getScene().getRoot() == null) {
-            return;
-        }
-
-        Object controller = stage.getScene().getRoot().getProperties().get(CONTROLLER_KEY);
-        if (controller instanceof BaseController) {
-            ((BaseController) controller).onBeforeNavigate();
-        }
-    }
-
-    private static final class LoadedView {
-        private final Parent root;
-        private final Object controller;
-
-        private LoadedView(Parent root, Object controller) {
-            this.root = root;
-            this.controller = controller;
-        }
     }
 }

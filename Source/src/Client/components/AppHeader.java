@@ -5,6 +5,7 @@ import Client.features.auth.SessionManager;
 import Client.features.notifications.NotificationClientService;
 import Client.features.profile.ProfileService;
 import Client.features.search.SearchService;
+import Client.navigation.NavigationService;
 import CommonClasses.User;
 import CommonClasses.dto.NotificationDTO;
 import CommonClasses.dto.WalletDTO;
@@ -31,6 +32,7 @@ public class AppHeader extends HBox {
     private final NotificationClientService notificationClientService = new NotificationClientService();
     private final SearchService searchService = new SearchService();
     private final ProfileService profileService = new ProfileService();
+    private final NavigationService navigationService = new NavigationService();
 
     private final Button dashboardButton = new Button("Browse Auctions");
     private final Button myBidsButton = new Button("My Bids");
@@ -40,7 +42,7 @@ public class AppHeader extends HBox {
     private final Button notificationsButton = new Button();
     private final Button profileButton = new Button();
 
-    private NavigationController owner;
+    private boolean configured;
     private String activePage;
 
     public AppHeader() {
@@ -48,8 +50,10 @@ public class AppHeader extends HBox {
     }
 
     public void configure(NavigationController owner) {
-        this.owner = owner;
-        wireActions();
+        if (!configured) {
+            wireActions();
+            configured = true;
+        }
         refreshWalletQuickInfo();
         refreshNotificationBadge();
     }
@@ -139,16 +143,16 @@ public class AppHeader extends HBox {
     }
 
     private void wireActions() {
-        dashboardButton.setOnAction(event -> navigate(event, () -> owner.switchToDashboard(event)));
-        myBidsButton.setOnAction(event -> navigate(event, () -> owner.switchToMyBids(event)));
-        sellItemButton.setOnAction(event -> navigate(event, () -> owner.switchToSellItem(event)));
+        dashboardButton.setOnAction(event -> navigate(event, () -> navigationService.openDashboard(event)));
+        myBidsButton.setOnAction(event -> navigate(event, () -> navigationService.openMyBids(event)));
+        sellItemButton.setOnAction(event -> navigate(event, () -> navigationService.openSellItem(event)));
         searchButton.setOnAction(event -> showSearchPopup());
         notificationsButton.setOnAction(event -> showNotificationPopup());
-        profileButton.setOnAction(event -> navigate(event, () -> owner.openUserProfile(event)));
+        profileButton.setOnAction(event -> navigate(event, () -> navigationService.openProfile(event)));
     }
 
     private void navigate(ActionEvent event, NavigationAction action) {
-        if (owner == null || action == null) {
+        if (action == null) {
             return;
         }
         try {
@@ -159,14 +163,13 @@ public class AppHeader extends HBox {
     }
 
     private void showSearchPopup() {
-        if (owner == null) {
-            return;
-        }
         HeaderSearchPopup popup = new HeaderSearchPopup(
                 searchService,
                 row -> {
                     try {
-                        owner.switchToBiddingDetails(new ActionEvent(searchButton, searchButton), row.getAuctionId());
+                        navigationService.openBiddingDetail(
+                                new ActionEvent(searchButton, searchButton),
+                                row.getAuctionId());
                     } catch (IOException e) {
                         System.err.println("[AppHeader] Cannot open search result: " + e.getMessage());
                     }
@@ -175,9 +178,6 @@ public class AppHeader extends HBox {
     }
 
     private void showNotificationPopup() {
-        if (owner == null) {
-            return;
-        }
         User currentUser = SessionManager.getCurrentUser();
         if (currentUser == null) {
             return;
@@ -193,14 +193,14 @@ public class AppHeader extends HBox {
 
     private void openNotificationTarget(NotificationDTO notification) {
         try {
-            ActionEvent event = new ActionEvent(notificationsButton, notificationsButton);
+                ActionEvent event = new ActionEvent(notificationsButton, notificationsButton);
             if (NotificationApplicationService.ACTION_AUCTION_DETAIL.equals(notification.getActionTarget())
                     && notification.getAuctionId() != null) {
-                owner.switchToBiddingDetails(event, notification.getAuctionId());
+                navigationService.openBiddingDetail(event, notification.getAuctionId());
                 return;
             }
             if (NotificationApplicationService.ACTION_MY_BIDS.equals(notification.getActionTarget())) {
-                owner.switchToMyBids(event);
+                navigationService.openMyBids(event);
             }
         } catch (IOException e) {
             System.err.println("[AppHeader] Cannot open notification target: " + e.getMessage());
