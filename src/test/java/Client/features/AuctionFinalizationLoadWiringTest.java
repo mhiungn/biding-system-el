@@ -1,4 +1,4 @@
-package Server.service;
+package Client.features;
 
 import CommonClasses.Items.Electronics;
 import CommonClasses.Items.Item;
@@ -15,6 +15,10 @@ import Server.dao.NotificationDAO;
 import Server.dao.TestDatabaseHelper;
 import Server.dao.UserDAO;
 import Server.dao.WalletDAO;
+import Server.service.AuctionFinalizationService;
+import Server.service.BiddingApplicationService;
+import Server.service.NotificationApplicationService;
+import Server.service.WalletApplicationService;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
