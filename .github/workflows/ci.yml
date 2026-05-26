@@ -1,0 +1,49 @@
+# CI Pipeline - Build & Test
+# Runs automatically on every push or Pull Request to main/test branches.
+# Uses H2 in-memory database for tests (no MySQL needed).
+
+name: CI
+
+on:
+  push:
+    branches: [ main, test ]
+  pull_request:
+    branches: [ main, test ]
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout the repo
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Set up JDK 25
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'oracle'
+          java-version: '25'
+          cache: 'maven'
+
+      # 3. Make Maven wrapper executable (Linux needs this)
+      - name: Make mvnw executable
+        run: chmod +x ./mvnw
+
+      # 4. Compile the project
+      - name: Compile
+        run: ./mvnw compile -B
+
+      # 5. Compile and run all unit tests
+      - name: Run Tests
+        run: ./mvnw test -B
+
+      # 6. Upload test reports if tests fail (helps debugging)
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
