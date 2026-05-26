@@ -1874,6 +1874,12 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
             return "ART";
         if (item instanceof Vehicle)
             return "VEHICLE";
+        if (item instanceof RealEstate)
+            return "REAL_ESTATE";
+        if (item instanceof Fashion)
+            return "FASHION";
+        if (item instanceof Collectibles)
+            return "COLLECTIBLES";
         return item.getClass().getSimpleName().toUpperCase();
     }
 
@@ -1918,6 +1924,15 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                 break;
             case "VEHICLE":
                 item = new Vehicle(startingPrice, name, description);
+                break;
+            case "REAL_ESTATE":
+                item = new RealEstate(startingPrice, name, description);
+                break;
+            case "FASHION":
+                item = new Fashion(startingPrice, name, description);
+                break;
+            case "COLLECTIBLES":
+                item = new Collectibles(startingPrice, name, description);
                 break;
             default:
                 throw new RuntimeException("Loại sản phẩm không xác định trong database: " + type);

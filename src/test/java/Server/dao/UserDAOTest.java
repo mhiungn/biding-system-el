@@ -321,7 +321,7 @@ public class UserDAOTest {
 
     @Test
     @Order(90)
-    @DisplayName("findByRole() - Lọc đúng user theo vai trò BIDDER")
+    @DisplayName("findByRole() - Lọc đúng user theo vai trò USER")
     void testFindByRole() {
         userDAO.save("b1", standardUser("b1", "p", "b1@m.com"));
         userDAO.save("b2", standardUser("b2", "p", "b2@m.com"));
