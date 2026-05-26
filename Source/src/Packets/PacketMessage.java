@@ -11,9 +11,11 @@ import java.io.Serializable;
  * </p>
  */
 public class PacketMessage implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private MessageType messageType;
     private Serializable payload;
+    private String authToken;
 
     /**
      * Constructs a new PacketMessage with the given type and payload.
@@ -22,8 +24,13 @@ public class PacketMessage implements Serializable {
      * @param payload     the data payload (must be Serializable)
      */
     public PacketMessage(MessageType messageType, Serializable payload) {
+        this(messageType, payload, null);
+    }
+
+    public PacketMessage(MessageType messageType, Serializable payload, String authToken) {
         this.messageType = messageType;
         this.payload = payload;
+        this.authToken = authToken;
     }
 
     /**
@@ -62,11 +69,20 @@ public class PacketMessage implements Serializable {
         this.payload = payload;
     }
 
+    public String getAuthToken() {
+        return authToken;
+    }
+
+    public void setAuthToken(String authToken) {
+        this.authToken = authToken;
+    }
+
     @Override
     public String toString() {
         return "PacketMessage{" +
                 "messageType=" + messageType +
                 ", payload=" + payload +
+                ", authTokenPresent=" + (authToken != null && !authToken.isBlank()) +
                 '}';
     }
 }

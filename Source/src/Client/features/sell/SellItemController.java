@@ -1,8 +1,11 @@
 package Client.features.sell;
 
 import Client.core.ui.NavigationController;
+import Client.components.AppHeader;
+import Client.components.LoadingOverlay;
 import Client.features.auth.SessionManager;
 import CommonClasses.User;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -39,7 +42,7 @@ import java.util.Optional;
 
 public class SellItemController extends NavigationController {
     private static final int MAX_DESCRIPTION_LENGTH = 500;
-    private static final int MAX_GALLERY_IMAGES = 5;
+    private static final int MAX_GALLERY_IMAGES = 3;
 
     @FXML private StackPane mainDropZone;
     @FXML private HBox thumbnailRow;
@@ -47,8 +50,6 @@ public class SellItemController extends NavigationController {
     @FXML private StackPane thumb1;
     @FXML private StackPane thumb2;
     @FXML private StackPane thumb3;
-    @FXML private StackPane thumb4;
-    @FXML private StackPane thumb5;
 
     @FXML private TextField txtItemName;
     @FXML private ComboBox<String> cmbCategory;
@@ -62,9 +63,10 @@ public class SellItemController extends NavigationController {
     @FXML private Button btnAutoExtend;
     @FXML private Button btnReset;
     @FXML private Button btnListItem;
-    @FXML private Label lblCurrentUserQuickInfo;
+    @FXML private AppHeader appHeader;
 
     private final SellItemService sellItemService = new SellItemService();
+    private final LoadingOverlay loadingOverlay = new LoadingOverlay();
     private final List<StackPane> thumbnailSlots = new ArrayList<>();
     private final List<File> galleryImages = new ArrayList<>();
     private File mainImage;
@@ -72,11 +74,11 @@ public class SellItemController extends NavigationController {
 
     @FXML
     public void initialize() {
-        applyCurrentUserQuickInfo(lblCurrentUserQuickInfo);
+        appHeader.configure(this);
 
         cmbCategory.getItems().setAll("ELECTRONICS", "ART", "VEHICLE", "REAL_ESTATE", "FASHION", "COLLECTIBLES");
         thumbnailSlots.clear();
-        thumbnailSlots.addAll(Arrays.asList(thumb1, thumb2, thumb3, thumb4, thumb5));
+        thumbnailSlots.addAll(Arrays.asList(thumb1, thumb2, thumb3));
 
         for (int i = 0; i < thumbnailSlots.size(); i++) {
             final int index = i;
@@ -100,14 +102,16 @@ public class SellItemController extends NavigationController {
             return;
         }
         mainImage = file;
+        removeDuplicateGalleryImages();
         renderMainDropZone();
+        renderThumbnails();
     }
 
     @FXML
     private void handleAddPhoto(MouseEvent event) {
         int remaining = MAX_GALLERY_IMAGES - galleryImages.size();
         if (remaining <= 0) {
-            showInfo("Photo limit reached", "You can add up to five additional pictures.");
+            showInfo("Photo limit reached", "You can add up to three additional pictures.");
             return;
         }
 
@@ -121,7 +125,7 @@ public class SellItemController extends NavigationController {
                 break;
             }
             if (isValidImage(file)) {
-                galleryImages.add(file);
+                addGalleryImage(file);
             }
         }
         renderThumbnails();
@@ -158,18 +162,35 @@ public class SellItemController extends NavigationController {
         }
 
         btnListItem.setDisable(true);
-        try {
-            SellItemResult result = sellItemService.listItem(request);
+        Task<SellItemResult> task = new Task<>() {
+            @Override
+            protected SellItemResult call() {
+                return sellItemService.listItem(request);
+            }
+        };
+        task.setOnSucceeded(taskEvent -> {
+            loadingOverlay.hide();
+            btnListItem.setDisable(false);
+            SellItemResult result = task.getValue();
             showInfo("Item listed", "Auction AUC-" + result.getAuctionId() + " has been added to the dashboard.");
             clearForm();
-            switchToDashboard(event);
-        } catch (IOException e) {
-            showError("Navigation Error", "The item was listed, but the dashboard could not be opened.");
-        } catch (RuntimeException e) {
-            showError("Listing Failed", e.getMessage());
-        } finally {
+            try {
+                navigationService.openDashboard(event);
+            } catch (IOException e) {
+                showError("Navigation Error", "The item was listed, but the dashboard could not be opened.");
+            }
+        });
+        task.setOnFailed(taskEvent -> {
+            loadingOverlay.hide();
             btnListItem.setDisable(false);
-        }
+            Throwable error = task.getException();
+            showError("Listing Failed", error == null ? "Could not list item." : error.getMessage());
+        });
+
+        loadingOverlay.show(btnListItem, "Listing item...");
+        Thread thread = new Thread(task, "sell-item-submit");
+        thread.setDaemon(true);
+        thread.start();
     }
 
     private SellItemRequest buildRequest() {
@@ -193,8 +214,11 @@ public class SellItemController extends NavigationController {
         request.setAuctionEndTime(parseEndDate());
         request.setMinimumBidIncrement(parseMoney(txtBidIncrement.getText(), "Minimum bid increment must be a valid number."));
         request.setAutoExtend(autoExtend);
+        if (mainImage == null) {
+            throw new IllegalArgumentException("Please select a main picture for this item.");
+        }
         request.setMainImage(mainImage);
-        request.getGalleryImages().addAll(galleryImages);
+        request.getGalleryImages().addAll(galleryImages.subList(0, Math.min(MAX_GALLERY_IMAGES, galleryImages.size())));
         return request;
     }
 
@@ -261,6 +285,7 @@ public class SellItemController extends NavigationController {
         }
         galleryImages.set(index, file);
         galleryImages.removeIf(item -> item == null);
+        removeDuplicateGalleryImages();
         renderThumbnails();
     }
 
@@ -333,7 +358,9 @@ public class SellItemController extends NavigationController {
                 File file = dragboard.getFiles().get(0);
                 if (isValidImage(file)) {
                     mainImage = file;
+                    removeDuplicateGalleryImages();
                     renderMainDropZone();
+                    renderThumbnails();
                     success = true;
                 }
             }
@@ -356,7 +383,7 @@ public class SellItemController extends NavigationController {
                         break;
                     }
                     if (isValidImage(file)) {
-                        galleryImages.add(file);
+                        addGalleryImage(file);
                         success = true;
                     }
                 }
@@ -386,6 +413,43 @@ public class SellItemController extends NavigationController {
         imageView.setFitWidth(400);
         imageView.setFitHeight(200);
         mainDropZone.getChildren().add(imageView);
+    }
+
+    private void addGalleryImage(File file) {
+        if (galleryImages.size() >= MAX_GALLERY_IMAGES || isDuplicateImage(file)) {
+            return;
+        }
+        galleryImages.add(file);
+    }
+
+    private void removeDuplicateGalleryImages() {
+        List<File> uniqueImages = new ArrayList<>();
+        for (File file : galleryImages) {
+            if (file != null && uniqueImages.stream().noneMatch(existing -> sameFile(existing, file))
+                    && !sameFile(mainImage, file)) {
+                uniqueImages.add(file);
+            }
+            if (uniqueImages.size() >= MAX_GALLERY_IMAGES) {
+                break;
+            }
+        }
+        galleryImages.clear();
+        galleryImages.addAll(uniqueImages);
+    }
+
+    private boolean isDuplicateImage(File file) {
+        return sameFile(mainImage, file) || galleryImages.stream().anyMatch(existing -> sameFile(existing, file));
+    }
+
+    private boolean sameFile(File first, File second) {
+        if (first == null || second == null) {
+            return false;
+        }
+        try {
+            return first.getCanonicalFile().equals(second.getCanonicalFile());
+        } catch (IOException e) {
+            return first.getAbsolutePath().equalsIgnoreCase(second.getAbsolutePath());
+        }
     }
 
     private void renderThumbnails() {

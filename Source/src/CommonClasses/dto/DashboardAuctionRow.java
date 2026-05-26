@@ -1,10 +1,15 @@
-package Server.dao;
+package CommonClasses.dto;
 
 import CommonClasses.Items.Item;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
-public class DashboardAuctionRow {
+public class DashboardAuctionRow implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private final int auctionId;
     private final String status;
     private final Date startTime;
@@ -12,6 +17,7 @@ public class DashboardAuctionRow {
     private final Item item;
     private final int bidCount;
     private final float minimumBidIncrement;
+    private final List<String> imagePaths;
 
     public DashboardAuctionRow(int auctionId, String status, Date startTime, Date endTime, Item item, int bidCount) {
         this(auctionId, status, startTime, endTime, item, bidCount, 1f);
@@ -19,6 +25,11 @@ public class DashboardAuctionRow {
 
     public DashboardAuctionRow(int auctionId, String status, Date startTime, Date endTime, Item item, int bidCount,
                                float minimumBidIncrement) {
+        this(auctionId, status, startTime, endTime, item, bidCount, minimumBidIncrement, new ArrayList<>());
+    }
+
+    public DashboardAuctionRow(int auctionId, String status, Date startTime, Date endTime, Item item, int bidCount,
+                               float minimumBidIncrement, List<String> imagePaths) {
         this.auctionId = auctionId;
         this.status = status;
         this.startTime = startTime;
@@ -26,6 +37,7 @@ public class DashboardAuctionRow {
         this.item = item;
         this.bidCount = bidCount;
         this.minimumBidIncrement = minimumBidIncrement > 0 ? minimumBidIncrement : 1f;
+        this.imagePaths = imagePaths == null ? new ArrayList<>() : new ArrayList<>(imagePaths);
     }
 
     public int getAuctionId() {
@@ -54,5 +66,9 @@ public class DashboardAuctionRow {
 
     public float getMinimumBidIncrement() {
         return minimumBidIncrement;
+    }
+
+    public List<String> getImagePaths() {
+        return new ArrayList<>(imagePaths);
     }
 }

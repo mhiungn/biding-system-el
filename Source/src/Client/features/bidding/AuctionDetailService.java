@@ -1,12 +1,20 @@
 package Client.features.bidding;
 
+import Client.core.network.NetworkRequestClient;
 import CommonClasses.Bid;
+import CommonClasses.dto.DashboardAuctionRow;
+import Packets.MessageType;
+import Packets.PacketMessage;
 import Server.dao.AuctionDAO;
-import Server.dao.DashboardAuctionRow;
+import Server.service.AuctionFinalizationService;
+import Server.service.BiddingApplicationService;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Service layer for the Bidding Detail screen.
@@ -24,7 +32,22 @@ public class AuctionDetailService {
      * @return DashboardAuctionRow with full detail, or null if not found
      */
     public DashboardAuctionRow loadAuctionDetail(int auctionId) {
+        if (NetworkRequestClient.isEnabled()) {
+            try {
+                PacketMessage response = NetworkRequestClient.request(
+                        MessageType.AUCTION_DETAIL_REQUEST, auctionId, MessageType.AUCTION_DETAIL_RESPONSE);
+                if (response.getPayload() instanceof DashboardAuctionRow) {
+                    return (DashboardAuctionRow) response.getPayload();
+                }
+                return null;
+            } catch (IOException e) {
+                System.err.println("[AuctionDetailService] Network detail unavailable, using DAO fallback: "
+                        + e.getMessage());
+            }
+        }
+
         try {
+            finalizeExpiredAuctions("auction detail load");
             return AuctionDAO.getInstance().findFullAuctionDetail(auctionId);
         } catch (Exception e) {
             System.err.println("[AuctionDetailService] Error loading auction detail: " + e.getMessage());
@@ -39,6 +62,20 @@ public class AuctionDetailService {
      * @return owner username, or "Unknown" on error
      */
     public String getAuctionOwner(int auctionId) {
+        if (NetworkRequestClient.isEnabled()) {
+            try {
+                PacketMessage response = NetworkRequestClient.request(
+                        MessageType.AUCTION_OWNER_REQUEST, auctionId, MessageType.AUCTION_OWNER_RESPONSE);
+                if (response.getPayload() instanceof String) {
+                    return (String) response.getPayload();
+                }
+                return "Unknown";
+            } catch (IOException e) {
+                System.err.println("[AuctionDetailService] Network owner unavailable, using DAO fallback: "
+                        + e.getMessage());
+            }
+        }
+
         try {
             String owner = AuctionDAO.getInstance().findAuctionOwner(auctionId);
             return owner != null ? owner : "Unknown";
@@ -55,6 +92,19 @@ public class AuctionDetailService {
      * @return list of Bid objects
      */
     public List<Bid> loadBidHistory(int auctionId) {
+        if (NetworkRequestClient.isEnabled()) {
+            try {
+                PacketMessage response = NetworkRequestClient.request(
+                        MessageType.BID_HISTORY_REQUEST, auctionId, MessageType.BID_HISTORY_RESPONSE);
+                if (response.getPayload() instanceof List<?>) {
+                    return (List<Bid>) response.getPayload();
+                }
+            } catch (IOException e) {
+                System.err.println("[AuctionDetailService] Network bid history unavailable, using DAO fallback: "
+                        + e.getMessage());
+            }
+        }
+
         try {
             return AuctionDAO.getInstance().getBidHistoryForAuction(auctionId);
         } catch (Exception e) {
@@ -70,6 +120,17 @@ public class AuctionDetailService {
      * @return username or null
      */
     public String getHighestBidder(int auctionId) {
+        if (NetworkRequestClient.isEnabled()) {
+            try {
+                PacketMessage response = NetworkRequestClient.request(
+                        MessageType.HIGHEST_BIDDER_REQUEST, auctionId, MessageType.HIGHEST_BIDDER_RESPONSE);
+                return response.getPayload() instanceof String ? (String) response.getPayload() : null;
+            } catch (IOException e) {
+                System.err.println("[AuctionDetailService] Network highest bidder unavailable, using DAO fallback: "
+                        + e.getMessage());
+            }
+        }
+
         try {
             return AuctionDAO.getInstance().getHighestBidderUsername(auctionId);
         } catch (Exception e) {
@@ -85,6 +146,19 @@ public class AuctionDetailService {
      * @return number of registered participants
      */
     public int getParticipantCount(int auctionId) {
+        if (NetworkRequestClient.isEnabled()) {
+            try {
+                PacketMessage response = NetworkRequestClient.request(
+                        MessageType.PARTICIPANT_COUNT_REQUEST, auctionId, MessageType.PARTICIPANT_COUNT_RESPONSE);
+                if (response.getPayload() instanceof Number) {
+                    return ((Number) response.getPayload()).intValue();
+                }
+            } catch (IOException e) {
+                System.err.println("[AuctionDetailService] Network participant count unavailable, using DAO fallback: "
+                        + e.getMessage());
+            }
+        }
+
         try {
             AuctionDAO dao = AuctionDAO.getInstance();
             var snapshot = dao.findById(String.valueOf(auctionId));
@@ -104,31 +178,30 @@ public class AuctionDetailService {
      * @return true if the bid was accepted
      */
     public boolean placeBid(int auctionId, String username, float amount) {
+        if (NetworkRequestClient.isEnabled()) {
+            try {
+                Map<String, Object> payload = new HashMap<>();
+                payload.put("auctionId", auctionId);
+                payload.put("bid", amount);
+                PacketMessage response = NetworkRequestClient.request(
+                        MessageType.PLACE_BID,
+                        (HashMap<String, Object>) payload,
+                        MessageType.PLACE_BID);
+                if (response.getPayload() instanceof Boolean) {
+                    return (Boolean) response.getPayload();
+                }
+            } catch (IOException e) {
+                if (NetworkRequestClient.isAuthenticationFailure(e)) {
+                    System.err.println("[AuctionDetailService] Network bid rejected: " + e.getMessage());
+                    return false;
+                }
+                System.err.println("[AuctionDetailService] Network bid unavailable, using DAO fallback: "
+                        + e.getMessage());
+            }
+        }
+
         try {
-            if (username == null || username.isBlank() || amount <= 0) {
-                return false;
-            }
-
-            AuctionDAO dao = AuctionDAO.getInstance();
-            String id = String.valueOf(auctionId);
-            if (!dao.exists(id)) {
-                return false;
-            }
-
-            DashboardAuctionRow detail = dao.findFullAuctionDetail(auctionId);
-            if (detail == null || detail.getItem() == null || isEnded(detail)) {
-                return false;
-            }
-
-            float currentPrice = detail.getItem().getCurrentHighestPrice();
-            if (amount < currentPrice + detail.getMinimumBidIncrement()) {
-                return false;
-            }
-
-            dao.addBid(id, new Bid(new Date(), amount, username));
-            dao.addParticipant(id, username);
-            applyAutoExtendIfNeeded(dao, id);
-            return true;
+            return BiddingApplicationService.getInstance().placeBid(username, auctionId, amount);
         } catch (Exception e) {
             System.err.println("[AuctionDetailService] Error placing bid: " + e.getMessage());
             return false;
@@ -150,5 +223,9 @@ public class AuctionDetailService {
 
     private boolean isEnded(DashboardAuctionRow detail) {
         return detail.getEndTime() == null || detail.getEndTime().getTime() <= System.currentTimeMillis();
+    }
+
+    private void finalizeExpiredAuctions(String trigger) {
+        AuctionFinalizationService.getInstance().finalizeEndedAuctionsSafely(trigger);
     }
 }

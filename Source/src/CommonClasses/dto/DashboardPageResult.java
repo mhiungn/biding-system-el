@@ -1,10 +1,11 @@
-package Client.features.dashboard;
+package CommonClasses.dto;
 
-import Server.dao.DashboardAuctionRow;
-
+import java.io.Serializable;
 import java.util.List;
 
-public class DashboardPageResult {
+public class DashboardPageResult implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private final List<DashboardAuctionRow> rows;
     private final int totalItems;
 

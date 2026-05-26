@@ -32,7 +32,7 @@ public class ClientApp extends Application {
             stage.setResizable(false);
             Image icon = new Image("/client/images/logo.png");
             stage.getIcons().add(icon);
-            stage.setTitle("Giấu đá trực tuyến");
+            stage.setTitle("Bidify Online Auction");
 
             stage.setScene(scene);
             stage.centerOnScreen();

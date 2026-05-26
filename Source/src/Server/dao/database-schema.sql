@@ -10,6 +10,7 @@
 -- COLLATE utf8mb4_unicode_ci;
 
 USE blbsc98ma5stojowrgcs;
+SET SQL_SAFE_UPDATES = 0;
 
 -- ============================================================================
 -- Table 1: users - Quản lý người dùng (Bidder, Seller, Admin)
@@ -25,6 +26,79 @@ CREATE TABLE IF NOT EXISTS users (
     INDEX idx_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Bảng quản lý người dùng hệ thống';
+
+-- ============================================================================
+-- Table 1b: user_wallets - User wallet balances
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS user_wallets (
+    username VARCHAR(50) PRIMARY KEY COMMENT 'Wallet owner username',
+    balance BIGINT NOT NULL DEFAULT 100000 COMMENT 'Total wallet balance',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='User wallet balances';
+
+CREATE TABLE IF NOT EXISTS wallet_transactions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    type VARCHAR(32) NOT NULL COMMENT 'INITIAL_CREDIT, DEPOSIT, HOLD, HOLD_RELEASE, SPENT, REFUND',
+    amount BIGINT NOT NULL,
+    auction_id INT NULL,
+    bid_id BIGINT NULL,
+    note VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE,
+    INDEX idx_wallet_tx_user (username),
+    INDEX idx_wallet_tx_type (type),
+    INDEX idx_wallet_tx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Wallet transaction ledger';
+
+CREATE TABLE IF NOT EXISTS wallet_holds (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    auction_id INT NOT NULL,
+    amount BIGINT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE KEY uk_wallet_hold_user_auction (username, auction_id),
+    FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE,
+    INDEX idx_wallet_hold_user (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Active wallet holds for current highest bids';
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    auction_id INT NULL,
+    type VARCHAR(64) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    action_target VARCHAR(64) NOT NULL,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE,
+    INDEX idx_notification_user (username),
+    INDEX idx_notification_unread (username, is_read),
+    INDEX idx_notification_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Persisted user notifications';
+
+INSERT INTO user_wallets (username, balance)
+SELECT username, 100000
+FROM users
+WHERE username NOT IN (SELECT username FROM user_wallets);
+
+INSERT INTO wallet_transactions (username, type, amount, note)
+SELECT username, 'INITIAL_CREDIT', 100000, 'Initial wallet credit'
+FROM users
+WHERE username NOT IN (
+    SELECT username FROM wallet_transactions WHERE type = 'INITIAL_CREDIT'
+);
 
 -- ============================================================================
 -- Table 2: items - Quản lý sản phẩm đấu giá
@@ -142,6 +216,8 @@ CREATE TABLE IF NOT EXISTS bid_transactions (
     INDEX idx_successful (successful)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Bảng ghi nhận chi tiết tất cả các giao dịch bid';
+
+SET SQL_SAFE_UPDATES = 1;
 
 SELECT * FROM items LIMIT 10;
 SELECT * FROM users LIMIT 10;

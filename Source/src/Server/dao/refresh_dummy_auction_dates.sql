@@ -8,7 +8,7 @@
 -- Adjust the database name if your local schema differs.
 
 USE blbsc98ma5stojowrgcs;
-
+SET SQL_SAFE_UPDATES = 0;
 START TRANSACTION;
 
 UPDATE auction_snapshots
@@ -27,6 +27,7 @@ SET
 WHERE s.auction_id IS NOT NULL;
 
 COMMIT;
+SET SQL_SAFE_UPDATES = 1;
 
 -- Verification:
 -- SELECT

@@ -4,10 +4,14 @@ import CommonClasses.Bid;
 import CommonClasses.User;
 import CommonClasses.Items.Electronics;
 import CommonClasses.Items.Item;
+import CommonClasses.dto.DashboardAuctionRow;
+import CommonClasses.dto.SellerAuctionRowDTO;
 
 import org.junit.jupiter.api.*;
 
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -64,6 +68,9 @@ public class AuctionDAOTest {
 
         User bidder1 = new User("bidder1", "pass", "b1@mail.com", "USER");
         userDAO.save("bidder1", bidder1);
+
+        User bidder2 = new User("bidder2", "pass", "b2@mail.com", "USER");
+        userDAO.save("bidder2", bidder2);
 
         // Dùng Electronics (concrete class) thay vì Item (abstract)
         testItem = new Electronics(1000f, "Laptop Gaming", "New");
@@ -369,6 +376,189 @@ public class AuctionDAOTest {
         List<AuctionSnapshot> list = auctionDAO.findByClientOwner("nobody");
         assertNotNull(list);
         assertTrue(list.isEmpty(), "Phải trả về rỗng khi seller không tồn tại");
+    }
+
+    @Test
+    @Order(72)
+    @DisplayName("findSellerAuctionRows() - returns seller auction rows")
+    void testFindSellerAuctionRows() {
+        AuctionSnapshot snapshot = createSampleSnapshot(21);
+        auctionDAO.save("21", snapshot);
+        auctionDAO.addBid("21", new Bid(new Date(), 1200f, "bidder1"));
+
+        List<SellerAuctionRowDTO> rows = auctionDAO.findSellerAuctionRows("seller_john");
+
+        assertEquals(1, rows.size());
+        SellerAuctionRowDTO row = rows.get(0);
+        assertEquals(21, row.getAuctionId());
+        assertEquals("Laptop Gaming", row.getItemName());
+        assertEquals(1200f, row.getCurrentPrice(), 0.01f);
+        assertEquals(1, row.getBidCount());
+        assertEquals("bidder1", row.getHighestBidderUsername());
+    }
+
+    @Test
+    @Order(73)
+    @DisplayName("countSoldByUser() - counts finished seller auctions with bids")
+    void testCountSoldByUser() {
+        AuctionSnapshot snapshot = createSampleSnapshot(22);
+        snapshot.setStatus("FINISHED");
+        auctionDAO.save("22", snapshot);
+        auctionDAO.addBid("22", new Bid(new Date(), 1200f, "bidder1"));
+
+        assertEquals(1, auctionDAO.countSoldByUser("seller_john"));
+    }
+
+    @Test
+    @Order(74)
+    @DisplayName("searchAuctionsByName() - finds active auctions by partial item name")
+    void testSearchAuctionsByName() {
+        Item phone = new Electronics(500f, "Smart Phone", "New phone");
+        itemDAO.save("item-phone", phone);
+        AuctionSnapshot phoneAuction = new AuctionSnapshot(
+                23,
+                "seller_john",
+                new Date(),
+                new Date(System.currentTimeMillis() + 86400000),
+                "Time_Fixed",
+                "OPEN",
+                phone,
+                new LinkedList<>(),
+                new ArrayList<>(),
+                false);
+        auctionDAO.save("23", phoneAuction);
+        auctionDAO.save("24", createSampleSnapshot(24));
+
+        List<DashboardAuctionRow> rows = auctionDAO.searchAuctionsByName("phone", 10);
+
+        assertEquals(1, rows.size());
+        assertEquals(23, rows.get(0).getAuctionId());
+        assertEquals("Smart Phone", rows.get(0).getItem().getName());
+    }
+
+    @Test
+    @Order(75)
+    @DisplayName("searchAuctionsByName() - still returns auctions when image lookup fails")
+    void testSearchAuctionsByNameToleratesImageLookupFailure() throws SQLException {
+        Item phone = new Electronics(500f, "Smart Phone", "New phone");
+        itemDAO.save("item-phone", phone);
+        AuctionSnapshot phoneAuction = new AuctionSnapshot(
+                123,
+                "seller_john",
+                new Date(),
+                new Date(System.currentTimeMillis() + 86400000),
+                "Time_Fixed",
+                "OPEN",
+                phone,
+                new LinkedList<>(),
+                new ArrayList<>(),
+                false);
+        auctionDAO.save("123", phoneAuction);
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.execute("DROP TABLE item_images");
+        }
+
+        try {
+            List<DashboardAuctionRow> rows = auctionDAO.searchAuctionsByName("phone", 10);
+
+            assertEquals(1, rows.size());
+            assertEquals(123, rows.get(0).getAuctionId());
+            assertTrue(rows.get(0).getImagePaths().isEmpty());
+        } finally {
+            TestDatabaseHelper.createAllTables();
+        }
+    }
+
+    @Test
+    @Order(76)
+    @DisplayName("findExpiredOpenRunningAuctions() - returns only expired OPEN/RUNNING auctions")
+    void testFindExpiredOpenRunningAuctions() {
+        AuctionSnapshot expiredOpen = createSampleSnapshot(25);
+        expiredOpen.setTerminateAt(new Date(System.currentTimeMillis() - 60_000L));
+        expiredOpen.setStatus("OPEN");
+        auctionDAO.save("25", expiredOpen);
+
+        AuctionSnapshot expiredRunning = createSampleSnapshot(26);
+        expiredRunning.setTerminateAt(new Date(System.currentTimeMillis() - 30_000L));
+        expiredRunning.setStatus("RUNNING");
+        auctionDAO.save("26", expiredRunning);
+
+        AuctionSnapshot futureOpen = createSampleSnapshot(27);
+        futureOpen.setTerminateAt(new Date(System.currentTimeMillis() + 60_000L));
+        futureOpen.setStatus("OPEN");
+        auctionDAO.save("27", futureOpen);
+
+        AuctionSnapshot expiredFinished = createSampleSnapshot(28);
+        expiredFinished.setTerminateAt(new Date(System.currentTimeMillis() - 60_000L));
+        expiredFinished.setStatus("FINISHED");
+        auctionDAO.save("28", expiredFinished);
+
+        List<Integer> ids = auctionDAO.findExpiredOpenRunningAuctions().stream()
+                .map(AuctionSnapshot::getAuctionId)
+                .toList();
+
+        assertEquals(List.of(25, 26), ids);
+    }
+
+    @Test
+    @Order(76)
+    @DisplayName("getHighestBidForAuction() and hasBids() - handles bid and no-bid auctions")
+    void testHighestBidAndNoBidSupport() {
+        auctionDAO.save("29", createSampleSnapshot(29));
+
+        assertFalse(auctionDAO.hasBids(29));
+        assertNull(auctionDAO.getHighestBidForAuction(29));
+
+        auctionDAO.addBid("29", new Bid(new Date(), 1100f, "bidder1"));
+        auctionDAO.addBid("29", new Bid(new Date(), 1250f, "bidder2"));
+
+        assertTrue(auctionDAO.hasBids(29));
+        Bid highest = auctionDAO.getHighestBidForAuction(29);
+        assertNotNull(highest);
+        assertEquals("bidder2", highest.getBidderUsername());
+        assertEquals(1250f, highest.getBid(), 0.01f);
+    }
+
+    @Test
+    @Order(77)
+    @DisplayName("findLosingBiddersForAuction() - excludes current winner")
+    void testFindLosingBiddersForAuction() {
+        auctionDAO.save("30", createSampleSnapshot(30));
+
+        auctionDAO.addBid("30", new Bid(new Date(), 1100f, "bidder1"));
+        auctionDAO.addBid("30", new Bid(new Date(), 1200f, "bidder2"));
+        auctionDAO.addBid("30", new Bid(new Date(), 1300f, "bidder1"));
+
+        List<String> losingBidders = auctionDAO.findLosingBiddersForAuction(30);
+
+        assertEquals(List.of("bidder2"), losingBidders);
+    }
+
+    @Test
+    @Order(78)
+    @DisplayName("findLosingParticipantsForAuction() - excludes current winner")
+    void testFindLosingParticipantsForAuction() {
+        auctionDAO.save("31", createSampleSnapshot(31));
+        auctionDAO.addParticipant("31", "bidder1");
+        auctionDAO.addParticipant("31", "bidder2");
+        auctionDAO.addBid("31", new Bid(new Date(), 1100f, "bidder1"));
+
+        List<String> losingParticipants = auctionDAO.findLosingParticipantsForAuction(31);
+
+        assertEquals(List.of("bidder2"), losingParticipants);
+    }
+
+    @Test
+    @Order(79)
+    @DisplayName("markAuctionFinished() - marks auction FINISHED")
+    void testMarkAuctionFinished() {
+        auctionDAO.save("32", createSampleSnapshot(32));
+
+        assertTrue(auctionDAO.markAuctionFinished(32));
+
+        assertEquals("FINISHED", auctionDAO.findById("32").getStatus());
     }
 
     // ========================== Test findAllAsMap() ==========================

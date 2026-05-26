@@ -1,8 +1,17 @@
 package Client.features.dashboard;
 
 import Client.core.ui.NavigationController;
+import Client.components.AppHeader;
+import Client.components.LoadingOverlay;
+import CommonClasses.dto.AuctionUpdatePushDTO;
+import CommonClasses.dto.DashboardAuctionRow;
+import CommonClasses.dto.DashboardPageResult;
+import CommonClasses.dto.DashboardStats;
+import CommonClasses.dto.NotificationPushDTO;
+import CommonClasses.dto.WalletUpdatePushDTO;
 import CommonClasses.Items.Item;
-import Server.dao.DashboardAuctionRow;
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
@@ -16,6 +25,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
+import java.nio.file.Path;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -31,13 +41,14 @@ public class DashboardController extends NavigationController {
     @FXML private Label lblActiveAuctions;
     @FXML private Label lblEndingToday;
     @FXML private Label lblTotalBids;
-    @FXML private Label lblCurrentUserQuickInfo;
+    @FXML private AppHeader appHeader;
     @FXML private ComboBox<String> categoryFilter;
     @FXML private ComboBox<String> sortFilter;
     @FXML private ComboBox<String> priceRangeFilter;
 
     private static final int PRICE_GAP = 500_000;
     private final DashboardService dashboardService = new DashboardService();
+    private final LoadingOverlay loadingOverlay = new LoadingOverlay();
     private List<DashboardAuctionRow> currentPageRows;
     private int currentPage = 0;
     private int totalItems = 0;
@@ -56,11 +67,14 @@ public class DashboardController extends NavigationController {
 
     @FXML
     public void initialize() {
-        applyCurrentUserQuickInfo(lblCurrentUserQuickInfo);
+        appHeader.configure(this);
+        registerForPushUpdates();
         setupFilters();
         setupPaginationButtons();
-        refreshStats();
-        showPage(0);
+        Platform.runLater(() -> {
+            refreshStats();
+            showPage(0);
+        });
     }
 
     private void reloadFromFilters() {
@@ -71,21 +85,49 @@ public class DashboardController extends NavigationController {
     }
 
     public void showPage(int pageNumber) {
-        DashboardPageResult result = dashboardService.loadAuctionPage(
-                pageNumber, selectedCategory, endingSoonOnly, selectedMinPrice, selectedMaxPrice
-        );
-        this.currentPage = Math.max(pageNumber, 0);
+        int requestedPage = Math.max(pageNumber, 0);
+        String category = selectedCategory;
+        boolean endingSoon = endingSoonOnly;
+        Float minPrice = selectedMinPrice;
+        Float maxPrice = selectedMaxPrice;
+
+        Task<PageLoad> task = new Task<>() {
+            @Override
+            protected PageLoad call() {
+                DashboardPageResult result = dashboardService.loadAuctionPage(
+                        requestedPage, category, endingSoon, minPrice, maxPrice);
+                int loadedPage = requestedPage;
+                int pages = (int) Math.ceil((double) result.getTotalItems() / DashboardService.PAGE_SIZE);
+                if (pages > 0 && loadedPage >= pages) {
+                    loadedPage = pages - 1;
+                    result = dashboardService.loadAuctionPage(loadedPage, category, endingSoon, minPrice, maxPrice);
+                }
+                return new PageLoad(loadedPage, result);
+            }
+        };
+        task.setOnSucceeded(event -> {
+            loadingOverlay.hide();
+            applyPageLoad(task.getValue());
+        });
+        task.setOnFailed(event -> {
+            loadingOverlay.hide();
+            showError("Dashboard could not be loaded.");
+        });
+
+        loadingOverlay.show(auctionCardsGrid, "Loading auctions...");
+        Thread thread = new Thread(task, "dashboard-page-load");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void applyPageLoad(PageLoad pageLoad) {
+        DashboardPageResult result = pageLoad.result;
+        this.currentPage = pageLoad.page;
         this.currentPageRows = result.getRows();
         this.totalItems = result.getTotalItems();
         this.totalPages = (int) Math.ceil((double) totalItems / DashboardService.PAGE_SIZE);
         if (totalPages == 0) {
             this.currentPage = 0;
-        } else if (currentPage >= totalPages) {
-            this.currentPage = totalPages - 1;
-            result = dashboardService.loadAuctionPage(
-                    this.currentPage, selectedCategory, endingSoonOnly, selectedMinPrice, selectedMaxPrice
-            );
-            this.currentPageRows = result.getRows();
         }
         loadAuctionCards(currentPageRows);
         updatePaginationUi();
@@ -120,6 +162,7 @@ public class DashboardController extends NavigationController {
 
         Region image = new Region();
         image.getStyleClass().add("card-image");
+        applyImageBackground(image, firstImagePath(rowData));
 
         VBox content = new VBox(5);
         content.getStyleClass().add("card-content");
@@ -163,7 +206,7 @@ public class DashboardController extends NavigationController {
         bidButton.setMaxWidth(Double.MAX_VALUE);
         bidButton.setOnAction(e -> {
             try {
-                switchToBiddingDetails(e, rowData.getAuctionId());
+                navigationService.openBiddingDetail(e, rowData.getAuctionId());
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
@@ -201,7 +244,7 @@ public class DashboardController extends NavigationController {
                     setText(LABEL_CATEGORY);
                 } else {
                     setText(item);
-                    //LABEL_CATEGORY + " · " + (display choice)
+                    // LABEL_CATEGORY + " - " + (display choice)
                 }
             }
         });
@@ -279,7 +322,7 @@ public class DashboardController extends NavigationController {
                 if (empty || item == null || "Any".equalsIgnoreCase(item)) {
                     setText(LABEL_PRICE_RANGE);
                 } else {
-                    setText(LABEL_PRICE_RANGE + " · " + item);
+                    setText(LABEL_PRICE_RANGE + " - " + item);
                 }
             }
         });
@@ -402,6 +445,22 @@ public class DashboardController extends NavigationController {
         }
     }
 
+    @Override
+    public void onAuctionUpdatePush(AuctionUpdatePushDTO payload) {
+        refreshStats();
+        showPage(currentPage);
+    }
+
+    @Override
+    public void onNotificationPush(NotificationPushDTO payload) {
+        appHeader.refreshNotificationBadge();
+    }
+
+    @Override
+    public void onWalletUpdatePush(WalletUpdatePushDTO payload) {
+        appHeader.refreshWalletQuickInfo();
+    }
+
     private String formatCurrency(float amount) {
         return String.format("%,.0f VND", amount).replace(",", ".");
     }
@@ -422,6 +481,42 @@ public class DashboardController extends NavigationController {
 
         long hours = totalMinutes / 60;
         return hours == 1 ? "1 hour left" : hours + " hours left";
+    }
+
+    private String firstImagePath(DashboardAuctionRow rowData) {
+        List<String> imagePaths = rowData.getImagePaths();
+        return imagePaths.isEmpty() ? null : imagePaths.get(0);
+    }
+
+    private void applyImageBackground(Region region, String path) {
+        if (region == null || path == null || path.isBlank()) {
+            return;
+        }
+        region.setStyle("-fx-background-image: url(\"" + toCssImageUrl(path) + "\"); "
+                + "-fx-background-size: cover; -fx-background-position: center;");
+    }
+
+    private String toCssImageUrl(String path) {
+        if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("file:")) {
+            return path;
+        }
+        return Path.of(path).toUri().toString();
+    }
+
+    private void showError(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR, message, ButtonType.OK);
+        alert.setHeaderText(null);
+        alert.showAndWait();
+    }
+
+    private static final class PageLoad {
+        private final int page;
+        private final DashboardPageResult result;
+
+        private PageLoad(int page, DashboardPageResult result) {
+            this.page = page;
+            this.result = result;
+        }
     }
 
     @Override

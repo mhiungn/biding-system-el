@@ -1,6 +1,10 @@
-package Client.features.dashboard;
+package CommonClasses.dto;
 
-public class DashboardStats {
+import java.io.Serializable;
+
+public class DashboardStats implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private final int activeAuctions;
     private final int endingToday;
     private final int totalBids;

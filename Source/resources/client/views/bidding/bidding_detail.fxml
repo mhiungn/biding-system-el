@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import Client.components.AppHeader?>
 <?import java.lang.String?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
@@ -50,41 +51,7 @@
         <VBox maxWidth="960" minWidth="960" prefWidth="960" styleClass="main-container">
 
             <!-- HEADER -->
-            <HBox alignment="CENTER_LEFT" spacing="20" styleClass="header">
-                <HBox alignment="CENTER_LEFT" spacing="10" HBox.hgrow="ALWAYS">
-                    <Region minHeight="40" minWidth="40" prefHeight="40" prefWidth="40" styleClass="logo" />
-                    <Label styleClass="app-title" text="Bidify" />
-                </HBox>
-
-                <HBox alignment="CENTER" spacing="8" HBox.hgrow="ALWAYS">
-                    <Button fx:id="btnBrowseAuctions" onAction="#switchToDashboard" styleClass="nav-button" text="Browse Auctions" />
-                    <Button fx:id="btnMyBids" onAction="#switchToMyBids" styleClass="nav-button" text="My Bids" />
-                    <Button fx:id="btnSellItem" styleClass="nav-button" text="Sell Item" />
-                </HBox>
-
-                <HBox alignment="CENTER_RIGHT" spacing="8">
-                    <Label fx:id="lblCurrentUserQuickInfo" styleClass="auth-footer-muted" text="Guest" />
-                    <Button fx:id="btnSearch" styleClass="icon-button">
-                        <graphic>
-                            <Region styleClass="search-icon" />
-                        </graphic>
-                    </Button>
-                    <Button fx:id="btnNotifications" styleClass="icon-button-badge">
-                        <graphic>
-                            <Region styleClass="notification-icon" />
-                        </graphic>
-                    </Button>
-                    <Button fx:id="btnUserProfile" onAction="#openUserProfile" styleClass="icon-button">
-                        <graphic>
-                            <ImageView fitWidth="24" fitHeight="24" preserveRatio="true">
-                                <image>
-                                    <Image url="@/client/images/user.png" />
-                                </image>
-                            </ImageView>
-                        </graphic>
-                    </Button>
-                </HBox>
-            </HBox>
+            <AppHeader fx:id="appHeader" activePage="DETAIL" />
 
             <!-- Quay lai trang chu -->
             <HBox styleClass="back-section">
@@ -133,16 +100,16 @@
                         <Label styleClass="section-title" text="SPECIFICATIONS" />
                         <GridPane hgap="20" styleClass="specs-grid" vgap="12">
                             <Label styleClass="spec-label" text="Condition:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-                            <Label fx:id="lblCondition" styleClass="spec-value" text="—" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                            <Label fx:id="lblCondition" styleClass="spec-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
                             <Label styleClass="spec-label" text="Category:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                            <Label fx:id="lblCategory" styleClass="spec-value" text="—" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                            <Label fx:id="lblCategory" styleClass="spec-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
                             <Label styleClass="spec-label" text="Location:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-                            <Label fx:id="lblLocation" styleClass="spec-value" text="—" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                            <Label fx:id="lblLocation" styleClass="spec-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
                             <Label styleClass="spec-label" text="Item ID:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
-                            <Label fx:id="lblItemId" styleClass="spec-value" text="—" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                            <Label fx:id="lblItemId" styleClass="spec-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="3" />
                             <columnConstraints>
                                 <ColumnConstraints />
                                 <ColumnConstraints />
@@ -208,7 +175,7 @@
                     <!-- PLACE YOUR BID BOX -->
                     <VBox styleClass="place-bid-box">
                         <Label styleClass="place-bid-label" text="PLACE YOUR BID" />
-                        <Label fx:id="lblMinBid" styleClass="min-bid-notice" text="Minimum bid: —" />
+                        <Label fx:id="lblMinBid" styleClass="min-bid-notice" text="Minimum bid: -" />
                         <TextField fx:id="txtBidAmount" promptText="Enter your bid amount" styleClass="bid-input" />
                         <Button fx:id="btnPlaceBid" maxWidth="Infinity" styleClass="place-bid-button" text="PLACE BID" />
                         <Button fx:id="btnAddWatchlist" maxWidth="Infinity" styleClass="watchlist-button" text="ADD TO WATCHLIST" />

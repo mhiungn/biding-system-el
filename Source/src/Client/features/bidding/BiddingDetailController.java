@@ -1,11 +1,17 @@
 package Client.features.bidding;
 
 import Client.core.ui.NavigationController;
+import Client.components.AppHeader;
+import Client.components.LoadingOverlay;
 import Client.features.auth.SessionManager;
 import CommonClasses.Bid;
+import CommonClasses.dto.AuctionUpdatePushDTO;
+import CommonClasses.dto.DashboardAuctionRow;
 import CommonClasses.User;
-import Server.dao.DashboardAuctionRow;
+import CommonClasses.dto.NotificationPushDTO;
+import CommonClasses.dto.WalletUpdatePushDTO;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
@@ -18,6 +24,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
+import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.util.Date;
 import java.util.List;
@@ -31,7 +38,7 @@ import java.util.TimerTask;
  * <p>
  * Loads auction data from {@link AuctionDetailService} and populates FXML
  * fields. Manages a countdown timer and dynamically builds bid history.
- * When NetworkClient integration is ready, only the service layer changes —
+ * When NetworkClient integration is ready, only the service layer changes -
  * this controller stays the same.
  * </p>
  */
@@ -60,7 +67,12 @@ public class BiddingDetailController extends NavigationController {
     @FXML private Label lblMinBid;
     @FXML private TextField txtBidAmount;
     @FXML private Button btnPlaceBid;
-    @FXML private Label lblCurrentUserQuickInfo;
+    @FXML private AppHeader appHeader;
+    @FXML private Region mainImage;
+    @FXML private Region thumbnail1;
+    @FXML private Region thumbnail2;
+    @FXML private Region thumbnail3;
+    @FXML private Region thumbnail4;
 
     // Seller
     @FXML private Label lblSellerName;
@@ -72,9 +84,13 @@ public class BiddingDetailController extends NavigationController {
 
     private final AuctionDetailService service = new AuctionDetailService();
     private final NumberFormat currencyFormat = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
+    private final LoadingOverlay loadingOverlay = new LoadingOverlay();
 
     private int currentAuctionId = -1;
     private DashboardAuctionRow auctionDetail;
+    private int participantCount;
+    private String auctionOwner;
+    private List<Bid> bidHistory = List.of();
     private Timer countdownTimer;
 
     // ========================== Initialization ==========================
@@ -84,7 +100,8 @@ public class BiddingDetailController extends NavigationController {
      */
     @FXML
     public void initialize() {
-        applyCurrentUserQuickInfo(lblCurrentUserQuickInfo);
+        appHeader.configure(this);
+        registerForPushUpdates();
 
         if (btnPlaceBid != null) {
             btnPlaceBid.setOnAction(e -> handlePlaceBid());
@@ -113,17 +130,48 @@ public class BiddingDetailController extends NavigationController {
      * Loads all auction data from the service and populates the UI.
      */
     private void loadAuctionData(int auctionId) {
-        auctionDetail = service.loadAuctionDetail(auctionId);
-        if (auctionDetail == null) {
-            showError("Auction not found");
-            return;
-        }
+        Task<AuctionDetailLoad> task = new Task<>() {
+            @Override
+            protected AuctionDetailLoad call() {
+                DashboardAuctionRow detail = service.loadAuctionDetail(auctionId);
+                if (detail == null) {
+                    return new AuctionDetailLoad(null, 0, null, List.of());
+                }
+                return new AuctionDetailLoad(
+                        detail,
+                        service.getParticipantCount(auctionId),
+                        service.getAuctionOwner(auctionId),
+                        service.loadBidHistory(auctionId));
+            }
+        };
+        task.setOnSucceeded(event -> {
+            loadingOverlay.hide();
+            AuctionDetailLoad loaded = task.getValue();
+            auctionDetail = loaded.detail;
+            participantCount = loaded.participantCount;
+            auctionOwner = loaded.owner;
+            bidHistory = loaded.bids;
+            if (auctionDetail == null) {
+                showError("Auction not found");
+                return;
+            }
 
-        populateItemInfo();
-        populateBidInfo();
-        populateSellerInfo();
-        populateBidHistory();
-        startCountdown();
+            populateItemInfo();
+            populateBidInfo();
+            populateSellerInfo();
+            renderItemImages();
+            populateBidHistory();
+            startCountdown();
+        });
+        task.setOnFailed(event -> {
+            loadingOverlay.hide();
+            showError("Auction could not be loaded");
+        });
+
+        loadingOverlay.show(lblItemTitle, "Loading auction...");
+        Thread thread = new Thread(task, "auction-detail-load");
+        thread.setDaemon(true);
+        thread.start();
     }
 
     /**
@@ -144,9 +192,9 @@ public class BiddingDetailController extends NavigationController {
         lblItemId.setText("AUC-" + auctionDetail.getAuctionId());
 
         lblCondition.setText(item.getItemCondition() != null && !item.getItemCondition().isBlank()
-                ? item.getItemCondition() : "—");
+                ? item.getItemCondition() : "-");
         lblLocation.setText(item.getLocation() != null && !item.getLocation().isBlank()
-                ? item.getLocation() : "—");
+                ? item.getLocation() : "-");
     }
 
     /**
@@ -160,8 +208,7 @@ public class BiddingDetailController extends NavigationController {
         lblBidCount.setText(bidCount + " bid" + (bidCount != 1 ? "s" : ""));
 
         // Watcher count = participant count
-        int participants = service.getParticipantCount(currentAuctionId);
-        lblWatcherCount.setText(participants + " participant" + (participants != 1 ? "s" : ""));
+        lblWatcherCount.setText(participantCount + " participant" + (participantCount != 1 ? "s" : ""));
 
         float minBid = currentPrice + auctionDetail.getMinimumBidIncrement();
         lblMinBid.setText("Minimum bid: " + formatCurrency(minBid));
@@ -175,8 +222,7 @@ public class BiddingDetailController extends NavigationController {
      * Populates the seller name (masked for privacy).
      */
     private void populateSellerInfo() {
-        String owner = service.getAuctionOwner(currentAuctionId);
-        lblSellerName.setText(maskUsername(owner));
+        lblSellerName.setText(maskUsername(auctionOwner));
     }
 
     /**
@@ -186,10 +232,10 @@ public class BiddingDetailController extends NavigationController {
     private void populateBidHistory() {
         bidHistoryList.getChildren().clear();
 
-        List<Bid> bids = service.loadBidHistory(currentAuctionId);
+        List<Bid> bids = bidHistory;
 
         if (bids.isEmpty()) {
-            Label noBids = new Label("No bids yet — be the first!");
+            Label noBids = new Label("No bids yet - be the first!");
             noBids.getStyleClass().add("bid-time");
             bidHistoryList.getChildren().add(noBids);
             return;
@@ -318,6 +364,11 @@ public class BiddingDetailController extends NavigationController {
             return;
         }
 
+        if (auctionOwner != null && auctionOwner.equals(user.getUsername())) {
+            showError("You cannot bid on your own auction.");
+            return;
+        }
+
         String rawAmount = txtBidAmount.getText() == null ? "" : txtBidAmount.getText().trim();
         float amount;
         try {
@@ -334,14 +385,41 @@ public class BiddingDetailController extends NavigationController {
             return;
         }
 
-        boolean success = service.placeBid(currentAuctionId, user.getUsername(), amount);
-        if (!success) {
-            showError("Bid failed. The auction may have ended or the amount is too low.");
-            return;
+        if (btnPlaceBid != null) {
+            btnPlaceBid.setDisable(true);
         }
+        Task<Boolean> task = new Task<>() {
+            @Override
+            protected Boolean call() {
+                return service.placeBid(currentAuctionId, user.getUsername(), amount);
+            }
+        };
+        task.setOnSucceeded(event -> {
+            loadingOverlay.hide();
+            if (btnPlaceBid != null) {
+                btnPlaceBid.setDisable(false);
+            }
+            if (!task.getValue()) {
+                showError("Bid failed. The auction may have ended or the amount is too low.");
+                return;
+            }
 
-        txtBidAmount.clear();
-        loadAuctionData(currentAuctionId);
+            txtBidAmount.clear();
+            loadAuctionData(currentAuctionId);
+            appHeader.refreshWalletQuickInfo();
+        });
+        task.setOnFailed(event -> {
+            loadingOverlay.hide();
+            if (btnPlaceBid != null) {
+                btnPlaceBid.setDisable(false);
+            }
+            showError("Bid failed. Please try again.");
+        });
+
+        loadingOverlay.show(btnPlaceBid, "Placing bid...");
+        Thread thread = new Thread(task, "auction-place-bid");
+        thread.setDaemon(true);
+        thread.start();
     }
 
     // ========================== Utility Methods ==========================
@@ -354,7 +432,7 @@ public class BiddingDetailController extends NavigationController {
     }
 
     /**
-     * Masks a username for privacy display (e.g. "seller_john" → "sell****ohn").
+     * Masks a username for privacy display (e.g. "seller_john" -> "sell****ohn").
      */
     private String maskUsername(String username) {
         if (username == null || username.length() <= 4) {
@@ -364,11 +442,54 @@ public class BiddingDetailController extends NavigationController {
         return username.substring(0, show) + "****" + username.substring(username.length() - Math.min(2, show));
     }
 
+    private void renderItemImages() {
+        List<String> images = auctionDetail == null ? List.of() : auctionDetail.getImagePaths();
+        applyImageBackground(mainImage, images.isEmpty() ? null : images.get(0));
+
+        Region[] thumbnails = {thumbnail1, thumbnail2, thumbnail3, thumbnail4};
+        for (int i = 0; i < thumbnails.length; i++) {
+            Region thumbnail = thumbnails[i];
+            if (thumbnail == null) {
+                continue;
+            }
+            if (i < images.size()) {
+                String imagePath = images.get(i);
+                applyImageBackground(thumbnail, imagePath);
+                thumbnail.setOnMouseClicked(event -> applyImageBackground(mainImage, imagePath));
+            } else {
+                thumbnail.setStyle("");
+                thumbnail.setOnMouseClicked(null);
+            }
+        }
+    }
+
+    private void applyImageBackground(Region region, String path) {
+        if (region == null) {
+            return;
+        }
+        if (path == null || path.isBlank()) {
+            region.setStyle("");
+            return;
+        }
+        region.setStyle(
+                "-fx-background-image: url('" + toCssImageUrl(path) + "'); " +
+                        "-fx-background-size: cover; " +
+                        "-fx-background-position: center;"
+        );
+    }
+
+    private String toCssImageUrl(String path) {
+        if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("file:")) {
+            return path;
+        }
+        return Path.of(path).toUri().toString();
+    }
+
     /**
      * Formats a Date as a relative "time ago" string.
      */
     private String formatTimeAgo(Date date) {
-        if (date == null) return "—";
+        if (date == null) return "-";
 
         long diff = System.currentTimeMillis() - date.getTime();
         long minutes = diff / 60_000;
@@ -387,6 +508,23 @@ public class BiddingDetailController extends NavigationController {
                 || auctionDetail.getEndTime().getTime() <= System.currentTimeMillis();
     }
 
+    @Override
+    public void onAuctionUpdatePush(AuctionUpdatePushDTO payload) {
+        if (payload != null && payload.getAuctionId() == currentAuctionId) {
+            loadAuctionData(currentAuctionId);
+        }
+    }
+
+    @Override
+    public void onNotificationPush(NotificationPushDTO payload) {
+        appHeader.refreshNotificationBadge();
+    }
+
+    @Override
+    public void onWalletUpdatePush(WalletUpdatePushDTO payload) {
+        appHeader.refreshWalletQuickInfo();
+    }
+
     /**
      * Shows an error message in the item title.
      */
@@ -398,10 +536,25 @@ public class BiddingDetailController extends NavigationController {
         alert.showAndWait();
     }
 
+    private static final class AuctionDetailLoad {
+        private final DashboardAuctionRow detail;
+        private final int participantCount;
+        private final String owner;
+        private final List<Bid> bids;
+
+        private AuctionDetailLoad(DashboardAuctionRow detail, int participantCount, String owner, List<Bid> bids) {
+            this.detail = detail;
+            this.participantCount = participantCount;
+            this.owner = owner;
+            this.bids = bids == null ? List.of() : bids;
+        }
+    }
+
     // ========================== Cleanup ==========================
 
     @Override
     protected void onBeforeNavigate() {
+        super.onBeforeNavigate();
         stopCountdown();
     }
 

@@ -3,6 +3,8 @@ package Client.core.network;
 import CommonClasses.Auction;
 import CommonClasses.User;
 import Packets.MessageType;
+import Packets.NetworkConfig;
+import Packets.NetworkErrorPayload;
 import Packets.PacketMessage;
 
 import java.io.Closeable;
@@ -23,8 +25,6 @@ import java.util.function.Consumer;
  */
 public class NetworkClient implements Closeable {
 
-    private static final int DEFAULT_CONNECT_TIMEOUT_MS = 3000;
-    private static final int DEFAULT_READ_TIMEOUT_MS = 10000;
     private static final int DEFAULT_RECONNECT_DELAY_MS = 2000;
     private static final int DEFAULT_MAX_RECONNECT_ATTEMPTS = 5;
 
@@ -37,13 +37,14 @@ public class NetworkClient implements Closeable {
 
     private String host;
     private int port;
-    private int connectTimeoutMs = DEFAULT_CONNECT_TIMEOUT_MS;
-    private int readTimeoutMs = DEFAULT_READ_TIMEOUT_MS;
+    private int connectTimeoutMs = NetworkConfig.DEFAULT_CONNECT_TIMEOUT_MS;
+    private int readTimeoutMs = NetworkConfig.DEFAULT_READ_TIMEOUT_MS;
     private int reconnectDelayMs = DEFAULT_RECONNECT_DELAY_MS;
     private int maxReconnectAttempts = DEFAULT_MAX_RECONNECT_ATTEMPTS;
 
     private String lastUsername;
     private String lastPassword;
+    private String lastAuthToken;
     private volatile boolean closed = true;
     private volatile boolean reconnecting;
 
@@ -78,6 +79,27 @@ public class NetworkClient implements Closeable {
         this.lastUsername = username;
         this.lastPassword = password;
         send(new PacketMessage(MessageType.LOGIN_REQUEST, new User(username, password, null, "USER")));
+    }
+
+    public synchronized void connectForPush(String host, int port, String authToken,
+                                            Consumer<PacketMessage> packetListener,
+                                            Consumer<String> statusListener) throws IOException {
+        this.lastAuthToken = authToken;
+        this.readTimeoutMs = NetworkConfig.DEFAULT_CLIENT_READ_TIMEOUT_MS;
+        connect(host, port, packetListener, statusListener);
+        subscribeForPush(authToken);
+    }
+
+    public void subscribeForPush(String authToken) throws IOException {
+        if (authToken == null || authToken.isBlank()) {
+            throw new IOException("Authentication token is required for push subscription");
+        }
+        this.lastAuthToken = authToken;
+        send(new PacketMessage(MessageType.PUSH_SUBSCRIBE_REQUEST, null, authToken));
+    }
+
+    public void ping() throws IOException {
+        send(new PacketMessage(MessageType.PING, null));
     }
 
     public void listAuctions() throws IOException {
@@ -134,6 +156,9 @@ public class NetworkClient implements Closeable {
                     Object received = inputStream.readObject();
                     if (received instanceof PacketMessage && packetListener != null) {
                         PacketMessage packet = (PacketMessage) received;
+                        if (packet.getMessageType() == MessageType.NETWORK_ERROR) {
+                            notifyStatus("SERVER_ERROR: " + formatNetworkError(packet));
+                        }
                         System.out.println("[Network] Received " + packet.getMessageType());
                         packetListener.accept(packet);
                     }
@@ -190,7 +215,9 @@ public class NetworkClient implements Closeable {
     }
 
     private void restoreLoginIfPossible() throws IOException {
-        if (lastUsername != null && lastPassword != null) {
+        if (lastAuthToken != null && !lastAuthToken.isBlank()) {
+            subscribeForPush(lastAuthToken);
+        } else if (lastUsername != null && lastPassword != null) {
             send(new PacketMessage(MessageType.LOGIN_REQUEST, new User(lastUsername, lastPassword, null, "USER")));
         }
     }
@@ -200,6 +227,14 @@ public class NetworkClient implements Closeable {
         if (statusListener != null) {
             statusListener.accept(status);
         }
+    }
+
+    private String formatNetworkError(PacketMessage packet) {
+        if (packet.getPayload() instanceof NetworkErrorPayload) {
+            NetworkErrorPayload error = (NetworkErrorPayload) packet.getPayload();
+            return error.getCode() + ": " + error.getMessage();
+        }
+        return "Unknown server error";
     }
 
     private void sleepQuietly(int millis) {

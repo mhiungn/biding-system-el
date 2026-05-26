@@ -51,7 +51,51 @@ public class TestDatabaseHelper {
                     + "username  VARCHAR(50)  PRIMARY KEY, "
                     + "password  VARCHAR(255) NOT NULL, "
                     + "email     VARCHAR(100) NOT NULL UNIQUE, "
-                    + "role      VARCHAR(20)  NOT NULL"
+                    + "role      VARCHAR(20)  NOT NULL, "
+                    + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+                    + ")");
+
+            stmt.execute("CREATE TABLE IF NOT EXISTS user_wallets ("
+                    + "username   VARCHAR(50) PRIMARY KEY, "
+                    + "balance    BIGINT NOT NULL DEFAULT 100000, "
+                    + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
+                    + "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
+                    + "FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE"
+                    + ")");
+
+            stmt.execute("CREATE TABLE IF NOT EXISTS wallet_transactions ("
+                    + "id         BIGINT AUTO_INCREMENT PRIMARY KEY, "
+                    + "username   VARCHAR(50) NOT NULL, "
+                    + "type       VARCHAR(32) NOT NULL, "
+                    + "amount     BIGINT NOT NULL, "
+                    + "auction_id INT NULL, "
+                    + "bid_id     BIGINT NULL, "
+                    + "note       VARCHAR(255), "
+                    + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
+                    + "FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE"
+                    + ")");
+
+            stmt.execute("CREATE TABLE IF NOT EXISTS wallet_holds ("
+                    + "id         BIGINT AUTO_INCREMENT PRIMARY KEY, "
+                    + "username   VARCHAR(50) NOT NULL, "
+                    + "auction_id INT NOT NULL, "
+                    + "amount     BIGINT NOT NULL, "
+                    + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
+                    + "UNIQUE (username, auction_id), "
+                    + "FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE"
+                    + ")");
+
+            stmt.execute("CREATE TABLE IF NOT EXISTS notifications ("
+                    + "id            BIGINT AUTO_INCREMENT PRIMARY KEY, "
+                    + "username      VARCHAR(50) NOT NULL, "
+                    + "auction_id    INT NULL, "
+                    + "type          VARCHAR(64) NOT NULL, "
+                    + "title         VARCHAR(255) NOT NULL, "
+                    + "message       TEXT NOT NULL, "
+                    + "action_target VARCHAR(64) NOT NULL, "
+                    + "is_read       BOOLEAN NOT NULL DEFAULT FALSE, "
+                    + "created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
+                    + "FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE"
                     + ")");
 
             // Bảng items
@@ -62,6 +106,15 @@ public class TestDatabaseHelper {
                     + "description     TEXT, "
                     + "item_type       VARCHAR(50)    NOT NULL, "
                     + "seller_username VARCHAR(50)"
+                    + ")");
+
+            stmt.execute("CREATE TABLE IF NOT EXISTS item_images ("
+                    + "image_id   VARCHAR(36) PRIMARY KEY, "
+                    + "item_id    VARCHAR(36) NOT NULL, "
+                    + "image_path VARCHAR(500) NOT NULL, "
+                    + "is_primary BOOLEAN DEFAULT FALSE, "
+                    + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
+                    + "FOREIGN KEY (item_id) REFERENCES items(item_id) ON DELETE CASCADE"
                     + ")");
 
             // Bảng auction_snapshots
@@ -121,6 +174,11 @@ public class TestDatabaseHelper {
             stmt.execute("DELETE FROM auction_participants");
             stmt.execute("DELETE FROM auction_snapshots");
             stmt.execute("DELETE FROM bid_transactions");
+            stmt.execute("DELETE FROM wallet_transactions");
+            stmt.execute("DELETE FROM wallet_holds");
+            stmt.execute("DELETE FROM notifications");
+            stmt.execute("DELETE FROM user_wallets");
+            stmt.execute("DELETE FROM item_images");
             stmt.execute("DELETE FROM items");
             stmt.execute("DELETE FROM users");
             stmt.execute("SET REFERENTIAL_INTEGRITY TRUE");

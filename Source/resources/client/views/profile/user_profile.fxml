@@ -5,6 +5,7 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.HBox?>
@@ -52,22 +53,22 @@
                 <!-- Status badge -->
                 <HBox alignment="CENTER" spacing="6">
                     <Region prefHeight="17.0" prefWidth="17.0" styleClass="status-dot" />
-                    <Label styleClass="profile-status" text="Admin" />
+                    <Label fx:id="lblRoleStatus" styleClass="profile-status" text="Active User" />
                 </HBox>
             </VBox>
 
             <!-- ─── Stats Row 1 ─── -->
             <HBox spacing="12" styleClass="stats-row">
                 <VBox alignment="CENTER" styleClass="stat-card" HBox.hgrow="ALWAYS">
-                    <Label styleClass="stat-value" text="0" />
+                    <Label fx:id="lblBidsPlaced" styleClass="stat-value" text="0" />
                     <Label styleClass="stat-label" text="BIDS PLACED" />
                 </VBox>
                 <VBox alignment="CENTER" styleClass="stat-card" HBox.hgrow="ALWAYS">
-                    <Label styleClass="stat-value" text="0" />
+                    <Label fx:id="lblAuctionsWon" styleClass="stat-value" text="0" />
                     <Label styleClass="stat-label" text="AUCTIONS WON" />
                 </VBox>
                 <VBox alignment="CENTER" styleClass="stat-card" HBox.hgrow="ALWAYS">
-                    <Label styleClass="stat-value" text="0%" />
+                    <Label fx:id="lblWinRate" styleClass="stat-value" text="0%" />
                     <Label styleClass="stat-label" text="WIN RATE" />
                 </VBox>
             </HBox>
@@ -75,15 +76,15 @@
             <!-- ─── Stats Row 2 ─── -->
             <HBox spacing="12" styleClass="stats-row">
                 <VBox alignment="CENTER" styleClass="stat-card" HBox.hgrow="ALWAYS">
-                    <Label styleClass="stat-value" text="0" />
+                    <Label fx:id="lblItemsBought" styleClass="stat-value" text="0" />
                     <Label styleClass="stat-label" text="ITEMS BOUGHT" />
                 </VBox>
                 <VBox alignment="CENTER" styleClass="stat-card" HBox.hgrow="ALWAYS">
-                    <Label styleClass="stat-value" text="0" />
+                    <Label fx:id="lblItemsSold" styleClass="stat-value" text="0" />
                     <Label styleClass="stat-label" text="ITEMS SOLD" />
                 </VBox>
                 <VBox alignment="CENTER" styleClass="stat-card" HBox.hgrow="ALWAYS">
-                    <Label styleClass="stat-value" text="—" />
+                    <Label fx:id="lblTotalSpent" styleClass="stat-value" text="-" />
                     <Label styleClass="stat-label" text="TOTAL SPENT" />
                 </VBox>
             <padding>
@@ -92,6 +93,32 @@
             </HBox>
 
             <!-- ─── Account Section ─── -->
+            <VBox spacing="0" styleClass="info-section">
+                <Label prefHeight="17.0" prefWidth="384.0" styleClass="section-heading" text="Wallet" />
+
+                <HBox alignment="CENTER_LEFT" styleClass="info-row">
+                    <Region prefHeight="16.0" prefWidth="16.0" styleClass="info-icon currency-icon" />
+                    <VBox spacing="2" HBox.hgrow="ALWAYS">
+                        <HBox.margin>
+                            <Insets left="12.0" />
+                        </HBox.margin>
+                        <Label styleClass="info-label" text="Balance" />
+                        <Label fx:id="lblWalletBalance" styleClass="info-value" text="0" />
+                    </VBox>
+                    <VBox alignment="CENTER_RIGHT" spacing="2">
+                        <Label styleClass="info-label" text="Available" />
+                        <Label fx:id="lblWalletAvailable" styleClass="info-value-right" text="0" />
+                    </VBox>
+                </HBox>
+
+                <Separator styleClass="row-divider" />
+
+                <HBox alignment="CENTER_LEFT" spacing="8" styleClass="info-row">
+                    <TextField fx:id="depositAmountField" promptText="Amount" HBox.hgrow="ALWAYS" />
+                    <Button onAction="#handleDeposit" styleClass="info-edit-btn" text="Deposit" />
+                </HBox>
+            </VBox>
+
             <VBox styleClass="info-section">
 
                 <Label prefHeight="17.0" prefWidth="384.0" styleClass="section-heading" text="Account">
@@ -108,9 +135,9 @@
                             <Insets left="12.0" />
                         </HBox.margin>
                         <Label styleClass="info-label" text="Email" />
-                        <Label fx:id="lblEmail" styleClass="info-value" text="—" />
+                        <Label fx:id="lblEmail" styleClass="info-value" text="-" />
                     </VBox>
-                    <Button styleClass="info-edit-btn" text="Edit" />
+                    <Button onAction="#handleEditEmail" styleClass="info-edit-btn" text="Edit" />
                 </HBox>
 
                 <Separator styleClass="row-divider" />
@@ -125,7 +152,7 @@
                         <Label styleClass="info-label" text="Phone" />
                         <Label fx:id="lblPhone" styleClass="info-value" text="Not set" />
                     </VBox>
-                    <Button styleClass="info-edit-btn" text="Edit" />
+                    <Button onAction="#handleUnavailableProfileField" styleClass="info-edit-btn" text="Edit" />
                 </HBox>
 
                 <Separator styleClass="row-divider" />
@@ -140,7 +167,7 @@
                         <Label styleClass="info-label" text="Location" />
                         <Label fx:id="lblLocation" styleClass="info-value" text="Not set" />
                     </VBox>
-                    <Button styleClass="info-edit-btn" text="Edit" />
+                    <Button onAction="#handleUnavailableProfileField" styleClass="info-edit-btn" text="Edit" />
                 </HBox>
 
                 <Separator styleClass="row-divider" />
@@ -155,7 +182,7 @@
                         <Label styleClass="info-label" text="Password" />
                         <Label styleClass="info-value" text="•••••••••" />
                     </VBox>
-                    <Button styleClass="info-edit-btn" text="Change" />
+                    <Button onAction="#handleChangePassword" styleClass="info-edit-btn" text="Change" />
                 </HBox>
             <VBox.margin>
                <Insets top="3.0" />

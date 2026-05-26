@@ -111,6 +111,7 @@ public class AuthenticationService {
         }
 
         userDAO.save(user.getUsername(), user);
+        WalletApplicationService.getInstance().ensureWallet(user.getUsername());
         System.out.println("[AuthenticationService] User '" + user.getUsername() + "' registered successfully.");
         return true;
     }
