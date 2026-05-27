@@ -461,7 +461,7 @@ class ClientHandlerSessionTokenTest {
                 try {
                     Socket socket = serverSocket.accept();
                     socket.setSoTimeout(NetworkConfig.DEFAULT_CLIENT_READ_TIMEOUT_MS);
-                    Object clientObj = createClientInstance("Guest_" + socket.getPort());
+                    Client clientObj = (Client) createClientInstance("Guest_" + socket.getPort());
                     ClientHandler handler = new ClientHandler(clientObj, socket);
                     executor.submit(handler);
                 } catch (IOException e) {

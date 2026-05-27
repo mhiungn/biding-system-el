@@ -59,6 +59,13 @@
             <artifactId>gson</artifactId>
             <version>2.10.1</version>
         </dependency>
+
+        <!-- Cloudinary SDK để upload ảnh lên cloud -->
+        <dependency>
+            <groupId>com.cloudinary</groupId>
+            <artifactId>cloudinary-http5</artifactId>
+            <version>2.2.0</version>
+        </dependency>
     </dependencies>
 
     <build>
