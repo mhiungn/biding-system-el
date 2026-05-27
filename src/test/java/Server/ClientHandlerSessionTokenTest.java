@@ -461,23 +461,14 @@ class ClientHandlerSessionTokenTest {
                 try {
                     Socket socket = serverSocket.accept();
                     socket.setSoTimeout(NetworkConfig.DEFAULT_CLIENT_READ_TIMEOUT_MS);
-                    Object clientObj = createClientInstance("Guest_" + socket.getPort());
-                    ClientHandler handler = new ClientHandler(clientObj, socket);
+                    Client guestClient = new Client("Guest_" + socket.getPort());
+                    ClientHandler handler = new ClientHandler(guestClient, socket);
                     executor.submit(handler);
                 } catch (IOException e) {
                     if (running) {
                         throw new RuntimeException(e);
                     }
                 }
-            }
-        }
-
-        private Object createClientInstance(String username) {
-            try {
-                Class<?> clientClass = Class.forName("Server.Client");
-                return clientClass.getConstructor(String.class).newInstance(username);
-            } catch (Exception e) {
-                throw new RuntimeException("Cannot create Client instance", e);
             }
         }
 
