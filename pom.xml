@@ -66,6 +66,13 @@
             <artifactId>cloudinary-http5</artifactId>
             <version>2.2.0</version>
         </dependency>
+
+        <!-- SLF4J -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.5.6</version>
+        </dependency>
     </dependencies>
 
     <build>
