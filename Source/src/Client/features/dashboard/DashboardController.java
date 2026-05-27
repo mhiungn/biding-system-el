@@ -4,6 +4,7 @@ import Client.core.ui.NavigationController;
 import Client.components.AppHeader;
 import Client.components.LoadingOverlay;
 import Client.core.ui.FxDebouncer;
+import Client.core.ui.ItemImageUrl;
 import CommonClasses.dto.AuctionUpdatePushDTO;
 import CommonClasses.dto.DashboardAuctionRow;
 import CommonClasses.dto.DashboardPageResult;
@@ -27,7 +28,6 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
-import java.nio.file.Path;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -498,15 +498,8 @@ public class DashboardController extends NavigationController {
         if (region == null || path == null || path.isBlank()) {
             return;
         }
-        region.setStyle("-fx-background-image: url(\"" + toCssImageUrl(path) + "\"); "
+        region.setStyle("-fx-background-image: url(\"" + ItemImageUrl.thumbnail(path) + "\"); "
                 + "-fx-background-size: cover; -fx-background-position: center;");
-    }
-
-    private String toCssImageUrl(String path) {
-        if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("file:")) {
-            return path;
-        }
-        return Path.of(path).toUri().toString();
     }
 
     private void showError(String message) {

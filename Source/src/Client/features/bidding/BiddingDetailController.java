@@ -4,6 +4,7 @@ import Client.core.ui.NavigationController;
 import Client.components.AppHeader;
 import Client.components.LoadingOverlay;
 import Client.core.ui.FxDebouncer;
+import Client.core.ui.ItemImageUrl;
 import Client.features.auth.SessionManager;
 import CommonClasses.Bid;
 import CommonClasses.dto.AuctionUpdatePushDTO;
@@ -26,7 +27,6 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
-import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.util.Date;
 import java.util.List;
@@ -448,7 +448,7 @@ public class BiddingDetailController extends NavigationController {
 
     private void renderItemImages() {
         List<String> images = auctionDetail == null ? List.of() : auctionDetail.getImagePaths();
-        applyImageBackground(mainImage, images.isEmpty() ? null : images.get(0));
+        applyImageBackground(mainImage, images.isEmpty() ? null : images.get(0), false);
 
         Region[] thumbnails = {thumbnail1, thumbnail2, thumbnail3, thumbnail4};
         for (int i = 0; i < thumbnails.length; i++) {
@@ -458,8 +458,8 @@ public class BiddingDetailController extends NavigationController {
             }
             if (i < images.size()) {
                 String imagePath = images.get(i);
-                applyImageBackground(thumbnail, imagePath);
-                thumbnail.setOnMouseClicked(event -> applyImageBackground(mainImage, imagePath));
+                applyImageBackground(thumbnail, imagePath, true);
+                thumbnail.setOnMouseClicked(event -> applyImageBackground(mainImage, imagePath, false));
             } else {
                 thumbnail.setStyle("");
                 thumbnail.setOnMouseClicked(null);
@@ -467,7 +467,7 @@ public class BiddingDetailController extends NavigationController {
         }
     }
 
-    private void applyImageBackground(Region region, String path) {
+    private void applyImageBackground(Region region, String path, boolean thumbnail) {
         if (region == null) {
             return;
         }
@@ -475,18 +475,12 @@ public class BiddingDetailController extends NavigationController {
             region.setStyle("");
             return;
         }
+        String imageUrl = thumbnail ? ItemImageUrl.thumbnail(path) : ItemImageUrl.detail(path);
         region.setStyle(
-                "-fx-background-image: url('" + toCssImageUrl(path) + "'); " +
+                "-fx-background-image: url('" + imageUrl + "'); " +
                         "-fx-background-size: cover; " +
                         "-fx-background-position: center;"
         );
-    }
-
-    private String toCssImageUrl(String path) {
-        if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("file:")) {
-            return path;
-        }
-        return Path.of(path).toUri().toString();
     }
 
     /**

@@ -4,6 +4,7 @@ import Client.core.ui.NavigationController;
 import Client.components.AppHeader;
 import Client.components.LoadingOverlay;
 import Client.core.ui.FxDebouncer;
+import Client.core.ui.ItemImageUrl;
 import Client.features.auth.SessionManager;
 import CommonClasses.dto.AuctionUpdatePushDTO;
 import CommonClasses.dto.DashboardAuctionRow;
@@ -27,7 +28,6 @@ import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.List;
@@ -476,15 +476,8 @@ public class MyBidsController extends NavigationController {
         if (region == null || path == null || path.isBlank()) {
             return;
         }
-        region.setStyle("-fx-background-image: url(\"" + toCssImageUrl(path) + "\"); "
+        region.setStyle("-fx-background-image: url(\"" + ItemImageUrl.thumbnail(path) + "\"); "
                 + "-fx-background-size: cover; -fx-background-position: center;");
-    }
-
-    private String toCssImageUrl(String path) {
-        if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("file:")) {
-            return path;
-        }
-        return Path.of(path).toUri().toString();
     }
 
     private String formatCurrency(float amount) {
