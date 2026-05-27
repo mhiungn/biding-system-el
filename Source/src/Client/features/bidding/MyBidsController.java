@@ -83,9 +83,20 @@ public class MyBidsController extends NavigationController {
             return;
         }
 
+        setupFilterButtons();
+    }
+
+    @Override
+    protected void onAfterShow() {
+        User user = SessionManager.getCurrentUser();
+        if (user == null) {
+            showEmptyState(activeBidsList, "Please log in to see your bids");
+            showEmptyState(completedBidsList, "Please log in to see your history");
+            showEmptyState(sellingItemsList, "Please log in to see your selling items");
+            return;
+        }
         registerForPushUpdates();
         Platform.runLater(() -> loadMyBidsData(user.getUsername()));
-        setupFilterButtons();
     }
 
     // ========================== Data Loading ==========================

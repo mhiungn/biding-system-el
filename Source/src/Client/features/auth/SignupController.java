@@ -24,6 +24,15 @@ public class SignupController extends NavigationController {
         errorLabel.setVisible(false);
     }
 
+    @Override
+    protected void onAfterShow() {
+        usernameField.clear();
+        emailField.clear();
+        newPasswordField.clear();
+        confirmPasswordField.clear();
+        clearError();
+    }
+
     @FXML
     private void handleSignup(ActionEvent event) {
         clearError();

@@ -17,9 +17,12 @@ import javafx.stage.StageStyle;
 import javafx.stage.Window;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class NavigationService {
     private static final String CONTROLLER_KEY = "client.controller";
+    private static final Map<String, LoadedView> VIEW_CACHE = new HashMap<>();
 
     private static final String DASHBOARD = "/client/views/dashboard/dashboard.fxml";
     private static final String BIDDING_DETAIL = "/client/views/bidding/bidding_detail.fxml";
@@ -44,7 +47,7 @@ public class NavigationService {
     public void openBiddingDetail(ActionEvent event, long auctionId) throws IOException {
         LoadedView loadedView = loadView(BIDDING_DETAIL);
         Stage stage = getEventStage(event);
-        replaceCurrentScene(stage, loadedView.root);
+        replaceCurrentScene(stage, loadedView);
 
         if (loadedView.controller instanceof BiddingDetailController) {
             ((BiddingDetailController) loadedView.controller).setAuctionId(Math.toIntExact(auctionId));
@@ -71,11 +74,12 @@ public class NavigationService {
         profileStage.initOwner(getEventStage(event));
         profileStage.initModality(Modality.WINDOW_MODAL);
         profileStage.initStyle(StageStyle.UNDECORATED);
-        profileStage.setScene(new Scene(loadedView.root));
+        profileStage.setScene(loadedView.scene);
         profileStage.setResizable(false);
         profileStage.show();
         profileStage.sizeToScene();
         profileStage.centerOnScreen();
+        notifyAfterShow(loadedView);
     }
 
     public void logoutToLogin(ActionEvent event) throws IOException {
@@ -90,9 +94,9 @@ public class NavigationService {
         Stage ownerStage = getOwnerStage(logoutStage);
         Stage targetStage = ownerStage != null ? ownerStage : logoutStage;
 
-        LoadedView loadedView = loadView(LOGIN);
+        LoadedView loadedView = loadCachedView(LOGIN);
         cleanupStageController(targetStage);
-        applyScene(targetStage, loadedView.root);
+        applyScene(targetStage, loadedView);
 
         if (logoutStage != targetStage) {
             logoutStage.close();
@@ -100,24 +104,24 @@ public class NavigationService {
     }
 
     private void switchScene(ActionEvent event, String classpathFXML) throws IOException {
-        LoadedView loadedView = loadView(classpathFXML);
+        LoadedView loadedView = loadCachedView(classpathFXML);
         Stage stage = getEventStage(event);
-        replaceCurrentScene(stage, loadedView.root);
+        replaceCurrentScene(stage, loadedView);
     }
 
-    private void replaceCurrentScene(Stage stage, Parent root) {
+    private void replaceCurrentScene(Stage stage, LoadedView loadedView) {
         cleanupStageController(stage);
-        applyScene(stage, root);
+        applyScene(stage, loadedView);
     }
 
-    private void applyScene(Stage stage, Parent root) {
-        Scene scene = new Scene(root);
-        stage.setScene(scene);
+    private void applyScene(Stage stage, LoadedView loadedView) {
+        stage.setScene(loadedView.scene);
         stage.sizeToScene();
         if (!stage.isShowing()) {
             stage.show();
         }
         stage.centerOnScreen();
+        notifyAfterShow(loadedView);
 
         Platform.runLater(() -> {
             stage.sizeToScene();
@@ -125,12 +129,33 @@ public class NavigationService {
         });
     }
 
+    private LoadedView loadCachedView(String classpathFXML) throws IOException {
+        if (!isCacheable(classpathFXML)) {
+            return loadView(classpathFXML);
+        }
+        LoadedView cached = VIEW_CACHE.get(classpathFXML);
+        if (cached != null) {
+            return cached;
+        }
+        LoadedView loadedView = loadView(classpathFXML);
+        VIEW_CACHE.put(classpathFXML, loadedView);
+        return loadedView;
+    }
+
     private LoadedView loadView(String classpathFXML) throws IOException {
         FXMLLoader loader = new FXMLLoader(NavigationService.class.getResource(classpathFXML));
         Parent root = loader.load();
         Object controller = loader.getController();
         root.getProperties().put(CONTROLLER_KEY, controller);
-        return new LoadedView(root, controller);
+        return new LoadedView(controller, new Scene(root));
+    }
+
+    private boolean isCacheable(String classpathFXML) {
+        return DASHBOARD.equals(classpathFXML)
+                || MY_BIDS.equals(classpathFXML)
+                || SELL_ITEM.equals(classpathFXML)
+                || SIGNUP.equals(classpathFXML)
+                || LOGIN.equals(classpathFXML);
     }
 
     private Stage getEventStage(ActionEvent event) {
@@ -153,13 +178,19 @@ public class NavigationService {
         }
     }
 
-    private static final class LoadedView {
-        private final Parent root;
-        private final Object controller;
+    private void notifyAfterShow(LoadedView loadedView) {
+        if (loadedView.controller instanceof BaseController) {
+            ((BaseController) loadedView.controller).afterExternalNavigation();
+        }
+    }
 
-        private LoadedView(Parent root, Object controller) {
-            this.root = root;
+    private static final class LoadedView {
+        private final Object controller;
+        private final Scene scene;
+
+        private LoadedView(Object controller, Scene scene) {
             this.controller = controller;
+            this.scene = scene;
         }
     }
 }
