@@ -54,6 +54,9 @@ public class AuctionSnapshot {
     /** Phiên đấu giá có đang trong giai đoạn đếm ngược khi được lưu hay không. */
     private boolean wasInCountDown;
 
+    /** Minimum amount a new bid must add over the current price. */
+    private float minimumBidIncrement = 1f;
+
     // ========================== Constructor ==========================
 
     /**
@@ -94,6 +97,7 @@ public class AuctionSnapshot {
         this.registeredUsernames = (registeredUsernames != null)
                 ? new ArrayList<>(registeredUsernames) : new ArrayList<>();
         this.wasInCountDown = wasInCountDown;
+        this.minimumBidIncrement = 1f;
     }
 
     // ========================== Getter & Setter ==========================
@@ -176,6 +180,14 @@ public class AuctionSnapshot {
 
     public void setWasInCountDown(boolean wasInCountDown) {
         this.wasInCountDown = wasInCountDown;
+    }
+
+    public float getMinimumBidIncrement() {
+        return minimumBidIncrement;
+    }
+
+    public void setMinimumBidIncrement(float minimumBidIncrement) {
+        this.minimumBidIncrement = minimumBidIncrement > 0 ? minimumBidIncrement : 1f;
     }
 
     // ========================== Phương thức Tiện ích ==========================

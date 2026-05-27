@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox prefHeight="580.0" prefWidth="480.0" stylesheets="@/client/views/profile/user_profile.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.features.profile.UserProfileController">
+
+    <!-- ═══ Custom Title Bar ═══ -->
+    <HBox fx:id="titleBar" alignment="CENTER_LEFT" onMouseDragged="#onTitleBarDragged" onMousePressed="#onTitleBarPressed" styleClass="title-bar">
+
+        <ImageView fitHeight="16" fitWidth="16" preserveRatio="true">
+            <image>
+                <Image url="@/client/images/logo.png" />
+            </image>
+        </ImageView>
+
+        <Label styleClass="window-title" text="Bidify">
+            <HBox.margin>
+                <Insets left="8.0" />
+            </HBox.margin>
+        </Label>
+
+        <Region HBox.hgrow="ALWAYS" />
+
+        <Button onAction="#handleMinimize" styleClass="title-bar-button" text="─" />
+        <Label styleClass="disable-button" text="□" />
+        <Button onAction="#handleClose" styleClass="title-bar-button, close-btn" text="✕" />
+    </HBox>
+
+    <!-- ═══ Scrollable Content ═══ -->
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="profile-scroll" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
+
+        <VBox alignment="TOP_CENTER" spacing="5.0" styleClass="profile-content">
+            <padding>
+                <Insets bottom="32.0" left="40.0" right="40.0" top="28.0" />
+            </padding>
+
+            <!-- ─── Avatar + Identity ─── -->
+            <VBox alignment="CENTER" prefWidth="384.0" spacing="10" styleClass="identity-section">
+                <!-- Username -->
+                <Label fx:id="lblUsername" styleClass="profile-username" text="Loading..." />
+                <!-- Member since -->
+                <Label fx:id="lblMemberSince" styleClass="profile-meta" text="" />
+                <!-- Status badge -->
+                <HBox alignment="CENTER" spacing="6">
+                    <Region prefHeight="17.0" prefWidth="17.0" styleClass="status-dot" />
+                    <Label fx:id="lblRoleStatus" styleClass="profile-status" text="Active User" />
+                </HBox>
+            </VBox>
+
+            <!-- ─── Stats Row 1 ─── -->
+            <HBox spacing="12" styleClass="stats-row">
+                <VBox alignment="CENTER" styleClass="stat-card" HBox.hgrow="ALWAYS">
+                    <Label fx:id="lblBidsPlaced" styleClass="stat-value" text="0" />
+                    <Label styleClass="stat-label" text="BIDS PLACED" />
+                </VBox>
+                <VBox alignment="CENTER" styleClass="stat-card" HBox.hgrow="ALWAYS">
+                    <Label fx:id="lblAuctionsWon" styleClass="stat-value" text="0" />
+                    <Label styleClass="stat-label" text="AUCTIONS WON" />
+                </VBox>
+                <VBox alignment="CENTER" styleClass="stat-card" HBox.hgrow="ALWAYS">
+                    <Label fx:id="lblWinRate" styleClass="stat-value" text="0%" />
+                    <Label styleClass="stat-label" text="WIN RATE" />
+                </VBox>
+            </HBox>
+
+            <!-- ─── Stats Row 2 ─── -->
+            <HBox spacing="12" styleClass="stats-row">
+                <VBox alignment="CENTER" styleClass="stat-card" HBox.hgrow="ALWAYS">
+                    <Label fx:id="lblItemsBought" styleClass="stat-value" text="0" />
+                    <Label styleClass="stat-label" text="ITEMS BOUGHT" />
+                </VBox>
+                <VBox alignment="CENTER" styleClass="stat-card" HBox.hgrow="ALWAYS">
+                    <Label fx:id="lblItemsSold" styleClass="stat-value" text="0" />
+                    <Label styleClass="stat-label" text="ITEMS SOLD" />
+                </VBox>
+                <VBox alignment="CENTER" styleClass="stat-card" HBox.hgrow="ALWAYS">
+                    <Label fx:id="lblTotalSpent" styleClass="stat-value" text="-" />
+                    <Label styleClass="stat-label" text="TOTAL SPENT" />
+                </VBox>
+            <padding>
+               <Insets bottom="5.0" />
+            </padding>
+            </HBox>
+
+            <!-- ─── Account Section ─── -->
+            <VBox spacing="0" styleClass="info-section">
+                <Label prefHeight="17.0" prefWidth="384.0" styleClass="section-heading" text="Wallet" />
+
+                <HBox alignment="CENTER_LEFT" styleClass="info-row">
+                    <Region prefHeight="16.0" prefWidth="16.0" styleClass="info-icon currency-icon" />
+                    <VBox spacing="2" HBox.hgrow="ALWAYS">
+                        <HBox.margin>
+                            <Insets left="12.0" />
+                        </HBox.margin>
+                        <Label styleClass="info-label" text="Balance" />
+                        <Label fx:id="lblWalletBalance" styleClass="info-value" text="0" />
+                    </VBox>
+                    <VBox alignment="CENTER_RIGHT" spacing="2">
+                        <Label styleClass="info-label" text="Available" />
+                        <Label fx:id="lblWalletAvailable" styleClass="info-value-right" text="0" />
+                    </VBox>
+                </HBox>
+
+                <Separator styleClass="row-divider" />
+
+                <HBox alignment="CENTER_LEFT" spacing="8" styleClass="info-row">
+                    <TextField fx:id="depositAmountField" promptText="Amount" HBox.hgrow="ALWAYS" />
+                    <Button onAction="#handleDeposit" styleClass="info-edit-btn" text="Deposit" />
+                </HBox>
+            </VBox>
+
+            <VBox styleClass="info-section">
+
+                <Label prefHeight="17.0" prefWidth="384.0" styleClass="section-heading" text="Account">
+                    <VBox.margin>
+                        <Insets />
+                    </VBox.margin>
+                </Label>
+
+                <!-- Email -->
+                <HBox alignment="CENTER_LEFT" styleClass="info-row">
+                    <Region prefHeight="16.0" prefWidth="16.0" styleClass="info-icon email-icon" />
+                    <VBox spacing="2" HBox.hgrow="ALWAYS">
+                        <HBox.margin>
+                            <Insets left="12.0" />
+                        </HBox.margin>
+                        <Label styleClass="info-label" text="Email" />
+                        <Label fx:id="lblEmail" styleClass="info-value" text="-" />
+                    </VBox>
+                    <Button onAction="#handleEditEmail" styleClass="info-edit-btn" text="Edit" />
+                </HBox>
+
+                <Separator styleClass="row-divider" />
+
+                <!-- Phone -->
+                <HBox alignment="CENTER_LEFT" styleClass="info-row">
+                    <Region prefHeight="16.0" prefWidth="16.0" styleClass="info-icon phone-icon" />
+                    <VBox spacing="2" HBox.hgrow="ALWAYS">
+                        <HBox.margin>
+                            <Insets left="12.0" />
+                        </HBox.margin>
+                        <Label styleClass="info-label" text="Phone" />
+                        <Label fx:id="lblPhone" styleClass="info-value" text="Not set" />
+                    </VBox>
+                    <Button onAction="#handleUnavailableProfileField" styleClass="info-edit-btn" text="Edit" />
+                </HBox>
+
+                <Separator styleClass="row-divider" />
+
+                <!-- Location -->
+                <HBox alignment="CENTER_LEFT" styleClass="info-row">
+                    <Region prefHeight="16.0" prefWidth="16.0" styleClass="info-icon location-icon" />
+                    <VBox spacing="2" HBox.hgrow="ALWAYS">
+                        <HBox.margin>
+                            <Insets left="12.0" />
+                        </HBox.margin>
+                        <Label styleClass="info-label" text="Location" />
+                        <Label fx:id="lblLocation" styleClass="info-value" text="Not set" />
+                    </VBox>
+                    <Button onAction="#handleUnavailableProfileField" styleClass="info-edit-btn" text="Edit" />
+                </HBox>
+
+                <Separator styleClass="row-divider" />
+
+                <!-- Password -->
+                <HBox alignment="CENTER_LEFT" styleClass="info-row">
+                    <Region prefHeight="16.0" prefWidth="16.0" styleClass="info-icon lock-icon" />
+                    <VBox spacing="2" HBox.hgrow="ALWAYS">
+                        <HBox.margin>
+                            <Insets left="12.0" />
+                        </HBox.margin>
+                        <Label styleClass="info-label" text="Password" />
+                        <Label styleClass="info-value" text="•••••••••" />
+                    </VBox>
+                    <Button onAction="#handleChangePassword" styleClass="info-edit-btn" text="Change" />
+                </HBox>
+            <VBox.margin>
+               <Insets top="3.0" />
+            </VBox.margin>
+
+            </VBox>
+
+            <!-- ─── Activity Section ─── -->
+            <VBox spacing="0" styleClass="info-section">
+
+                <Label styleClass="section-heading" text="Activity">
+                    <VBox.margin>
+                        <Insets bottom="4.0" />
+                    </VBox.margin>
+                </Label>
+
+                <!-- Active Bids -->
+                <HBox alignment="CENTER_LEFT" styleClass="info-row">
+                    <Region prefHeight="16.0" prefWidth="16.0" styleClass="info-icon bid-icon" />
+                    <VBox spacing="2" HBox.hgrow="ALWAYS">
+                        <HBox.margin>
+                            <Insets left="12.0" />
+                        </HBox.margin>
+                        <Label styleClass="info-label" text="Active Bids" />
+                        <Label fx:id="lblActiveBids" styleClass="info-value" text="0 ongoing" />
+                    </VBox>
+                    <Label styleClass="info-badge info-badge-green" text="LIVE" />
+                </HBox>
+
+<!--                <Separator styleClass="row-divider" />-->
+
+<!--                &lt;!&ndash; Watchlist &ndash;&gt;-->
+<!--                <HBox alignment="CENTER_LEFT" styleClass="info-row">-->
+<!--                    <Region prefHeight="16.0" prefWidth="16.0" styleClass="info-icon watch-icon" />-->
+<!--                    <VBox spacing="2" HBox.hgrow="ALWAYS">-->
+<!--                        <HBox.margin>-->
+<!--                            <Insets left="12.0" />-->
+<!--                        </HBox.margin>-->
+<!--                        <Label styleClass="info-label" text="Watchlist" />-->
+<!--                        <Label fx:id="lblWatchlist" styleClass="info-value" text="14 items saved" />-->
+<!--                    </VBox>-->
+<!--                    <Button styleClass="info-edit-btn" text="View" />-->
+<!--                </HBox>-->
+
+<!--                <Separator styleClass="row-divider" />-->
+
+<!--                &lt;!&ndash; Seller Rating &ndash;&gt;-->
+<!--                <HBox alignment="CENTER_LEFT" styleClass="info-row">-->
+<!--                    <Region prefHeight="16.0" prefWidth="16.0" styleClass="info-icon star-icon" />-->
+<!--                    <VBox spacing="2" HBox.hgrow="ALWAYS">-->
+<!--                        <HBox.margin>-->
+<!--                            <Insets left="12.0" />-->
+<!--                        </HBox.margin>-->
+<!--                        <Label styleClass="info-label" text="Seller Rating" />-->
+<!--                        <Label fx:id="lblRating" styleClass="info-value" text="4.8 / 5.0  (23 reviews)" />-->
+<!--                    </VBox>-->
+<!--                </HBox>-->
+            <VBox.margin>
+               <Insets top="5.0" />
+            </VBox.margin>
+
+            </VBox>
+
+            <!-- ─── Preferences Section ─── -->
+            <VBox spacing="0" styleClass="info-section">
+
+                <Label styleClass="section-heading" text="Preferences">
+                    <VBox.margin>
+                        <Insets bottom="4.0" />
+                    </VBox.margin>
+                </Label>
+
+                <!-- Language -->
+                <HBox alignment="CENTER_LEFT" styleClass="info-row">
+                    <Region prefHeight="16.0" prefWidth="16.0" styleClass="info-icon globe-icon" />
+                    <VBox spacing="2" HBox.hgrow="ALWAYS">
+                        <HBox.margin>
+                            <Insets left="12.0" />
+                        </HBox.margin>
+                        <Label styleClass="info-label" text="Language" />
+                        <Label styleClass="info-value-muted" text="Changes applied after restarting the app" />
+                    </VBox>
+                    <Label fx:id="lblLanguage" styleClass="info-value-right" text="English" />
+                </HBox>
+
+                <Separator styleClass="row-divider" />
+
+                <!-- Notifications -->
+                <HBox alignment="CENTER_LEFT" styleClass="info-row">
+                    <Region prefHeight="16.0" prefWidth="16.0" styleClass="info-icon bell-icon" />
+                    <VBox spacing="2" HBox.hgrow="ALWAYS">
+                        <HBox.margin>
+                            <Insets left="12.0" />
+                        </HBox.margin>
+                        <Label styleClass="info-label" text="Notifications" />
+                        <Label styleClass="info-value-muted" text="Bid updates, outbid alerts, auction endings" />
+                    </VBox>
+                    <Label styleClass="info-value-right" text="Off" />
+                </HBox>
+
+                <Separator styleClass="row-divider" />
+
+                <!-- Currency -->
+                <HBox alignment="CENTER_LEFT" styleClass="info-row">
+                    <Region prefHeight="16.0" prefWidth="16.0" styleClass="info-icon currency-icon" />
+                    <VBox spacing="2" HBox.hgrow="ALWAYS">
+                        <HBox.margin>
+                            <Insets left="12.0" />
+                        </HBox.margin>
+                        <Label styleClass="info-label" text="Display Currency" />
+                        <Label styleClass="info-value-muted" text="All bid amounts shown in selected currency" />
+                    </VBox>
+                    <Label fx:id="lblCurrency" styleClass="info-value-right" text="VND" />
+                </HBox>
+            <VBox.margin>
+               <Insets top="5.0" />
+            </VBox.margin>
+
+            </VBox>
+
+            <!-- ─── Logout Button ─── -->
+            <HBox alignment="CENTER">
+                <Button fx:id="btnLogout" onAction="#handleLogout" styleClass="logout-button" text="LOG OUT" />
+            <VBox.margin>
+               <Insets top="5.0" />
+            </VBox.margin>
+            </HBox>
+
+            <VBox.margin>
+                <Insets bottom="24.0" />
+            </VBox.margin>
+
+            <VBox.margin>
+                <Insets bottom="8.0" />
+            </VBox.margin>
+
+            <VBox.margin>
+                <Insets bottom="24.0" />
+            </VBox.margin>
+
+            <VBox.margin>
+                <Insets bottom="20.0" />
+            </VBox.margin>
+
+            <VBox.margin>
+                <Insets bottom="20.0" />
+            </VBox.margin>
+
+            <VBox.margin>
+                <Insets bottom="32.0" />
+            </VBox.margin>
+
+            <VBox.margin>
+                <Insets bottom="8.0" />
+            </VBox.margin>
+
+        </VBox>
+    </ScrollPane>
+
+</VBox>

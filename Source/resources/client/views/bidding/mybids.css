@@ -1,0 +1,388 @@
+/* Import dashboard styles for shared header/nav components */
+@import url("../dashboard/dashboard.css");
+
+/* =============================================
+   ROOT & SCROLL OVERRIDES
+   ============================================= */
+.root-pane {
+    -fx-background-color: #121212;
+}
+
+.root-scroll {
+    -fx-background-color: #121212;
+    -fx-border-color: transparent;
+}
+
+.root-scroll .viewport {
+    -fx-background-color: #121212;
+}
+
+.main-container {
+    -fx-background-color: #121212;
+}
+
+/* =============================================
+   PAGE TITLE
+   ============================================= */
+.page-title-section {
+    -fx-padding: 30 30 20 30;
+    -fx-background-color: #121212;
+}
+
+.page-title {
+    -fx-font-family: "Space Mono";
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+}
+
+/* =============================================
+   ACTIVE BIDS SECTION
+   ============================================= */
+.active-bids-section {
+    -fx-padding: 0 30 20 30;
+    -fx-spacing: 15;
+}
+
+.section-header {
+    -fx-padding: 0 0 10 0;
+    -fx-spacing: 20;
+}
+
+.section-heading {
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #b3b3b3;
+    -fx-letter-spacing: 2;
+}
+
+/* FILTER BUTTONS */
+.filter-btn {
+    -fx-background-color: #1f1f1f;
+    -fx-text-fill: #b3b3b3;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-cursor: hand;
+    -fx-padding: 8 15;
+    -fx-border-color: #4d4d4d;
+    -fx-border-width: 1;
+    -fx-border-radius: 9999;
+    -fx-background-radius: 9999;
+    -fx-letter-spacing: 1.4;
+}
+
+.filter-btn:hover {
+    -fx-background-color: #252525;
+    -fx-text-fill: #ffffff;
+}
+
+.filter-active {
+    -fx-background-color: #1ed760;
+    -fx-text-fill: #000000;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-background-radius: 9999;
+    -fx-cursor: hand;
+    -fx-padding: 8 15;
+    -fx-letter-spacing: 1.4;
+}
+
+.filter-active:hover {
+    -fx-background-color: #1fdf64;
+}
+
+/* =============================================
+   ACTIVE BIDS LIST
+   ============================================= */
+.active-bids-scroll {
+    -fx-background-color: transparent;
+    -fx-max-height: 465;
+}
+
+.active-bids-scroll .viewport {
+    -fx-background-color: transparent;
+}
+
+.active-bids-list {
+    -fx-background-color: transparent;
+}
+
+.bid-item {
+    -fx-background-color: #181818;
+    -fx-border-color: transparent;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 15;
+    -fx-spacing: 15;
+    -fx-alignment: center-left;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 8);
+}
+
+.bid-item:hover {
+    -fx-background-color: #252525;
+}
+
+.bid-item-image {
+    -fx-background-color: #1f1f1f;
+    -fx-min-width: 110;
+    -fx-min-height: 110;
+    -fx-pref-width: 110;
+    -fx-pref-height: 110;
+    -fx-max-width: 110;
+    -fx-max-height: 110;
+    -fx-background-radius: 6;
+}
+
+.bid-item-info {
+    -fx-padding: 5 0;
+}
+
+.bid-item-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+}
+
+.bid-item-your-bid {
+    -fx-font-size: 11px;
+    -fx-text-fill: #b3b3b3;
+}
+
+.bid-item-current {
+    -fx-font-size: 11px;
+    -fx-text-fill: #b3b3b3;
+}
+
+.bid-item-right {
+    -fx-padding: 5 15 5 0;
+    -fx-min-width: 120;
+}
+
+.bid-item-time {
+    -fx-font-size: 11px;
+    -fx-text-fill: #b3b3b3;
+}
+
+.time-icon-small {
+    -fx-min-width: 12;
+    -fx-min-height: 12;
+    -fx-pref-width: 12;
+    -fx-pref-height: 12;
+    -fx-background-color: #b3b3b3;
+    -fx-background-radius: 50%;
+}
+
+.status-icon-winning {
+    -fx-min-width: 12;
+    -fx-min-height: 12;
+    -fx-pref-width: 12;
+    -fx-pref-height: 12;
+    -fx-background-color: #1ed760;
+    -fx-background-radius: 50%;
+}
+
+.status-icon-outbid {
+    -fx-min-width: 12;
+    -fx-min-height: 12;
+    -fx-pref-width: 12;
+    -fx-pref-height: 12;
+    -fx-background-color: #f3727f;
+    -fx-background-radius: 50%;
+}
+
+.status-winning {
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #1ed760;
+    -fx-letter-spacing: 1.4;
+}
+
+.status-outbid {
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #f3727f;
+    -fx-letter-spacing: 1.4;
+}
+
+.bid-item-action {
+    -fx-padding: 0 0 0 15;
+}
+
+.increase-bid-button {
+    -fx-background-color: #1ed760;
+    -fx-text-fill: #000000;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-cursor: hand;
+    -fx-padding: 12 20;
+    -fx-background-radius: 9999;
+    -fx-letter-spacing: 1.4;
+}
+
+.increase-bid-button:hover {
+    -fx-background-color: #1fdf64;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 8, 0, 0, 4);
+}
+
+.increase-bid-button:pressed {
+    -fx-background-color: #169c46;
+}
+
+/* =============================================
+   COMPLETED BIDS SECTION
+   ============================================= */
+.completed-bids-section {
+    -fx-padding: 20 30 30 30;
+    -fx-spacing: 15;
+}
+
+.selling-items-section {
+    -fx-padding: 0 30 30 30;
+    -fx-spacing: 15;
+}
+
+.completed-table-container {
+    -fx-background-color: #181818;
+    -fx-border-color: transparent;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 8);
+}
+
+/* TABLE HEADER */
+.table-header {
+    -fx-background-color: #1f1f1f;
+    -fx-padding: 15 20;
+    -fx-border-color: #252525;
+    -fx-border-width: 0 0 1 0;
+    -fx-spacing: 12;
+    -fx-background-radius: 8 8 0 0;
+}
+
+.table-header-label {
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #b3b3b3;
+    -fx-letter-spacing: 2;
+}
+
+/* TABLE COLUMNS WIDTH */
+.table-col-bid {
+    -fx-min-width: 100;
+    -fx-pref-width: 100;
+    -fx-alignment: center-left;
+}
+
+.table-col-price {
+    -fx-min-width: 110;
+    -fx-pref-width: 110;
+    -fx-alignment: center-left;
+}
+
+.table-col-status {
+    -fx-min-width: 90;
+    -fx-pref-width: 90;
+    -fx-alignment: center;
+}
+
+.table-col-date {
+    -fx-min-width: 110;
+    -fx-pref-width: 110;
+    -fx-alignment: center-left;
+}
+
+.table-col-item {
+    -fx-min-width: 250;
+}
+
+/* TABLE SCROLL */
+.completed-table-scroll {
+    -fx-background-color: transparent;
+    -fx-max-height: 225;
+}
+
+.completed-table-scroll .viewport {
+    -fx-background-color: #181818;
+}
+
+.completed-table-rows {
+    -fx-background-color: #181818;
+}
+
+/* TABLE ROWS */
+.table-row {
+    -fx-background-color: #181818;
+    -fx-padding: 15 20;
+    -fx-border-color: #1f1f1f;
+    -fx-border-width: 0 0 1 0;
+    -fx-spacing: 12;
+    -fx-alignment: center-left;
+}
+
+.table-row:hover {
+    -fx-background-color: #252525;
+}
+
+.table-item-image {
+    -fx-background-color: #1f1f1f;
+    -fx-min-width: 42;
+    -fx-min-height: 42;
+    -fx-pref-width: 42;
+    -fx-pref-height: 42;
+    -fx-max-width: 42;
+    -fx-max-height: 42;
+    -fx-background-radius: 4;
+}
+
+.table-item-name {
+    -fx-font-size: 12px;
+    -fx-text-fill: #ffffff;
+}
+
+.table-value {
+    -fx-font-size: 11px;
+    -fx-text-fill: #b3b3b3;
+}
+
+/* STATUS BADGES */
+.status-badge {
+    -fx-font-size: 9px;
+    -fx-font-weight: 700;
+    -fx-padding: 5 12;
+    -fx-letter-spacing: 1.4;
+    -fx-background-radius: 9999;
+}
+
+.status-won {
+    -fx-background-color: rgba(30, 215, 96, 0.15);
+    -fx-text-fill: #1ed760;
+}
+
+.status-lost {
+    -fx-background-color: rgba(243, 114, 127, 0.15);
+    -fx-text-fill: #f3727f;
+}
+
+.status-active {
+    -fx-background-color: rgba(30, 215, 96, 0.15);
+    -fx-text-fill: #1ed760;
+}
+
+.status-ended {
+    -fx-background-color: rgba(255, 255, 255, 0.12);
+    -fx-text-fill: #d6d6d6;
+}
+
+.table-action-button {
+    -fx-background-color: #1ed760;
+    -fx-text-fill: #000000;
+    -fx-font-size: 9px;
+    -fx-font-weight: 700;
+    -fx-cursor: hand;
+    -fx-padding: 8 14;
+    -fx-background-radius: 9999;
+}
+
+.table-action-button:hover {
+    -fx-background-color: #1fdf64;
+}

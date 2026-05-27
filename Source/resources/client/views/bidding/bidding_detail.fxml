@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import Client.components.AppHeader?>
+<?import java.lang.String?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
+
+<?import javafx.scene.image.ImageView?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.image.Image?>
+<VBox maxHeight="576.0" maxWidth="977.0" minHeight="576.0" minWidth="977.0" prefHeight="576.0" prefWidth="977.0" styleClass="root" stylesheets="@/client/views/bidding/bidding_detail.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.features.bidding.BiddingDetailController">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         CUSTOM TITLE BAR (same as login)
+         ═══════════════════════════════════════════════════════════ -->
+    <HBox fx:id="titleBar" alignment="CENTER_LEFT" onMouseDragged="#onTitleBarDragged" onMousePressed="#onTitleBarPressed" styleClass="title-bar">
+
+        <!-- Logo -->
+        <ImageView fitHeight="16" fitWidth="16" preserveRatio="true">
+
+        </ImageView>
+
+        <!-- App title -->
+        <Label styleClass="window-title" text=" ">
+            <HBox.margin><Insets left="8.0" /></HBox.margin>
+        </Label>
+
+        <!-- Spacer -->
+        <Region HBox.hgrow="ALWAYS" />
+
+        <!-- Window controls -->
+        <Button onAction="#handleMinimize" styleClass="title-bar-button" text="─" />
+        <Label styleClass="disable-button" text="□" />
+        <Button onAction="#handleClose" text="✕">
+            <styleClass>
+                <String fx:value="title-bar-button" />
+                <String fx:value="close-btn" />
+            </styleClass></Button>
+    </HBox>
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="root-scroll" vbarPolicy="AS_NEEDED" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
+
+        <VBox maxWidth="960" minWidth="960" prefWidth="960" styleClass="main-container">
+
+            <!-- HEADER -->
+            <AppHeader fx:id="appHeader" activePage="DETAIL" />
+
+            <!-- Quay lai trang chu -->
+            <HBox styleClass="back-section">
+                <Button fx:id="btnBackToListings" onAction="#switchToDashboard" styleClass="back-button">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="5">
+                            <Region styleClass="back-arrow" />
+                            <Label styleClass="back-text" text="Back to Listings" />
+                        </HBox>
+                    </graphic>
+                </Button>
+            </HBox>
+
+            <!-- NOI DUNG CHINH -->
+            <HBox spacing="20" styleClass="content-area">
+
+                <!-- LEFT COLUMN: pic n description -->
+                <VBox spacing="20" styleClass="left-column" HBox.hgrow="NEVER">
+
+                    <!-- MAIN IMAGE -->
+                    <Region fx:id="mainImage" styleClass="main-image" />
+
+                    <!-- THUMBNAIL -->
+                    <HBox spacing="15" styleClass="thumbnail-gallery">
+                        <Region fx:id="thumbnail1" styleClass="thumbnail">
+                        </Region>
+                        <Region fx:id="thumbnail2" styleClass="thumbnail">
+                        </Region>
+                        <Region fx:id="thumbnail3" styleClass="thumbnail">
+                        </Region>
+                        <Region fx:id="thumbnail4" styleClass="thumbnail">
+                            <!--                        <Label text="4" styleClass="thumbnail-number"/>-->
+                        </Region>
+                    </HBox>
+
+                    <!-- DESCRIPTION -->
+                    <VBox styleClass="description-box">
+                        <Label styleClass="section-title" text="DESCRIPTION" />
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="description-scroll">
+                            <Label fx:id="lblDescription" styleClass="description-text" text="" wrapText="true" />
+                        </ScrollPane>
+                    </VBox>
+
+                    <!-- chi tiet -->
+                    <VBox styleClass="specifications-box">
+                        <Label styleClass="section-title" text="SPECIFICATIONS" />
+                        <GridPane hgap="20" styleClass="specs-grid" vgap="12">
+                            <Label styleClass="spec-label" text="Condition:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                            <Label fx:id="lblCondition" styleClass="spec-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                            <Label styleClass="spec-label" text="Category:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                            <Label fx:id="lblCategory" styleClass="spec-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+                            <Label styleClass="spec-label" text="Location:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                            <Label fx:id="lblLocation" styleClass="spec-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+
+                            <Label styleClass="spec-label" text="Item ID:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                            <Label fx:id="lblItemId" styleClass="spec-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                            <columnConstraints>
+                                <ColumnConstraints />
+                                <ColumnConstraints />
+                            </columnConstraints>
+                            <rowConstraints>
+                                <RowConstraints />
+                                <RowConstraints />
+                                <RowConstraints />
+                                <RowConstraints />
+                            </rowConstraints>
+                        </GridPane>
+                    </VBox>
+
+                </VBox>
+
+                <!-- RIGHT COLUMN: Title, Timer, Bidding, Seller, History -->
+                <VBox spacing="20" styleClass="right-column" HBox.hgrow="NEVER">
+
+                    <!-- ITEM TITLE -->
+                    <Label fx:id="lblItemTitle" styleClass="item-title" text="Loading..." />
+
+                    <!-- dem nguoc -->
+                    <VBox styleClass="timer-box">
+                        <Label styleClass="timer-label" text="TIME REMAINING" />
+                        <HBox alignment="CENTER_LEFT" spacing="8" styleClass="timer-display">
+                            <Region styleClass="clock-icon" />
+                            <Label fx:id="lblTimerValue" styleClass="timer-value" text="--:--:--" />
+                        </HBox>
+
+                        <!-- chi tiet dem nguoc -->
+                        <HBox spacing="15" styleClass="time-breakdown">
+                            <VBox styleClass="time-unit">
+                                <Label fx:id="lblHours" styleClass="time-number" text="--" />
+                                <Label styleClass="time-unit-label" text="HOURS" />
+                            </VBox>
+                            <VBox styleClass="time-unit">
+                                <Label fx:id="lblMinutes" styleClass="time-number" text="--" />
+                                <Label styleClass="time-unit-label" text="MINS" />
+                            </VBox>
+                            <VBox styleClass="time-unit">
+                                <Label fx:id="lblSeconds" styleClass="time-number" text="--" />
+                                <Label styleClass="time-unit-label" text="SECS" />
+                            </VBox>
+                        </HBox>
+                    </VBox>
+
+                    <!-- CURRENT BID BOX -->
+                    <VBox styleClass="current-bid-box">
+                        <Label styleClass="bid-label" text="CURRENT BID" />
+                        <Label fx:id="lblCurrentBid" styleClass="bid-amount" text="0VND" />
+                        <HBox alignment="CENTER_LEFT" spacing="15" styleClass="bid-meta">
+                            <HBox alignment="CENTER_LEFT" spacing="5">
+                                <Region styleClass="bid-count-icon" />
+                                <Label fx:id="lblBidCount" styleClass="bid-meta-text" text="0 bids" />
+                            </HBox>
+                            <HBox alignment="CENTER_LEFT" spacing="5">
+                                <Region styleClass="watcher-icon" />
+                                <Label fx:id="lblWatcherCount" styleClass="bid-meta-text" text="0 participants" />
+                            </HBox>
+                        </HBox>
+                    </VBox>
+
+                    <!-- PLACE YOUR BID BOX -->
+                    <VBox styleClass="place-bid-box">
+                        <Label styleClass="place-bid-label" text="PLACE YOUR BID" />
+                        <Label fx:id="lblMinBid" styleClass="min-bid-notice" text="Minimum bid: -" />
+                        <TextField fx:id="txtBidAmount" promptText="Enter your bid amount" styleClass="bid-input" />
+                        <Button fx:id="btnPlaceBid" maxWidth="Infinity" styleClass="place-bid-button" text="PLACE BID" />
+                        <Button fx:id="btnAddWatchlist" maxWidth="Infinity" styleClass="watchlist-button" text="ADD TO WATCHLIST" />
+                    </VBox>
+
+                    <!-- SELLER INFORMATION BOX -->
+                    <VBox styleClass="seller-box">
+                        <Label styleClass="seller-label" text="SELLER INFORMATION" />
+                        <HBox alignment="CENTER_LEFT" spacing="12" styleClass="seller-info">
+                            <Region styleClass="seller-avatar" />
+                            <Label fx:id="lblSellerName" styleClass="seller-name" text="Loading..." />
+                        </HBox>
+                        <Button fx:id="btnContactSeller" maxWidth="Infinity" styleClass="contact-seller-button" text="CONTACT SELLER" />
+                    </VBox>
+
+                    <!-- BID HISTORY BOX: EXAMPLE PROTOTYPE -->
+                    <VBox styleClass="bid-history-box" VBox.vgrow="ALWAYS">
+                        <Label styleClass="bid-history-label" text="BID HISTORY" />
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="bid-history-scroll" VBox.vgrow="ALWAYS">
+                            <VBox fx:id="bidHistoryList" styleClass="bid-history-list">
+                                <!-- Populated dynamically by BiddingDetailController -->
+                            </VBox>
+                        </ScrollPane>
+                    </VBox>
+
+                </VBox>
+
+            </HBox>
+
+        </VBox>
+
+    </ScrollPane>
+
+</VBox>

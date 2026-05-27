@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import Client.components.AppHeader?>
+<?import java.lang.String?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox maxHeight="576.0" maxWidth="977.0" minHeight="576.0" minWidth="977.0" prefHeight="576.0" prefWidth="977.0" styleClass="root" stylesheets="@sell_item.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.features.sell.SellItemController">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         CUSTOM TITLE BAR (matching dashboard/bidding_detail)
+         ═══════════════════════════════════════════════════════════ -->
+    <HBox fx:id="titleBar" alignment="CENTER_LEFT" onMouseDragged="#onTitleBarDragged" onMousePressed="#onTitleBarPressed" styleClass="title-bar">
+
+        <ImageView fitHeight="16" fitWidth="16" preserveRatio="true" />
+
+        <Label styleClass="window-title" text=" ">
+            <HBox.margin><Insets left="8.0" /></HBox.margin>
+        </Label>
+
+        <Region HBox.hgrow="ALWAYS" />
+
+        <Button onAction="#handleMinimize" styleClass="title-bar-button" text="─" />
+        <Label styleClass="disable-button" text="□" />
+        <Button onAction="#handleClose" text="✕">
+            <styleClass>
+                <String fx:value="title-bar-button" />
+                <String fx:value="close-btn" />
+            </styleClass>
+        </Button>
+    </HBox>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SCROLL CONTAINER
+         ═══════════════════════════════════════════════════════════ -->
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="root-scroll" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
+
+        <VBox maxWidth="960" minWidth="960" prefWidth="960" styleClass="main-container">
+
+            <!-- ─────────────────────────────────────────────────────
+                 HEADER (matching dashboard/bidding_detail)
+                 ───────────────────────────────────────────────────── -->
+            <AppHeader fx:id="appHeader" activePage="SELL_ITEM" />
+
+            <!-- ─────────────────────────────────────────────────────
+                 BACK BUTTON SECTION (matching bidding_detail)
+                 ───────────────────────────────────────────────────── -->
+            <HBox styleClass="back-section">
+                <Button fx:id="btnBackToListings" onAction="#switchToDashboard" styleClass="back-button">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="5">
+                            <Region styleClass="back-arrow" />
+                            <Label styleClass="back-text" text="Back to Listings" />
+                        </HBox>
+                    </graphic>
+                </Button>
+            </HBox>
+
+            <!-- ─────────────────────────────────────────────────────
+                 MAIN CONTENT: Left Column (Photos) + Right Column (Form)
+                 ───────────────────────────────────────────────────── -->
+            <HBox spacing="20" styleClass="content-area">
+
+                <!-- ════════════════════════════════════════════
+                     LEFT COLUMN — Image Upload & Tips
+                     ════════════════════════════════════════════ -->
+                <VBox spacing="20" styleClass="left-column" HBox.hgrow="NEVER">
+
+                    <!-- PHOTO UPLOAD BOX -->
+                    <VBox spacing="12" styleClass="upload-box">
+
+                        <Label styleClass="section-title" text="MAIN DISPLAY PICTURE" />
+
+                        <!-- Main Drop Zone -->
+                        <StackPane fx:id="mainDropZone" onMouseClicked="#handleMainUpload" styleClass="drop-zone">
+                            <VBox alignment="CENTER" spacing="10">
+                                <Label styleClass="drop-zone-title" text="Main picture required" />
+                                <Label styleClass="drop-zone-hint" text="JPG, PNG · Max 5 MB each" />
+                            </VBox>
+                        </StackPane>
+
+                        <!-- Thumbnail Strip Label -->
+                        <Label styleClass="upload-sub-label" text="ADDITIONAL PICTURES (MAX 3)" />
+
+                        <!-- Thumbnail Strip: 1 Add Button + 3 slots -->
+                        <HBox fx:id="thumbnailRow" alignment="CENTER_LEFT" spacing="8" styleClass="thumbnail-row">
+
+                            <!-- Add Photo Button -->
+                            <StackPane fx:id="addPhotoBtn" onMouseClicked="#handleAddPhoto" styleClass="thumb-add-btn">
+                                <Label styleClass="thumb-add-icon" text="+" />
+                            </StackPane>
+
+                            <!-- Slot 1 -->
+                            <StackPane fx:id="thumb1" styleClass="thumb-slot">
+                                <Region styleClass="thumb-placeholder" />
+                            </StackPane>
+
+                            <!-- Slot 2 -->
+                            <StackPane fx:id="thumb2" styleClass="thumb-slot">
+                                <Region styleClass="thumb-placeholder" />
+                            </StackPane>
+
+                            <!-- Slot 3 -->
+                            <StackPane fx:id="thumb3" styleClass="thumb-slot">
+                                <Region styleClass="thumb-placeholder" />
+                            </StackPane>
+
+                        </HBox>
+
+                        <Label styleClass="upload-tip" text="The main picture is required and will be used as the cover image." />
+
+                    </VBox>
+
+                    <!-- LISTING TIPS BOX -->
+                    <VBox spacing="12" styleClass="tips-box">
+
+                        <Label styleClass="section-title" text="LISTING TIPS" />
+
+                        <VBox spacing="10" styleClass="tips-list">
+                            <HBox alignment="TOP_LEFT" spacing="10" fillHeight="false">
+                                <Region styleClass="tip-dot">
+                                    <HBox.margin>
+                                        <Insets top="7"/>
+                                    </HBox.margin>
+                                </Region>
+
+                                <Label styleClass="tip-text"
+                                       text="Use clear, well-lit photos from multiple angles."
+                                       wrapText="true" />
+                            </HBox>
+
+                            <HBox alignment="TOP_LEFT" spacing="10" fillHeight="false">
+                                <Region styleClass="tip-dot">
+                                    <HBox.margin>
+                                        <Insets top="7"/>
+                                    </HBox.margin>
+                                </Region>
+
+                                <Label styleClass="tip-text"
+                                       text="Be honest about item condition — it builds trust and reduces disputes."
+                                       wrapText="true" />
+                            </HBox>
+
+                            <HBox alignment="TOP_LEFT" spacing="10" fillHeight="false">
+                                <Region styleClass="tip-dot">
+                                    <HBox.margin>
+                                        <Insets top="7"/>
+                                    </HBox.margin>
+                                </Region>
+
+                                <Label styleClass="tip-text"
+                                       text="Set a competitive starting price to attract early bids."
+                                       wrapText="true" />
+                            </HBox>
+
+                            <HBox alignment="TOP_LEFT" spacing="10" fillHeight="false">
+                                <Region styleClass="tip-dot">
+                                    <HBox.margin>
+                                        <Insets top="7"/>
+                                    </HBox.margin>
+                                </Region>
+
+                                <Label styleClass="tip-text"
+                                       text="End auctions on evenings or weekends for maximum traffic."
+                                       wrapText="true" />
+                            </HBox>
+                        </VBox>
+
+                    </VBox>
+
+                </VBox>
+
+                <!-- ════════════════════════════════════════════
+                     RIGHT COLUMN — Form Fields
+                     ════════════════════════════════════════════ -->
+                <VBox spacing="20" styleClass="right-column" HBox.hgrow="NEVER">
+
+                    <!-- ITEM DETAILS -->
+                    <VBox spacing="14" styleClass="form-box">
+
+                        <Label styleClass="section-title" text="ITEM DETAILS" />
+
+                        <!-- Item Name -->
+                        <VBox spacing="6" styleClass="form-field">
+                            <Label styleClass="field-label" text="Item Name" />
+                            <TextField fx:id="txtItemName" promptText="e.g. Vintage Leica M3 Camera — 1954" styleClass="form-input" />
+                        </VBox>
+
+                        <!-- Category + Condition (Balanced Row) -->
+                        <HBox spacing="12">
+                            <VBox spacing="6" styleClass="form-field" HBox.hgrow="ALWAYS">
+                                <Label styleClass="field-label" text="Category" />
+                                <ComboBox fx:id="cmbCategory" maxWidth="Infinity" styleClass="form-combo" />
+                            </VBox>
+                            <VBox spacing="6" styleClass="form-field" HBox.hgrow="ALWAYS">
+                                <Label styleClass="field-label" text="Condition" />
+                                <TextField fx:id="txtCondition" promptText="e.g. New, Like New, Good..." styleClass="form-input" />
+                            </VBox>
+                        </HBox>
+
+                        <!-- Starting Price (Full Row) -->
+                        <VBox spacing="6" styleClass="form-field">
+                            <Label styleClass="field-label" text="Starting Price" />
+                            <HBox alignment="CENTER_LEFT" styleClass="price-input-wrapper">
+                                <Label styleClass="currency-label" text="₫" />
+                                <TextField fx:id="txtStartingPrice" promptText="0" styleClass="price-input" HBox.hgrow="ALWAYS" />
+                            </HBox>
+                        </VBox>
+
+                        <!-- Description -->
+                        <VBox spacing="6" styleClass="form-field">
+                            <HBox alignment="CENTER_LEFT">
+                                <Label styleClass="field-label" text="Description" HBox.hgrow="ALWAYS" />
+                                <Region HBox.hgrow="ALWAYS" />
+                                <Label fx:id="lblCharCount" styleClass="char-count" text="0 / 500" />
+                            </HBox>
+                            <TextArea fx:id="txtDescription" promptText="Describe your item — its condition, history, what's included, and any known defects." styleClass="form-textarea" wrapText="true" />
+                        </VBox>
+
+                        <!-- Location -->
+                        <VBox spacing="6" styleClass="form-field">
+                            <Label styleClass="field-label" text="Location" />
+                            <TextField fx:id="txtLocation" promptText="City, Province" styleClass="form-input" />
+                        </VBox>
+
+                    </VBox>
+
+                    <!-- AUCTION SETTINGS -->
+                    <VBox spacing="14" styleClass="form-box">
+
+                        <Label styleClass="section-title" text="AUCTION SETTINGS" />
+
+                        <!-- End Date (Full Row) -->
+                        <VBox spacing="6" styleClass="form-field">
+                            <Label styleClass="field-label" text="End Date" />
+                            <DatePicker fx:id="dpEndDate" maxWidth="Infinity" styleClass="form-datepicker" />
+                        </VBox>
+
+                        <!-- Min Bid Increment -->
+                        <VBox spacing="6" styleClass="form-field">
+                            <Label styleClass="field-label" text="Minimum Bid Increment" />
+                            <HBox alignment="CENTER_LEFT" styleClass="price-input-wrapper">
+                                <Label styleClass="currency-label" text="₫" />
+                                <TextField fx:id="txtBidIncrement" promptText="50,000" styleClass="price-input" HBox.hgrow="ALWAYS" />
+                            </HBox>
+                        </VBox>
+
+                        <!-- Auto-extend Toggle -->
+                        <HBox alignment="CENTER_LEFT" spacing="16" styleClass="toggle-row">
+                            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                                <Label styleClass="field-label" text="Auto-extend Auction" />
+                                <Label styleClass="toggle-hint" text="Extends by 5 min when a bid arrives in the final 2 minutes." wrapText="true" />
+                            </VBox>
+                            <Button fx:id="btnAutoExtend" onAction="#toggleAutoExtend" styleClass="toggle-btn-off" text="OFF" />
+                        </HBox>
+
+                    </VBox>
+
+                    <!-- ACTION BUTTONS -->
+                    <HBox alignment="CENTER_RIGHT" spacing="12" styleClass="form-actions">
+                        <Button fx:id="btnReset" onAction="#handleReset" styleClass="cancel-button" text="RESET" />
+                        <Button fx:id="btnListItem" onAction="#handleListItem" styleClass="list-item-button" text="LIST ITEM" />
+                    </HBox>
+
+                </VBox>
+
+            </HBox>
+
+        </VBox>
+
+    </ScrollPane>
+
+</VBox>

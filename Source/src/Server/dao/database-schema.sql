@@ -7,9 +7,10 @@
 -- Create database
 -- CREATE DATABASE IF NOT EXISTS hethongdaugia 
 -- CHARACTER SET utf8mb4 
---COLLATE utf8mb4_unicode_ci;
+-- COLLATE utf8mb4_unicode_ci;
 
--- USE hethongdaugia;
+USE blbsc98ma5stojowrgcs;
+SET SQL_SAFE_UPDATES = 0;
 
 -- ============================================================================
 -- Table 1: users - Quản lý người dùng (Bidder, Seller, Admin)
@@ -27,22 +28,117 @@ CREATE TABLE IF NOT EXISTS users (
 COMMENT='Bảng quản lý người dùng hệ thống';
 
 -- ============================================================================
+-- Table 1b: user_wallets - User wallet balances
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS user_wallets (
+    username VARCHAR(50) PRIMARY KEY COMMENT 'Wallet owner username',
+    balance BIGINT NOT NULL DEFAULT 100000 COMMENT 'Total wallet balance',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='User wallet balances';
+
+CREATE TABLE IF NOT EXISTS wallet_transactions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    type VARCHAR(32) NOT NULL COMMENT 'INITIAL_CREDIT, DEPOSIT, HOLD, HOLD_RELEASE, SPENT, REFUND',
+    amount BIGINT NOT NULL,
+    auction_id INT NULL,
+    bid_id BIGINT NULL,
+    note VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE,
+    INDEX idx_wallet_tx_user (username),
+    INDEX idx_wallet_tx_type (type),
+    INDEX idx_wallet_tx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Wallet transaction ledger';
+
+CREATE TABLE IF NOT EXISTS wallet_holds (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    auction_id INT NOT NULL,
+    amount BIGINT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE KEY uk_wallet_hold_user_auction (username, auction_id),
+    FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE,
+    INDEX idx_wallet_hold_user (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Active wallet holds for current highest bids';
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    auction_id INT NULL,
+    type VARCHAR(64) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    action_target VARCHAR(64) NOT NULL,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE,
+    INDEX idx_notification_user (username),
+    INDEX idx_notification_unread (username, is_read),
+    INDEX idx_notification_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Persisted user notifications';
+
+INSERT INTO user_wallets (username, balance)
+SELECT username, 100000
+FROM users
+WHERE username NOT IN (SELECT username FROM user_wallets);
+
+INSERT INTO wallet_transactions (username, type, amount, note)
+SELECT username, 'INITIAL_CREDIT', 100000, 'Initial wallet credit'
+FROM users
+WHERE username NOT IN (
+    SELECT username FROM wallet_transactions WHERE type = 'INITIAL_CREDIT'
+);
+
+-- ============================================================================
 -- Table 2: items - Quản lý sản phẩm đấu giá
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS items (
     item_id VARCHAR(36) PRIMARY KEY COMMENT 'ID sản phẩm (UUID)',
     name VARCHAR(255) NOT NULL COMMENT 'Tên sản phẩm',
     starting_price FLOAT NOT NULL COMMENT 'Giá khởi điểm',
+    current_highest_price FLOAT NOT NULL COMMENT 'Giá hiện tại cao nhất',
     item_type VARCHAR(50) NOT NULL COMMENT 'Loại sản phẩm: ELECTRONICS, ART, VEHICLE',
     description TEXT COMMENT 'Mô tả chi tiết sản phẩm',
+    auction_start_time DATETIME NULL COMMENT 'Thời gian bắt đầu đấu giá',
+    auction_end_time DATETIME NULL COMMENT 'Thời gian kết thúc đấu giá',
     seller_username VARCHAR(50) COMMENT 'Người bán sở hữu sản phẩm',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Thời điểm tạo sản phẩm',
     
+    item_condition VARCHAR(255) NULL COMMENT 'Seller-provided condition description',
+    location VARCHAR(255) NULL COMMENT 'Seller-provided item location',
+    
     FOREIGN KEY (seller_username) REFERENCES users(username) ON DELETE SET NULL,
+    
     INDEX idx_seller (seller_username),
     INDEX idx_item_type (item_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Bảng quản lý sản phẩm đấu giá';
+
+-- ============================================================================
+-- Table 2b: item_images - Lưu đường dẫn ảnh sản phẩm
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS item_images (
+    image_id VARCHAR(36) PRIMARY KEY COMMENT 'ID ảnh (UUID)',
+    item_id VARCHAR(36) NOT NULL COMMENT 'ID sản phẩm',
+    image_path VARCHAR(500) NOT NULL COMMENT 'Đường dẫn ảnh hoặc URL',
+    is_primary BOOLEAN DEFAULT FALSE COMMENT 'Có phải ảnh chính không',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (item_id) REFERENCES items(item_id) ON DELETE CASCADE,
+    INDEX idx_item_id (item_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Bảng lưu trữ ảnh của sản phẩm';
 
 -- ============================================================================
 -- Table 3: auction_snapshots - Thông tin chính của phiên đấu giá
@@ -57,8 +153,11 @@ CREATE TABLE IF NOT EXISTS auction_snapshots (
     status VARCHAR(20) NOT NULL DEFAULT 'OPEN' COMMENT 'Trạng thái: OPEN, RUNNING, FINISHED, PAID, CANCELED',
     was_in_countdown BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Có đang ở giai đoạn countdown không',
     
+    minimum_bid_increment FLOAT NOT NULL DEFAULT 1 COMMENT 'Minimum increase required for each new bid',
+    
     FOREIGN KEY (client_owner) REFERENCES users(username) ON DELETE CASCADE,
     FOREIGN KEY (item_id) REFERENCES items(item_id) ON DELETE CASCADE,
+    
     INDEX idx_status (status),
     INDEX idx_client_owner (client_owner),
     INDEX idx_terminate_at (terminate_at)
@@ -118,23 +217,28 @@ CREATE TABLE IF NOT EXISTS bid_transactions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Bảng ghi nhận chi tiết tất cả các giao dịch bid';
 
+SET SQL_SAFE_UPDATES = 1;
+
+SELECT * FROM items LIMIT 10;
+SELECT * FROM users LIMIT 10;
+
 -- ============================================================================
 -- SAMPLE DATA - Dữ liệu mẫu để test (tùy chọn)
 -- ============================================================================
 
 -- Thêm người dùng mẫu
-INSERT INTO users (username, password, email, role) VALUES 
-('seller_john', 'pass123', 'john@example.com', 'SELLER'),
-('seller_ann', 'pass456', 'ann@example.com', 'SELLER'),
-('bidder_bob', 'pass789', 'bob@example.com', 'BIDDER'),
-('bidder_alice', 'pass000', 'alice@example.com', 'BIDDER'),
-('admin_root', 'admin123', 'admin@example.com', 'ADMIN')
-ON DUPLICATE KEY UPDATE username=username;
+-- INSERT INTO users (username, password, email, role) VALUES 
+-- ('seller_john', 'pass123', 'john@example.com', 'SELLER'),
+-- ('seller_ann', 'pass456', 'ann@example.com', 'SELLER'),
+-- ('bidder_bob', 'pass789', 'bob@example.com', 'BIDDER'),
+-- ('bidder_alice', 'pass000', 'alice@example.com', 'BIDDER'),
+-- ('admin_root', 'admin123', 'admin@example.com', 'ADMIN')
+-- ON DUPLICATE KEY UPDATE username=username;
 
 -- Thêm sản phẩm mẫu
-INSERT INTO items (item_id, name, starting_price, item_type, description, seller_username) VALUES 
-('item-001', 'Gaming Laptop RTX 4090', 1500.0, 'ELECTRONICS', 'Laptop gaming cao cấp', 'seller_john'),
-('item-002', 'Tranh sơn dầu cổ', 500.0, 'ART', 'Tranh sơn dầu thế kỷ 19', 'seller_ann'),
-('item-003', 'Xe máy Honda Air Blade', 3000.0, 'VEHICLE', 'Xe máy 110cc, tình trạng tốt', 'seller_john')
-ON DUPLICATE KEY UPDATE name=name;
+-- INSERT INTO items (item_id, name, starting_price, item_type, description, seller_username) VALUES 
+-- ('item-001', 'Gaming Laptop RTX 4090', 1500.0, 'ELECTRONICS', 'Laptop gaming cao cấp', 'seller_john'),
+-- ('item-002', 'Tranh sơn dầu cổ', 500.0, 'ART', 'Tranh sơn dầu thế kỷ 19', 'seller_ann'),
+-- ('item-003', 'Xe máy Honda Air Blade', 3000.0, 'VEHICLE', 'Xe máy 110cc, tình trạng tốt', 'seller_john')
+-- ON DUPLICATE KEY UPDATE name=name;
 

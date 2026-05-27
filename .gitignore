@@ -37,3 +37,5 @@ build/
 
 ### Mac OS ###
 .DS_Store
+Source/resources/db.properties
+Source/resources/cloudinary.properties

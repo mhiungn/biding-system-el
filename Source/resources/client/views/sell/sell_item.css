@@ -1,0 +1,655 @@
+@font-face {
+    src: url('/client/fonts/SVN-Canopee.otf');
+}
+
+@font-face {
+    src: url('/client/fonts/SpaceMono-Regular.ttf');
+}
+
+/* =============================================
+   ROOT & SCROLL
+   ============================================= */
+.root {
+    -fx-font-family: "Space Mono";
+    -fx-background-color: #121212;
+}
+
+.root-scroll {
+    -fx-background-color: #121212;
+    -fx-border-color: transparent;
+}
+
+.root-scroll .viewport {
+    -fx-background-color: #121212;
+}
+
+.root-scroll:focused {
+    -fx-border-color: transparent;
+}
+
+.main-container {
+    -fx-background-color: #121212;
+    -fx-padding: 0;
+}
+
+/* =============================================
+   CUSTOM TITLE BAR
+   ============================================= */
+.title-bar {
+    -fx-background-color: #121212;
+    -fx-padding: 0 0 0 12;
+    -fx-pref-height: 36;
+    -fx-min-height: 36;
+    -fx-max-height: 36;
+    -fx-border-color: transparent transparent #1f1f1f transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.window-title {
+    -fx-font-size: 12px;
+    -fx-text-fill: #b3b3b3;
+}
+
+.title-bar-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #b3b3b3;
+    -fx-font-size: 13px;
+    -fx-font-family: "Space Mono";
+    -fx-background-radius: 0;
+    -fx-padding: 0 14 0 14;
+    -fx-pref-height: 36;
+    -fx-min-height: 36;
+    -fx-cursor: hand;
+    -fx-border-color: transparent;
+}
+
+.title-bar-button:hover {
+    -fx-background-color: #2a2a2a;
+    -fx-text-fill: #ffffff;
+}
+
+.disable-button {
+    -fx-opacity: 0.3;
+    -fx-text-fill: #b3b3b3;
+    -fx-font-size: 11px;
+    -fx-font-family: "Space Mono";
+    -fx-padding: 0 14 0 14;
+    -fx-alignment: CENTER;
+}
+
+.close-btn {
+    -fx-text-fill: #b3b3b3;
+}
+
+.close-btn:hover {
+    -fx-background-color: #e81123;
+    -fx-text-fill: #ffffff;
+}
+
+/* =============================================
+   HEADER (matching dashboard)
+   ============================================= */
+.header {
+    -fx-background-color: #121212;
+    -fx-padding: 15 30;
+    -fx-border-color: #1f1f1f;
+    -fx-border-width: 0 0 1 0;
+    -fx-min-height: 60;
+}
+
+.logo {
+    -fx-background-image: url('/client/images/logo.png');
+    -fx-background-size: contain;
+    -fx-background-position: center;
+    -fx-background-repeat: no-repeat;
+}
+
+.app-title {
+    -fx-font-family: "SVN-Canopee";
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1ed760;
+}
+
+.nav-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #b3b3b3;
+    -fx-font-size: 14px;
+    -fx-font-weight: 400;
+    -fx-cursor: hand;
+    -fx-padding: 8 15;
+    -fx-background-radius: 9999;
+    -fx-border-color: transparent;
+}
+
+.nav-button:hover {
+    -fx-text-fill: #ffffff;
+    -fx-background-color: #1f1f1f;
+}
+
+.nav-button-active {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: 700;
+}
+
+.icon-button,
+.icon-button-badge {
+    -fx-background-color: transparent;
+    -fx-cursor: hand;
+    -fx-padding: 8;
+    -fx-background-radius: 50%;
+}
+
+.icon-button:hover,
+.icon-button-badge:hover {
+    -fx-background-color: #1f1f1f;
+}
+
+.search-icon,
+.notification-icon {
+    -fx-min-width: 24;
+    -fx-min-height: 24;
+    -fx-pref-width: 24;
+    -fx-pref-height: 24;
+    -fx-background-color: #b3b3b3;
+    -fx-background-radius: 50%;
+}
+
+.search-icon:hover,
+.notification-icon:hover {
+    -fx-background-color: #ffffff;
+}
+
+/* =============================================
+   BACK BUTTON (matching bidding_detail)
+   ============================================= */
+.back-section {
+    -fx-padding: 20 30 10 30;
+}
+
+.back-button {
+    -fx-background-color: transparent;
+    -fx-cursor: hand;
+    -fx-padding: 5 0;
+}
+
+.back-button:hover .back-text {
+    -fx-text-fill: #ffffff;
+}
+
+.back-arrow {
+    -fx-min-width: 12;
+    -fx-min-height: 12;
+    -fx-pref-width: 12;
+    -fx-pref-height: 12;
+    -fx-background-color: #b3b3b3;
+    -fx-shape: "M15 18l-6-6 6-6";
+}
+
+.back-text {
+    -fx-font-size: 12px;
+    -fx-text-fill: #b3b3b3;
+}
+
+/* =============================================
+   CONTENT LAYOUT & COLUMNS
+   ============================================= */
+.content-area {
+    -fx-padding: 10 30 30 30;
+}
+
+.left-column {
+    -fx-pref-width: 440;
+    -fx-min-width: 440;
+    -fx-max-width: 440;
+}
+
+.right-column {
+    -fx-pref-width: 440;
+    -fx-min-width: 440;
+    -fx-max-width: 440;
+}
+
+/* =============================================
+   CARD CONTAINERS (matching bidding_detail)
+   ============================================= */
+.upload-box,
+.tips-box,
+.form-box {
+    -fx-background-color: #181818;
+    -fx-padding: 20;
+    -fx-border-color: transparent;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 8);
+}
+
+.section-title {
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #b3b3b3;
+    -fx-letter-spacing: 2;
+}
+
+/* =============================================
+   LEFT COLUMN: PHOTO UPLOAD
+   ============================================= */
+.drop-zone {
+    -fx-background-color: #1f1f1f;
+    -fx-border-color: #4d4d4d;
+    -fx-border-width: 1;
+    -fx-border-style: dashed;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-min-height: 200;
+    -fx-pref-height: 200;
+    -fx-cursor: hand;
+}
+
+.drop-zone:hover {
+    -fx-background-color: #252525;
+    -fx-border-color: #1ed760;
+}
+
+.upload-icon {
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-pref-width: 32;
+    -fx-pref-height: 32;
+    -fx-background-color: #b3b3b3;
+    -fx-background-radius: 50%;
+}
+
+.drop-zone:hover .upload-icon {
+    -fx-background-color: #1ed760;
+}
+
+.drop-zone-title {
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #ffffff;
+}
+
+.drop-zone-hint {
+    -fx-font-size: 10px;
+    -fx-text-fill: #b3b3b3;
+}
+
+.upload-sub-label {
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #b3b3b3;
+    -fx-letter-spacing: 1.4;
+    -fx-padding: 8 0 0 0;
+}
+
+/* THUMBNAIL GALLERY */
+.thumbnail-row {
+    -fx-alignment: center-left;
+}
+
+.thumb-add-btn {
+    -fx-min-width: 66;
+    -fx-min-height: 66;
+    -fx-pref-width: 66;
+    -fx-pref-height: 66;
+    -fx-max-width: 66;
+    -fx-max-height: 66;
+    -fx-background-color: #1f1f1f;
+    -fx-border-color: #4d4d4d;
+    -fx-border-width: 1;
+    -fx-border-style: dashed;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-alignment: center;
+    -fx-cursor: hand;
+}
+
+.thumb-add-btn:hover {
+    -fx-background-color: #252525;
+    -fx-border-color: #1ed760;
+}
+
+.thumb-add-icon {
+    -fx-font-size: 20px;
+    -fx-text-fill: #b3b3b3;
+}
+
+.thumb-add-btn:hover .thumb-add-icon {
+    -fx-text-fill: #1ed760;
+}
+
+.thumb-slot {
+    -fx-min-width: 66;
+    -fx-min-height: 66;
+    -fx-pref-width: 66;
+    -fx-pref-height: 66;
+    -fx-max-width: 66;
+    -fx-max-height: 66;
+    -fx-background-color: #1f1f1f;
+    -fx-border-color: #4d4d4d;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+}
+
+.thumb-slot:hover {
+    -fx-border-color: #1ed760;
+}
+
+.thumb-placeholder {
+    -fx-min-width: 20;
+    -fx-min-height: 20;
+    -fx-pref-width: 20;
+    -fx-pref-height: 20;
+    -fx-background-color: #2a2a2a;
+    -fx-background-radius: 4;
+}
+
+.upload-tip {
+    -fx-font-size: 10px;
+    -fx-text-fill: #b3b3b3;
+}
+
+/* =============================================
+   LEFT COLUMN: LISTING TIPS
+   ============================================= */
+.tips-list {
+    -fx-padding: 5 0 0 0;
+}
+
+.tip-dot {
+    -fx-min-width: 6px;
+    -fx-min-height: 6px;
+    -fx-pref-width: 6px;
+    -fx-pref-height: 6px;
+    -fx-max-width: 6px;
+    -fx-max-height: 6px;
+    -fx-background-color: #1ed760;
+    -fx-background-radius: 999px;
+}
+
+.tip-text {
+    -fx-font-size: 11px;
+    -fx-text-fill: #b3b3b3;
+    -fx-line-spacing: 4px;
+}
+
+/* =============================================
+   RIGHT COLUMN: FORM FIELDS
+   ============================================= */
+.field-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #ffffff;
+}
+
+.field-optional {
+    -fx-font-size: 9px;
+    -fx-text-fill: #7c7c7c;
+    -fx-font-style: italic;
+    -fx-padding: 2 0 0 6;
+}
+
+/* STANDARD TEXTFIELDS */
+.form-input {
+    -fx-background-color: #1f1f1f;
+    -fx-border-color: #4d4d4d;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 10 12;
+    -fx-font-size: 12px;
+    -fx-text-fill: #ffffff;
+}
+
+.form-input:focused {
+    -fx-border-color: #1ed760;
+}
+
+/* TEXT AREA */
+.form-textarea {
+    -fx-background-color: #1f1f1f;
+    -fx-border-color: #4d4d4d;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 10 12;
+    -fx-font-size: 12px;
+    -fx-text-fill: #ffffff;
+    -fx-pref-height: 100;
+    -fx-min-height: 100;
+}
+
+.form-textarea:focused {
+    -fx-border-color: #1ed760;
+}
+
+.form-textarea .content {
+    -fx-background-color: transparent;
+}
+
+.form-textarea .scroll-pane {
+    -fx-background-color: transparent;
+}
+
+.form-textarea .scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+.char-count {
+    -fx-font-size: 10px;
+    -fx-text-fill: #7c7c7c;
+}
+
+/* PRICE COMBINED INPUT WRAPPER */
+.price-input-wrapper {
+    -fx-background-color: #1f1f1f;
+    -fx-border-color: #4d4d4d;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 0 10;
+}
+
+.price-input-wrapper:focused-within {
+    -fx-border-color: #1ed760;
+}
+
+.currency-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: #b3b3b3;
+    -fx-padding: 0 6 0 0;
+}
+
+.price-input {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 10 0;
+    -fx-font-size: 12px;
+    -fx-text-fill: #ffffff;
+}
+
+.price-input:focused {
+    -fx-border-color: transparent;
+}
+
+/* COMBO BOXES */
+.form-combo {
+    -fx-background-color: #1f1f1f;
+    -fx-border-color: #4d4d4d;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 6 12;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 12px;
+}
+
+.form-combo .list-cell {
+    -fx-text-fill: #ffffff;
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.form-combo:hover > .arrow-button {
+    -fx-background-color: #2a2a2a;
+}
+
+.form-combo > .arrow-button {
+    -fx-background-color: transparent;
+}
+
+.form-combo > .arrow-button > .arrow {
+    -fx-background-color: #b3b3b3;
+}
+
+.combo-box-popup > .list-view {
+    -fx-background-color: #181818;
+    -fx-border-color: #4d4d4d;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 18, 0, 0, 6);
+}
+
+.combo-box-popup > .list-view .list-cell {
+    -fx-background-color: #1f1f1f;
+    -fx-text-fill: #b3b3b3;
+    -fx-padding: 8 12;
+}
+
+.combo-box-popup > .list-view .list-cell:filled:hover {
+    -fx-background-color: #252525;
+    -fx-text-fill: #ffffff;
+}
+
+.combo-box-popup > .list-view .list-cell:filled:selected {
+    -fx-background-color: #1ed760;
+    -fx-text-fill: #000000;
+    -fx-font-weight: 700;
+}
+
+/* DATEPICKER */
+.form-datepicker {
+    -fx-background-color: #1f1f1f;
+    -fx-border-color: #4d4d4d;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+
+.form-datepicker > .text-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 10 12;
+    -fx-font-size: 12px;
+    -fx-text-fill: #ffffff;
+}
+
+.form-datepicker > .button {
+    -fx-background-color: transparent;
+}
+
+.form-datepicker > .button > .left-arrow {
+    -fx-background-color: #b3b3b3;
+}
+
+.form-datepicker:focused-within {
+    -fx-border-color: #1ed760;
+}
+
+/* AUTO EXTEND TOGGLE */
+.toggle-row {
+    -fx-background-color: #1f1f1f;
+    -fx-padding: 12 16;
+    -fx-border-color: transparent;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+
+.toggle-hint {
+    -fx-font-size: 10px;
+    -fx-text-fill: #b3b3b3;
+}
+
+.toggle-btn-off {
+    -fx-background-color: #4d4d4d;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-cursor: hand;
+    -fx-padding: 6 16;
+    -fx-background-radius: 9999;
+}
+
+.toggle-btn-off:hover {
+    -fx-background-color: #5a5a5a;
+}
+
+.toggle-btn-on {
+    -fx-background-color: #1ed760;
+    -fx-text-fill: #000000;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-cursor: hand;
+    -fx-padding: 6 16;
+    -fx-background-radius: 9999;
+}
+
+.toggle-btn-on:hover {
+    -fx-background-color: #1fdf64;
+}
+
+/* =============================================
+   FORM ACTIONS & BUTTONS
+   ============================================= */
+.form-actions {
+    -fx-padding: 10 0 0 0;
+}
+
+/* (Save Draft button removed) */
+
+/* CANCEL - MUTED OUTLINED */
+.cancel-button {
+    -fx-background-color: transparent;
+    -fx-border-color: #4d4d4d;
+    -fx-border-width: 1;
+    -fx-text-fill: #b3b3b3;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-cursor: hand;
+    -fx-padding: 12 24;
+    -fx-background-radius: 9999;
+    -fx-border-radius: 9999;
+    -fx-letter-spacing: 1.4;
+}
+
+.cancel-button:hover {
+    -fx-background-color: #1f1f1f;
+    -fx-text-fill: #ffffff;
+    -fx-border-color: #7c7c7c;
+}
+
+/* LIST ITEM - PRIMARY SPOTIFY GREEN PILL */
+.list-item-button {
+    -fx-background-color: #1ed760;
+    -fx-text-fill: #000000;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-cursor: hand;
+    -fx-padding: 12 28;
+    -fx-background-radius: 9999;
+    -fx-letter-spacing: 1.4;
+}
+
+.list-item-button:hover {
+    -fx-background-color: #1fdf64;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 8, 0, 0, 4);
+}
+
+.list-item-button:pressed {
+    -fx-background-color: #169c46;
+}

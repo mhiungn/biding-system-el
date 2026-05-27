@@ -95,12 +95,14 @@ public class UserDAO implements GenericDAO<String, User> {
                 + "username  VARCHAR(50)  PRIMARY KEY, "
                 + "password  VARCHAR(255) NOT NULL, "
                 + "email     VARCHAR(100) NOT NULL UNIQUE, "
-                + "role      VARCHAR(20)  NOT NULL"
+                + "role      VARCHAR(20)  NOT NULL, "
+                + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
                 + ")";
 
         try (Connection conn = DatabaseConnection.getConnection();
              Statement stmt = conn.createStatement()) {
             stmt.execute(sql);
+            addColumnIfMissing(conn, "users", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
         } catch (SQLException e) {
             throw new RuntimeException("[UserDAO] Không thể tạo bảng users", e);
         }
@@ -119,6 +121,19 @@ public class UserDAO implements GenericDAO<String, User> {
      * @param user     đối tượng User (Bidder, Seller, hoặc Admin)
      * @throws IllegalArgumentException nếu username rỗng/null hoặc user là null
      */
+    private void addColumnIfMissing(Connection conn, String tableName, String columnName, String definition)
+            throws SQLException {
+        DatabaseMetaData meta = conn.getMetaData();
+        try (ResultSet rs = meta.getColumns(null, null, tableName, columnName)) {
+            if (rs.next()) {
+                return;
+            }
+        }
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + definition);
+        }
+    }
+
     @Override
     public void save(String username, User user) {
         if (username == null || username.trim().isEmpty()) {
@@ -392,31 +407,38 @@ public class UserDAO implements GenericDAO<String, User> {
     // ========================== Phương thức Private ==========================
 
     /**
-     * Chuyển đổi một dòng {@link ResultSet} thành đối tượng {@link User} đúng kiểu.
-     * <p>
-     * Dựa vào cột {@code role} để xác định tạo {@link Bidder}, {@link Seller},
-     * hay {@link Admin}.
-     * </p>
+     * Chuyển đổi một dòng {@link ResultSet} thành đối tượng {@link User}.
      *
      * @param rs ResultSet đang trỏ tới dòng cần đọc
-     * @return đối tượng User đúng kiểu
+     * @return đối tượng User
      * @throws SQLException nếu lỗi đọc dữ liệu
      */
+    public java.util.Date getCreatedAt(String username) {
+        String sql = "SELECT created_at FROM users WHERE username = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Timestamp timestamp = rs.getTimestamp("created_at");
+                    return timestamp == null ? null : new java.util.Date(timestamp.getTime());
+                }
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("[UserDAO] Error loading created_at for user: " + username, e);
+        }
+    }
+
     private User mapResultSetToUser(ResultSet rs) throws SQLException {
         String username = rs.getString("username");
         String password = rs.getString("password");
         String email = rs.getString("email");
         String role = rs.getString("role");
 
-        switch (role.toUpperCase()) {
-            case "BIDDER":
-                return new Bidder(username, password, email);
-            case "SELLER":
-                return new Seller(username, password, email);
-            case "ADMIN":
-                return new Admin(username, password, email);
-            default:
-                throw new RuntimeException("Vai trò không xác định trong database: " + role);
-        }
+        // Chuẩn hóa vai trò về USER hoặc ADMIN
+        String normalizedRole = "ADMIN".equalsIgnoreCase(role) ? "ADMIN" : "USER";
+
+        return new User(username, password, email, normalizedRole);
     }
 }

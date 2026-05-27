@@ -31,13 +31,18 @@ public class ItemFactory {
      */
     public static Item createItem(String type, float price, String name, String desc) {
         switch (type.toUpperCase()) {
-            // need to fix this!!!
-//            case "ELECTRONICS":
-//                return new Electronics(price, name, desc);
+            case "ELECTRONICS":
+                return new Electronics(price, name, desc);
             case "ART":
                 return new Art(price, name, desc);
             case "VEHICLE":
                 return new Vehicle(price, name, desc);
+            case "REAL_ESTATE":
+                return new RealEstate(price, name, desc);
+            case "FASHION":
+                return new Fashion(price, name, desc);
+            case "COLLECTIBLES":
+                return new Collectibles(price, name, desc);
             default:
                 throw new IllegalArgumentException("Unknown item type: " + type);
         }
