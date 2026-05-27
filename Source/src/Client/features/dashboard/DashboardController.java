@@ -72,12 +72,16 @@ public class DashboardController extends NavigationController {
     @FXML
     public void initialize() {
         appHeader.configure(this);
-        registerForPushUpdates();
         setupFilters();
         setupPaginationButtons();
+    }
+
+    @Override
+    protected void onAfterShow() {
+        registerForPushUpdates();
         Platform.runLater(() -> {
             refreshStats();
-            showPage(0);
+            showPage(currentPage);
         });
     }
 

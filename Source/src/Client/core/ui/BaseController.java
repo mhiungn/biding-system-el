@@ -74,7 +74,14 @@ public abstract class BaseController {
     protected void onBeforeNavigate() {
     }
 
+    protected void onAfterShow() {
+    }
+
     public final void beforeExternalNavigation() {
         onBeforeNavigate();
+    }
+
+    public final void afterExternalNavigation() {
+        onAfterShow();
     }
 }
