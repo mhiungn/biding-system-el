@@ -3,6 +3,7 @@ package Client.features.bidding;
 import Client.core.ui.NavigationController;
 import Client.components.AppHeader;
 import Client.components.LoadingOverlay;
+import Client.core.ui.FxDebouncer;
 import Client.features.auth.SessionManager;
 import CommonClasses.dto.AuctionUpdatePushDTO;
 import CommonClasses.dto.DashboardAuctionRow;
@@ -23,6 +24,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -61,6 +63,8 @@ public class MyBidsController extends NavigationController {
     private final NumberFormat currencyFormat = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy");
     private final LoadingOverlay loadingOverlay = new LoadingOverlay();
+    private static final Duration PUSH_REFRESH_DELAY = Duration.millis(400);
+    private final FxDebouncer auctionPushRefreshDebouncer = new FxDebouncer(PUSH_REFRESH_DELAY);
 
     private List<DashboardAuctionRow> allActiveBids;
     private String currentFilter = "ALL";
@@ -540,7 +544,7 @@ public class MyBidsController extends NavigationController {
 
     @Override
     public void onAuctionUpdatePush(AuctionUpdatePushDTO payload) {
-        refreshCurrentUserBids();
+        auctionPushRefreshDebouncer.run(this::refreshCurrentUserBids);
     }
 
     @Override
@@ -551,6 +555,12 @@ public class MyBidsController extends NavigationController {
     @Override
     public void onWalletUpdatePush(WalletUpdatePushDTO payload) {
         appHeader.refreshWalletQuickInfo();
+    }
+
+    @Override
+    protected void onBeforeNavigate() {
+        auctionPushRefreshDebouncer.cancel();
+        super.onBeforeNavigate();
     }
 
     @Override

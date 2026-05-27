@@ -23,7 +23,7 @@ public class DatabaseConnection {
     private static final Object LOCK = new Object();
     private static final int MINIMUM_IDLE = 2;
     private static final int MAXIMUM_POOL_SIZE = 8;
-    private static final long CONNECTION_TIMEOUT_MS = 3_000L;
+    private static final long CONNECTION_TIMEOUT_MS = 10_000L;
     private static final long IDLE_TIMEOUT_MS = 600_000L;
     private static final long MAX_LIFETIME_MS = 1_800_000L;
 
@@ -103,7 +103,11 @@ public class DatabaseConnection {
         config.setMaxLifetime(MAX_LIFETIME_MS);
         config.setPoolName("AuctionDatabasePool");
 
-        return new HikariDataSource(config);
+        try {
+            return new HikariDataSource(config);
+        } catch (RuntimeException e) {
+            throw new SQLException("Could not initialize database connection pool.", e);
+        }
     }
 
     private static void closeDataSource() {

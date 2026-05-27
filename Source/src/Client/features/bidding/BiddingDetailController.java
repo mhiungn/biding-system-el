@@ -3,6 +3,7 @@ package Client.features.bidding;
 import Client.core.ui.NavigationController;
 import Client.components.AppHeader;
 import Client.components.LoadingOverlay;
+import Client.core.ui.FxDebouncer;
 import Client.features.auth.SessionManager;
 import CommonClasses.Bid;
 import CommonClasses.dto.AuctionUpdatePushDTO;
@@ -23,6 +24,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 
 import java.nio.file.Path;
 import java.text.NumberFormat;
@@ -85,6 +87,8 @@ public class BiddingDetailController extends NavigationController {
     private final AuctionDetailService service = new AuctionDetailService();
     private final NumberFormat currencyFormat = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
     private final LoadingOverlay loadingOverlay = new LoadingOverlay();
+    private static final Duration PUSH_REFRESH_DELAY = Duration.millis(400);
+    private final FxDebouncer auctionPushRefreshDebouncer = new FxDebouncer(PUSH_REFRESH_DELAY);
 
     private int currentAuctionId = -1;
     private DashboardAuctionRow auctionDetail;
@@ -511,7 +515,7 @@ public class BiddingDetailController extends NavigationController {
     @Override
     public void onAuctionUpdatePush(AuctionUpdatePushDTO payload) {
         if (payload != null && payload.getAuctionId() == currentAuctionId) {
-            loadAuctionData(currentAuctionId);
+            auctionPushRefreshDebouncer.run(() -> loadAuctionData(currentAuctionId));
         }
     }
 
@@ -554,6 +558,7 @@ public class BiddingDetailController extends NavigationController {
 
     @Override
     protected void onBeforeNavigate() {
+        auctionPushRefreshDebouncer.cancel();
         super.onBeforeNavigate();
         stopCountdown();
     }
