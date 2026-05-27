@@ -1,24 +1,18 @@
 package Server.dao;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Properties;
 
 /**
- * Lớp tiện ích quản lý kết nối tới cơ sở dữ liệu MySQL.
+ * Central database connection provider for DAO operations.
  * <p>
- * Cung cấp kết nối JDBC cho tất cả các lớp DAO trong hệ thống đấu giá.
- * Tất cả cấu hình kết nối (URL, username, password) được quản lý tập trung tại đây.
+ * Connections are served from one HikariCP pool. DAO code should keep using
+ * try-with-resources; closing a {@link Connection} returns it to the pool.
  * </p>
- *
- * <h3>Ví dụ sử dụng:</h3>
- * <pre>{@code
- *   try (Connection conn = DatabaseConnection.getConnection()) {
- *       PreparedStatement ps = conn.prepareStatement("SELECT * FROM users");
- *       ResultSet rs = ps.executeQuery();
- *       // ...
- *   }
- * }</pre>
  *
  * @see UserDAO
  * @see ItemDAO
@@ -26,16 +20,23 @@ import java.sql.SQLException;
  */
 public class DatabaseConnection {
 
-    // ========================== Cấu hình kết nối ==========================
+    private static final Object LOCK = new Object();
+    private static final int MINIMUM_IDLE = 2;
+    private static final int MAXIMUM_POOL_SIZE = 8;
+    private static final long CONNECTION_TIMEOUT_MS = 3_000L;
+    private static final long IDLE_TIMEOUT_MS = 600_000L;
+    private static final long MAX_LIFETIME_MS = 1_800_000L;
+
     private static String URL;
     private static String USER;
     private static String PASSWORD;
+    private static HikariDataSource dataSource;
 
     static {
         try (java.io.InputStream input = DatabaseConnection.class.getResourceAsStream("/db.properties")) {
-            java.util.Properties prop = new java.util.Properties();
+            Properties prop = new Properties();
             if (input == null) {
-                System.err.println("Không tìm thấy file db.properties!");
+                System.err.println("Khong tim thay file db.properties!");
             } else {
                 prop.load(input);
                 URL = prop.getProperty("db.url");
@@ -47,38 +48,68 @@ public class DatabaseConnection {
         }
     }
 
-    // ========================== Phương thức ==========================
-
     /**
-     * Tạo và trả về một kết nối mới tới cơ sở dữ liệu MySQL.
-     * <p>
-     * Người gọi có trách nhiệm đóng kết nối sau khi sử dụng xong.
-     * Nên sử dụng try-with-resources để đảm bảo kết nối luôn được đóng.
-     * </p>
+     * Returns a pooled database connection.
      *
-     * @return kết nối JDBC tới cơ sở dữ liệu
-     * @throws SQLException nếu không thể kết nối tới cơ sở dữ liệu
+     * @return JDBC connection from the central pool
+     * @throws SQLException if the pool cannot provide a connection
      */
-    private static Connection instance;
     public static Connection getConnection() throws SQLException {
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            if (URL == null || USER == null || PASSWORD == null) {
-                throw new SQLException("Cấu hình database chưa được tải!");
-            }
-            return DriverManager.getConnection(URL, USER, PASSWORD);
-        } catch (ClassNotFoundException e) {
-            throw new SQLException("Không tìm thấy MySQL Driver!", e);
+        return getDataSource().getConnection();
+    }
+
+    public static void setConnectionParams(String url, String user, String password) {
+        synchronized (LOCK) {
+            URL = url;
+            USER = user;
+            PASSWORD = password;
+            closeDataSource();
         }
     }
 
-    public static void setConnectionParams(String url, String user, String password) throws SQLException {
-        URL = url;
-        USER = user;
-        PASSWORD = password;
-        if (instance != null && !instance.isClosed()) {
-            instance.close();
+    public static void shutdown() {
+        synchronized (LOCK) {
+            closeDataSource();
         }
-        instance = null;
+    }
+
+    private static HikariDataSource getDataSource() throws SQLException {
+        HikariDataSource current = dataSource;
+        if (current != null && !current.isClosed()) {
+            return current;
+        }
+
+        synchronized (LOCK) {
+            if (dataSource == null || dataSource.isClosed()) {
+                dataSource = createDataSource();
+            }
+            return dataSource;
+        }
+    }
+
+    private static HikariDataSource createDataSource() throws SQLException {
+        if (URL == null || USER == null || PASSWORD == null) {
+            throw new SQLException("Database configuration has not been loaded.");
+        }
+
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(URL);
+        config.setUsername(USER);
+        config.setPassword(PASSWORD);
+        config.setMinimumIdle(MINIMUM_IDLE);
+        config.setMaximumPoolSize(MAXIMUM_POOL_SIZE);
+        config.setConnectionTimeout(CONNECTION_TIMEOUT_MS);
+        config.setIdleTimeout(IDLE_TIMEOUT_MS);
+        config.setMaxLifetime(MAX_LIFETIME_MS);
+        config.setPoolName("AuctionDatabasePool");
+
+        return new HikariDataSource(config);
+    }
+
+    private static void closeDataSource() {
+        if (dataSource != null) {
+            dataSource.close();
+            dataSource = null;
+        }
     }
 }
