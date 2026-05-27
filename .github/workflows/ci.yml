@@ -35,7 +35,13 @@ jobs:
       # 4. Compile the project
       - name: Compile
         run: ./mvnw compile -B
-
+      # 4.5. Tự động tạo file cấu hình từ GitHub Secrets bảo mật
+      - name: Create Cloudinary Properties File
+        run: |
+          mkdir -p Source/resources
+          echo "cloudinary.cloud_name=${{ secrets.CLOUDINARY_NAME }}" > Source/resources/cloudinary.properties
+          echo "cloudinary.api_key=${{ secrets.CLOUDINARY_KEY }}" >> Source/resources/cloudinary.properties
+          echo "cloudinary.api_secret=${{ secrets.CLOUDINARY_SECRET }}" >> Source/resources/cloudinary.properties
       # 5. Compile and run all unit tests
       - name: Run Tests
         run: ./mvnw test -B
