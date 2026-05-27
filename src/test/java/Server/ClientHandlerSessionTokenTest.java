@@ -1,4 +1,4 @@
-package Network;
+package Server;
 
 import CommonClasses.Items.Electronics;
 import CommonClasses.Items.Item;
@@ -101,7 +101,7 @@ class ClientHandlerSessionTokenTest {
         TestDatabaseHelper.createAllTables();
         TestDatabaseHelper.clearAllTables();
         resetSingletons();
-        Server.Server.getInstance().getClientHandlers().clear();
+        clearServerClientHandlers();
 
         userDAO = UserDAO.getInstance();
         itemDAO = ItemDAO.getInstance();
@@ -113,8 +113,18 @@ class ClientHandlerSessionTokenTest {
 
     @AfterEach
     void tearDown() {
-        Server.Server.getInstance().getClientHandlers().clear();
+        clearServerClientHandlers();
         SessionRegistry.getInstance().clearAll();
+    }
+
+    private void clearServerClientHandlers() {
+        try {
+            Object serverInstance = getServerInstance();
+            Object handlers = serverInstance.getClass().getMethod("getClientHandlers").invoke(serverInstance);
+            handlers.getClass().getMethod("clear").invoke(handlers);
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot clear server client handlers", e);
+        }
     }
 
     @Test
@@ -357,6 +367,15 @@ class ClientHandlerSessionTokenTest {
         }
     }
 
+    private static Object getServerInstance() {
+        try {
+            Class<?> serverClass = Class.forName("Server.Server");
+            return serverClass.getMethod("getInstance").invoke(null);
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot get Server instance", e);
+        }
+    }
+
     private static final class TestRequestClient {
         private String token;
 
@@ -442,15 +461,23 @@ class ClientHandlerSessionTokenTest {
                 try {
                     Socket socket = serverSocket.accept();
                     socket.setSoTimeout(NetworkConfig.DEFAULT_CLIENT_READ_TIMEOUT_MS);
-                    ClientHandler handler = new ClientHandler(
-                            new Server.Client("Guest_" + socket.getPort()),
-                            socket);
+                    Object clientObj = createClientInstance("Guest_" + socket.getPort());
+                    ClientHandler handler = new ClientHandler(clientObj, socket);
                     executor.submit(handler);
                 } catch (IOException e) {
                     if (running) {
                         throw new RuntimeException(e);
                     }
                 }
+            }
+        }
+
+        private Object createClientInstance(String username) {
+            try {
+                Class<?> clientClass = Class.forName("Server.Client");
+                return clientClass.getConstructor(String.class).newInstance(username);
+            } catch (Exception e) {
+                throw new RuntimeException("Cannot create Client instance", e);
             }
         }
 
