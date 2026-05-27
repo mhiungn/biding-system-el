@@ -386,7 +386,7 @@ class ClientHandlerSessionTokenTest {
                         NetworkConfig.DEFAULT_CONNECT_TIMEOUT_MS);
                 socket.setSoTimeout(NetworkConfig.DEFAULT_READ_TIMEOUT_MS);
                 try (ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
-                     ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream())) {
+                        ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream())) {
                     outputStream.writeObject(new PacketMessage(type, payload, token));
                     outputStream.flush();
                     outputStream.reset();
@@ -461,7 +461,7 @@ class ClientHandlerSessionTokenTest {
                 try {
                     Socket socket = serverSocket.accept();
                     socket.setSoTimeout(NetworkConfig.DEFAULT_CLIENT_READ_TIMEOUT_MS);
-                    Client clientObj = (Client) createClientInstance("Guest_" + socket.getPort());
+                    Client clientObj = new Client("Guest_" + socket.getPort());
                     ClientHandler handler = new ClientHandler(clientObj, socket);
                     executor.submit(handler);
                 } catch (IOException e) {
@@ -469,15 +469,6 @@ class ClientHandlerSessionTokenTest {
                         throw new RuntimeException(e);
                     }
                 }
-            }
-        }
-
-        private Object createClientInstance(String username) {
-            try {
-                Class<?> clientClass = Class.forName("Server.Client");
-                return clientClass.getConstructor(String.class).newInstance(username);
-            } catch (Exception e) {
-                throw new RuntimeException("Cannot create Client instance", e);
             }
         }
 

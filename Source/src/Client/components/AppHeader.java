@@ -121,25 +121,23 @@ public class AppHeader extends HBox {
         actions.setAlignment(Pos.CENTER_RIGHT);
         currentUserQuickInfoLabel.getStyleClass().add("auth-footer-muted");
         searchButton.getStyleClass().add("icon-button");
-        searchButton.setGraphic(icon("search-icon"));
+        searchButton.setGraphic(imageIcon("/client/images/search.png"));
         notificationsButton.getStyleClass().add("icon-button-badge");
-        notificationsButton.setGraphic(icon("notification-icon"));
+        notificationsButton.setGraphic(imageIcon("/client/images/notification.png"));
         profileButton.getStyleClass().add("icon-button");
-        ImageView userImage = new ImageView(new Image("/client/images/user.png"));
-        userImage.setFitWidth(24);
-        userImage.setFitHeight(24);
-        userImage.setPreserveRatio(true);
-        profileButton.setGraphic(userImage);
+        profileButton.setGraphic(imageIcon("/client/images/user.png"));
         actions.getChildren().addAll(currentUserQuickInfoLabel, searchButton, notificationsButton, profileButton);
 
         getChildren().addAll(brand, navigation, actions);
         updateActiveNavigation();
     }
 
-    private Region icon(String styleClass) {
-        Region region = new Region();
-        region.getStyleClass().add(styleClass);
-        return region;
+    private ImageView imageIcon(String imagePath) {
+        ImageView imageView = new ImageView(new Image(imagePath));
+        imageView.setFitWidth(24);
+        imageView.setFitHeight(24);
+        imageView.setPreserveRatio(true);
+        return imageView;
     }
 
     private void wireActions() {
