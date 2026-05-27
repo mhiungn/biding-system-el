@@ -3,6 +3,7 @@ package Client.features.dashboard;
 import Client.core.ui.NavigationController;
 import Client.components.AppHeader;
 import Client.components.LoadingOverlay;
+import Client.core.ui.FxDebouncer;
 import CommonClasses.dto.AuctionUpdatePushDTO;
 import CommonClasses.dto.DashboardAuctionRow;
 import CommonClasses.dto.DashboardPageResult;
@@ -24,6 +25,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 
 import java.nio.file.Path;
 import java.util.Date;
@@ -62,7 +64,9 @@ public class DashboardController extends NavigationController {
     private static final String LABEL_PRICE_RANGE = "PRICE RANGE";
     private static final String TIME_ALL = "TIME:ALL";
     private static final String TIME_ENDING_SOON = "TIME: ENDING SOON (<3 DAYS)";
+    private static final Duration PUSH_REFRESH_DELAY = Duration.millis(400);
 
+    private final FxDebouncer auctionPushRefreshDebouncer = new FxDebouncer(PUSH_REFRESH_DELAY);
     private boolean suppressFilterReload;
 
     @FXML
@@ -447,8 +451,10 @@ public class DashboardController extends NavigationController {
 
     @Override
     public void onAuctionUpdatePush(AuctionUpdatePushDTO payload) {
-        refreshStats();
-        showPage(currentPage);
+        auctionPushRefreshDebouncer.run(() -> {
+            refreshStats();
+            showPage(currentPage);
+        });
     }
 
     @Override
@@ -517,6 +523,12 @@ public class DashboardController extends NavigationController {
             this.page = page;
             this.result = result;
         }
+    }
+
+    @Override
+    protected void onBeforeNavigate() {
+        auctionPushRefreshDebouncer.cancel();
+        super.onBeforeNavigate();
     }
 
     @Override
