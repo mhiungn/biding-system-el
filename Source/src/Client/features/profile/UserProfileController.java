@@ -1,5 +1,7 @@
 package Client.features.profile;
 
+import Client.components.AppHeader;
+import Client.core.ui.AvatarService;
 import Client.core.ui.NavigationController;
 import Client.components.LoadingOverlay;
 import Client.features.auth.SessionManager;
@@ -64,6 +66,7 @@ public class UserProfileController extends NavigationController {
 
     // ========================== Service & State ==========================
 
+    private final AvatarService avatarService = AvatarService.getInstance();
     private final ProfileService profileService = new ProfileService();
     private final NumberFormat currencyFormat = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
     private final DateFormat dateFormat = DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.US);
@@ -117,7 +120,7 @@ public class UserProfileController extends NavigationController {
             lblLocation.setText(displayProfileValue(user.getLocation()));
         }
 
-        renderProfileImage(user.getProfileImageUrl());
+        renderProfileImage(user.getUsername(), user.getProfileImageUrl());
     }
 
     private void configureAvatar() {
@@ -148,7 +151,7 @@ public class UserProfileController extends NavigationController {
 
     private void showAvatarImage(Image image) {
         if (avatarImageView != null) {
-            avatarImageView.setImage(image);
+            avatarService.applyAvatarImage(avatarImageView, image);
             avatarImageView.setVisible(true);
             avatarImageView.setManaged(true);
         }
@@ -158,22 +161,8 @@ public class UserProfileController extends NavigationController {
         }
     }
 
-    private void renderProfileImage(String profileImageUrl) {
-        if (profileImageUrl == null || profileImageUrl.isBlank()) {
-            showAvatarPlaceholder();
-            return;
-        }
-
-        Image image = new Image(profileImageUrl, 88, 88, false, true, true);
-        image.errorProperty().addListener((observable, wasError, isError) -> {
-            if (isError && avatarImageView != null && avatarImageView.getImage() == image) {
-                showAvatarPlaceholder();
-            }
-        });
-        if (image.isError()) {
-            showAvatarPlaceholder();
-            return;
-        }
+    private void renderProfileImage(String username, String profileImageUrl) {
+        Image image = avatarService.getAvatarImage(username, profileImageUrl);
         showAvatarImage(image);
     }
 
@@ -213,18 +202,20 @@ public class UserProfileController extends NavigationController {
             loadingOverlay.hide();
             User updated = task.getValue();
             if (updated == null) {
-                renderProfileImage(currentUser.getProfileImageUrl());
+                renderProfileImage(currentUser.getUsername(), currentUser.getProfileImageUrl());
                 showMessage(Alert.AlertType.ERROR, "Could not upload or save the selected profile photo.");
                 return;
             }
 
+            avatarService.invalidateAvatar(currentUser.getUsername());
             SessionManager.setCurrentUser(updated);
             populateProfile(updated);
+            AppHeader.refreshAllProfileAvatars();
             showMessage(Alert.AlertType.INFORMATION, "Profile photo updated.");
         });
         task.setOnFailed(taskEvent -> {
             loadingOverlay.hide();
-            renderProfileImage(currentUser.getProfileImageUrl());
+            renderProfileImage(currentUser.getUsername(), currentUser.getProfileImageUrl());
             showMessage(Alert.AlertType.ERROR, "Could not upload or save the selected profile photo.");
         });
 

@@ -1,6 +1,7 @@
 package Client.components;
 
 import Client.core.ui.NavigationController;
+import Client.core.ui.AvatarService;
 import Client.features.auth.SessionManager;
 import Client.features.notifications.NotificationClientService;
 import Client.features.profile.ProfileService;
@@ -10,6 +11,7 @@ import CommonClasses.User;
 import CommonClasses.dto.NotificationDTO;
 import CommonClasses.dto.WalletDTO;
 import Server.service.NotificationApplicationService;
+import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.geometry.Pos;
@@ -22,14 +24,21 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
+import javafx.scene.shape.Circle;
 
 import java.io.IOException;
 import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Locale;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 public class AppHeader extends HBox {
     private static final String NOTIFICATION_BADGE_KEY = "notification.badge";
+    private static final Set<AppHeader> INSTANCES = Collections.newSetFromMap(new WeakHashMap<>());
 
+    private final AvatarService avatarService = AvatarService.getInstance();
     private final NotificationClientService notificationClientService = new NotificationClientService();
     private final SearchService searchService = new SearchService();
     private final ProfileService profileService = new ProfileService();
@@ -42,12 +51,23 @@ public class AppHeader extends HBox {
     private final Button searchButton = new Button();
     private final Button notificationsButton = new Button();
     private final Button profileButton = new Button();
+    private final ImageView profileAvatarView = avatarImageView(24);
 
     private boolean configured;
     private String activePage;
 
     public AppHeader() {
+        INSTANCES.add(this);
         build();
+    }
+
+    public static void refreshAllProfileAvatars() {
+        if (Platform.isFxApplicationThread()) {
+            refreshRegisteredProfileAvatars();
+            return;
+        }
+
+        Platform.runLater(AppHeader::refreshRegisteredProfileAvatars);
     }
 
     public void configure(NavigationController owner) {
@@ -70,9 +90,11 @@ public class AppHeader extends HBox {
         User currentUser = SessionManager.getCurrentUser();
         if (currentUser == null) {
             currentUserQuickInfoLabel.setText("Guest");
+            refreshProfileAvatar();
             return;
         }
 
+        refreshProfileAvatar();
         try {
             WalletDTO wallet = profileService.getWallet(currentUser.getUsername());
             currentUserQuickInfoLabel.setText(formatWalletQuickInfo(currentUser.getUsername(), wallet));
@@ -85,12 +107,14 @@ public class AppHeader extends HBox {
         User currentUser = SessionManager.getCurrentUser();
         if (currentUser == null) {
             currentUserQuickInfoLabel.setText("Guest");
+            refreshProfileAvatar();
             applyNotificationCount(0);
             return;
         }
 
         String username = currentUser.getUsername();
         currentUserQuickInfoLabel.setText(username);
+        refreshProfileAvatar();
 
         Task<HeaderDynamicData> task = new Task<>() {
             @Override
@@ -196,7 +220,8 @@ public class AppHeader extends HBox {
         notificationsButton.getStyleClass().add("icon-button-badge");
         notificationsButton.setGraphic(imageIcon("/client/images/notification.png"));
         profileButton.getStyleClass().add("icon-button");
-        profileButton.setGraphic(imageIcon("/client/images/user.png"));
+        profileButton.setGraphic(profileAvatarView);
+        refreshProfileAvatar();
         actions.getChildren().addAll(currentUserQuickInfoLabel, searchButton, notificationsButton, profileButton);
 
         getChildren().addAll(brand, navigation, actions);
@@ -209,6 +234,23 @@ public class AppHeader extends HBox {
         imageView.setFitHeight(24);
         imageView.setPreserveRatio(true);
         return imageView;
+    }
+
+    private ImageView avatarImageView(double size) {
+        ImageView imageView = new ImageView();
+        imageView.setFitWidth(size);
+        imageView.setFitHeight(size);
+        imageView.setPreserveRatio(false);
+        imageView.setClip(new Circle(size / 2, size / 2, size / 2));
+        return imageView;
+    }
+
+    private void refreshProfileAvatar() {
+        User currentUser = SessionManager.getCurrentUser();
+        Image image = currentUser == null
+                ? avatarService.getDefaultAvatar()
+                : avatarService.getAvatarImage(currentUser.getUsername(), currentUser.getProfileImageUrl());
+        avatarService.applyAvatarImage(profileAvatarView, image);
     }
 
     private void wireActions() {
@@ -313,6 +355,12 @@ public class AppHeader extends HBox {
         button.getStyleClass().remove("nav-button-active");
         if (page.equalsIgnoreCase(activePage)) {
             button.getStyleClass().add("nav-button-active");
+        }
+    }
+
+    private static void refreshRegisteredProfileAvatars() {
+        for (AppHeader header : new ArrayList<>(INSTANCES)) {
+            header.refreshProfileAvatar();
         }
     }
 

@@ -13,6 +13,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
 <?import javafx.scene.image.ImageView?>
@@ -190,7 +191,9 @@
                     <VBox styleClass="seller-box">
                         <Label styleClass="seller-label" text="SELLER INFORMATION" />
                         <HBox alignment="CENTER_LEFT" spacing="12" styleClass="seller-info">
-                            <Region styleClass="seller-avatar" />
+                            <StackPane styleClass="seller-avatar">
+                                <ImageView fx:id="sellerAvatarImageView" fitHeight="40" fitWidth="40" preserveRatio="false" />
+                            </StackPane>
                             <Label fx:id="lblSellerName" styleClass="seller-name" text="Loading..." />
                         </HBox>
                         <Button fx:id="btnContactSeller" maxWidth="Infinity" styleClass="contact-seller-button" text="CONTACT SELLER" />

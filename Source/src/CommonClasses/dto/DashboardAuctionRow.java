@@ -18,6 +18,8 @@ public class DashboardAuctionRow implements Serializable {
     private final int bidCount;
     private final float minimumBidIncrement;
     private final List<String> imagePaths;
+    private final String ownerUsername;
+    private final String ownerProfileImageUrl;
 
     public DashboardAuctionRow(int auctionId, String status, Date startTime, Date endTime, Item item, int bidCount) {
         this(auctionId, status, startTime, endTime, item, bidCount, 1f);
@@ -30,6 +32,12 @@ public class DashboardAuctionRow implements Serializable {
 
     public DashboardAuctionRow(int auctionId, String status, Date startTime, Date endTime, Item item, int bidCount,
                                float minimumBidIncrement, List<String> imagePaths) {
+        this(auctionId, status, startTime, endTime, item, bidCount, minimumBidIncrement, imagePaths, null, null);
+    }
+
+    public DashboardAuctionRow(int auctionId, String status, Date startTime, Date endTime, Item item, int bidCount,
+                               float minimumBidIncrement, List<String> imagePaths, String ownerUsername,
+                               String ownerProfileImageUrl) {
         this.auctionId = auctionId;
         this.status = status;
         this.startTime = startTime;
@@ -38,6 +46,8 @@ public class DashboardAuctionRow implements Serializable {
         this.bidCount = bidCount;
         this.minimumBidIncrement = minimumBidIncrement > 0 ? minimumBidIncrement : 1f;
         this.imagePaths = imagePaths == null ? new ArrayList<>() : new ArrayList<>(imagePaths);
+        this.ownerUsername = ownerUsername;
+        this.ownerProfileImageUrl = ownerProfileImageUrl;
     }
 
     public int getAuctionId() {
@@ -70,5 +80,13 @@ public class DashboardAuctionRow implements Serializable {
 
     public List<String> getImagePaths() {
         return new ArrayList<>(imagePaths);
+    }
+
+    public String getOwnerUsername() {
+        return ownerUsername;
+    }
+
+    public String getOwnerProfileImageUrl() {
+        return ownerProfileImageUrl;
     }
 }

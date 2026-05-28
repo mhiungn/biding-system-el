@@ -878,12 +878,14 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
      */
     public DashboardAuctionRow findFullAuctionDetail(int auctionId) {
         String sql = "SELECT s.auction_id, s.status, s.created_at, s.terminate_at, s.client_owner, "
+                + " u.profile_image_url AS owner_profile_image_url, "
                 + " s.minimum_bid_increment, i.item_id, i.item_type, i.name, i.description, i.starting_price, "
                 + " i.auction_start_time, i.auction_end_time, i.item_condition, i.location, "
                 + " COALESCE(b.max_bid, i.current_highest_price, i.starting_price) AS current_price, "
                 + " COALESCE(b.bid_count, 0) AS bid_count "
                 + " FROM auction_snapshots s "
                 + " JOIN items i ON i.item_id = s.item_id "
+                + " LEFT JOIN users u ON u.username = s.client_owner "
                 + " LEFT JOIN (SELECT auction_id, MAX(bid_amount) AS max_bid, COUNT(*) AS bid_count FROM auction_bids GROUP BY auction_id) b "
                 + " ON b.auction_id = s.auction_id "
                 + " WHERE s.auction_id = ?";
@@ -899,8 +901,11 @@ public class AuctionDAO implements GenericDAO<String, AuctionSnapshot> {
                     Date endTime = toDate(rs.getTimestamp("terminate_at"));
                     int bidCount = rs.getInt("bid_count");
                     float minimumBidIncrement = rs.getFloat("minimum_bid_increment");
+                    String ownerUsername = rs.getString("client_owner");
+                    String ownerProfileImageUrl = rs.getString("owner_profile_image_url");
                     return new DashboardAuctionRow(auctionId, status, startTime, endTime, item, bidCount,
-                            minimumBidIncrement, loadItemImagesSafely(item.getId()));
+                            minimumBidIncrement, loadItemImagesSafely(item.getId()), ownerUsername,
+                            ownerProfileImageUrl);
                 }
                 return null;
             }

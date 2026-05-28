@@ -1,6 +1,7 @@
 package Client.features.bidding;
 
 import Client.core.ui.NavigationController;
+import Client.core.ui.AvatarService;
 import Client.components.AppHeader;
 import Client.components.LoadingOverlay;
 import Client.core.ui.FxDebouncer;
@@ -22,10 +23,13 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Circle;
 import javafx.util.Duration;
 
 import java.text.NumberFormat;
@@ -79,6 +83,7 @@ public class BiddingDetailController extends NavigationController implements Ref
 
     // Seller
     @FXML private Label lblSellerName;
+    @FXML private ImageView sellerAvatarImageView;
 
     // Bid history container
     @FXML private VBox bidHistoryList;
@@ -86,6 +91,7 @@ public class BiddingDetailController extends NavigationController implements Ref
     // ========================== Service & State ==========================
 
     private final AuctionDetailService service = new AuctionDetailService();
+    private final AvatarService avatarService = AvatarService.getInstance();
     private final NumberFormat currencyFormat = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
     private final LoadingOverlay loadingOverlay = new LoadingOverlay();
     private static final Duration PUSH_REFRESH_DELAY = Duration.millis(400);
@@ -95,6 +101,7 @@ public class BiddingDetailController extends NavigationController implements Ref
     private DashboardAuctionRow auctionDetail;
     private int participantCount;
     private String auctionOwner;
+    private String auctionOwnerProfileImageUrl;
     private List<Bid> bidHistory = List.of();
     private Timer countdownTimer;
 
@@ -106,6 +113,7 @@ public class BiddingDetailController extends NavigationController implements Ref
     @FXML
     public void initialize() {
         appHeader.configure(this);
+        configureSellerAvatar();
         registerForPushUpdates();
 
         if (btnPlaceBid != null) {
@@ -147,12 +155,17 @@ public class BiddingDetailController extends NavigationController implements Ref
             protected AuctionDetailLoad call() {
                 DashboardAuctionRow detail = service.loadAuctionDetail(auctionId);
                 if (detail == null) {
-                    return new AuctionDetailLoad(null, 0, null, List.of());
+                    return new AuctionDetailLoad(null, 0, null, null, List.of());
+                }
+                String owner = detail.getOwnerUsername();
+                if (owner == null || owner.isBlank()) {
+                    owner = service.getAuctionOwner(auctionId);
                 }
                 return new AuctionDetailLoad(
                         detail,
                         service.getParticipantCount(auctionId),
-                        service.getAuctionOwner(auctionId),
+                        owner,
+                        detail.getOwnerProfileImageUrl(),
                         service.loadBidHistory(auctionId));
             }
         };
@@ -162,6 +175,7 @@ public class BiddingDetailController extends NavigationController implements Ref
             auctionDetail = loaded.detail;
             participantCount = loaded.participantCount;
             auctionOwner = loaded.owner;
+            auctionOwnerProfileImageUrl = loaded.ownerProfileImageUrl;
             bidHistory = loaded.bids;
             if (auctionDetail == null) {
                 showError("Auction not found");
@@ -235,6 +249,29 @@ public class BiddingDetailController extends NavigationController implements Ref
      */
     private void populateSellerInfo() {
         lblSellerName.setText(maskUsername(auctionOwner));
+        renderSellerAvatar();
+    }
+
+    private void configureSellerAvatar() {
+        if (sellerAvatarImageView == null) {
+            return;
+        }
+
+        sellerAvatarImageView.setClip(new Circle(20, 20, 20));
+        renderSellerAvatar();
+    }
+
+    private void renderSellerAvatar() {
+        if (sellerAvatarImageView == null) {
+            return;
+        }
+
+        Image image = avatarService.getAvatarImage(auctionOwner, auctionOwnerProfileImageUrl);
+        showSellerAvatarImage(image);
+    }
+
+    private void showSellerAvatarImage(Image image) {
+        avatarService.applyAvatarImage(sellerAvatarImageView, image);
     }
 
     /**
@@ -546,12 +583,15 @@ public class BiddingDetailController extends NavigationController implements Ref
         private final DashboardAuctionRow detail;
         private final int participantCount;
         private final String owner;
+        private final String ownerProfileImageUrl;
         private final List<Bid> bids;
 
-        private AuctionDetailLoad(DashboardAuctionRow detail, int participantCount, String owner, List<Bid> bids) {
+        private AuctionDetailLoad(DashboardAuctionRow detail, int participantCount, String owner,
+                                  String ownerProfileImageUrl, List<Bid> bids) {
             this.detail = detail;
             this.participantCount = participantCount;
             this.owner = owner;
+            this.ownerProfileImageUrl = ownerProfileImageUrl;
             this.bids = bids == null ? List.of() : bids;
         }
     }

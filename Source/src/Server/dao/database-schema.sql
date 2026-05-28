@@ -9,7 +9,6 @@
 -- CHARACTER SET utf8mb4 
 -- COLLATE utf8mb4_unicode_ci;
 
-USE blbsc98ma5stojowrgcs;
 SET SQL_SAFE_UPDATES = 0;
 
 -- ============================================================================
