@@ -184,7 +184,6 @@
                         <Label fx:id="lblMinBid" styleClass="min-bid-notice" text="Minimum bid: -" />
                         <TextField fx:id="txtBidAmount" promptText="Enter your bid amount" styleClass="bid-input" />
                         <Button fx:id="btnPlaceBid" maxWidth="Infinity" styleClass="place-bid-button" text="PLACE BID" />
-                        <Button fx:id="btnAddWatchlist" maxWidth="Infinity" styleClass="watchlist-button" text="ADD TO WATCHLIST" />
                     </VBox>
 
                     <!-- SELLER INFORMATION BOX -->
@@ -196,7 +195,6 @@
                             </StackPane>
                             <Label fx:id="lblSellerName" styleClass="seller-name" text="Loading..." />
                         </HBox>
-                        <Button fx:id="btnContactSeller" maxWidth="Infinity" styleClass="contact-seller-button" text="CONTACT SELLER" />
                     </VBox>
 
                     <!-- BID HISTORY BOX: EXAMPLE PROTOTYPE -->

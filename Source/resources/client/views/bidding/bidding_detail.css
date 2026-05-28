@@ -490,29 +490,6 @@
     -fx-background-color: #169c46;
 }
 
-.watchlist-button {
-    -fx-background-color: transparent;
-    -fx-border-color: #4d4d4d;
-    -fx-border-width: 1;
-    -fx-text-fill: #ffffff;
-    -fx-font-size: 12px;
-    -fx-font-weight: 700;
-    -fx-cursor: hand;
-    -fx-padding: 14 0;
-    -fx-background-radius: 9999;
-    -fx-border-radius: 9999;
-    -fx-letter-spacing: 1.4;
-    -fx-alignment: center;
-}
-
-.watchlist-button:hover {
-    -fx-background-color: #1f1f1f;
-    -fx-border-color: #7c7c7c;
-}
-
-.watchlist-button:pressed {
-    -fx-background-color: #252525;
-}
 
 /* SELLER BOX */
 .seller-box {
@@ -550,26 +527,6 @@
     -fx-font-size: 12px;
     -fx-font-weight: bold;
     -fx-text-fill: #ffffff;
-}
-
-.contact-seller-button {
-    -fx-background-color: transparent;
-    -fx-border-color: #4d4d4d;
-    -fx-border-width: 1;
-    -fx-text-fill: #b3b3b3;
-    -fx-font-size: 10px;
-    -fx-font-weight: 700;
-    -fx-cursor: hand;
-    -fx-padding: 12 0;
-    -fx-background-radius: 9999;
-    -fx-border-radius: 9999;
-    -fx-letter-spacing: 1.4;
-    -fx-alignment: center;
-}
-
-.contact-seller-button:hover {
-    -fx-background-color: #1f1f1f;
-    -fx-border-color: #7c7c7c;
 }
 
 /* BID HISTORY BOX */
