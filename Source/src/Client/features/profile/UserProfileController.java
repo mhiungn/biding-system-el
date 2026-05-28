@@ -11,11 +11,19 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.StackPane;
+import javafx.scene.shape.Circle;
+import javafx.stage.FileChooser;
+import javafx.stage.Window;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.NumberFormat;
@@ -51,6 +59,8 @@ public class UserProfileController extends NavigationController {
     @FXML private Label lblWalletBalance;
     @FXML private Label lblWalletAvailable;
     @FXML private TextField depositAmountField;
+    @FXML private StackPane avatarPlaceholder;
+    @FXML private ImageView avatarImageView;
 
     // ========================== Service & State ==========================
 
@@ -58,11 +68,14 @@ public class UserProfileController extends NavigationController {
     private final NumberFormat currencyFormat = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
     private final DateFormat dateFormat = DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.US);
     private final LoadingOverlay loadingOverlay = new LoadingOverlay();
+    private static final long MAX_AVATAR_BYTES = 5L * 1024L * 1024L;
 
     // ========================== Initialization ==========================
 
     @FXML
     public void initialize() {
+        configureAvatar();
+
         User user = SessionManager.getCurrentUser();
         if (user == null) {
             clearProfile();
@@ -103,6 +116,108 @@ public class UserProfileController extends NavigationController {
         if (lblLocation != null) {
             lblLocation.setText(displayProfileValue(user.getLocation()));
         }
+    }
+
+    private void configureAvatar() {
+        if (avatarImageView == null) {
+            return;
+        }
+
+        avatarImageView.setClip(new Circle(44, 44, 44));
+        if (avatarImageView.getImage() == null) {
+            showAvatarPlaceholder();
+            return;
+        }
+
+        showAvatarImage(avatarImageView.getImage());
+    }
+
+    private void showAvatarPlaceholder() {
+        if (avatarImageView != null) {
+            avatarImageView.setImage(null);
+            avatarImageView.setVisible(false);
+            avatarImageView.setManaged(false);
+        }
+        if (avatarPlaceholder != null) {
+            avatarPlaceholder.setVisible(true);
+            avatarPlaceholder.setManaged(true);
+        }
+    }
+
+    private void showAvatarImage(Image image) {
+        if (avatarImageView != null) {
+            avatarImageView.setImage(image);
+            avatarImageView.setVisible(true);
+            avatarImageView.setManaged(true);
+        }
+        if (avatarPlaceholder != null) {
+            avatarPlaceholder.setVisible(false);
+            avatarPlaceholder.setManaged(false);
+        }
+    }
+
+    @FXML
+    public void handleChangePhoto(ActionEvent event) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Choose Profile Photo");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
+                "Image files (*.png, *.jpg, *.jpeg)",
+                "*.png",
+                "*.jpg",
+                "*.jpeg"
+        ));
+
+        File selectedFile = chooser.showOpenDialog(resolveWindow(event));
+        if (selectedFile == null) {
+            return;
+        }
+
+        if (!isValidAvatarFile(selectedFile)) {
+            showAvatarPlaceholder();
+            return;
+        }
+
+        try {
+            Image selectedImage = new Image(selectedFile.toURI().toString(), 88, 88, false, true, false);
+            if (selectedImage.isError() || selectedImage.getWidth() <= 0 || selectedImage.getHeight() <= 0) {
+                showAvatarPlaceholder();
+                showMessage(Alert.AlertType.ERROR, "Could not load the selected image.");
+                return;
+            }
+
+            showAvatarImage(selectedImage);
+        } catch (RuntimeException e) {
+            showAvatarPlaceholder();
+            showMessage(Alert.AlertType.ERROR, "Could not load the selected image.");
+        }
+    }
+
+    private Window resolveWindow(ActionEvent event) {
+        if (event != null && event.getSource() instanceof Node node && node.getScene() != null) {
+            return node.getScene().getWindow();
+        }
+        return null;
+    }
+
+    private boolean isValidAvatarFile(File file) {
+        if (file == null || !file.exists() || !file.isFile()) {
+            showMessage(Alert.AlertType.ERROR, "Selected file does not exist.");
+            return false;
+        }
+        if (file.length() > MAX_AVATAR_BYTES) {
+            showMessage(Alert.AlertType.ERROR, "Profile photo must be 5 MB or smaller.");
+            return false;
+        }
+        if (!hasSupportedAvatarExtension(file)) {
+            showMessage(Alert.AlertType.ERROR, "Choose a PNG, JPG, or JPEG image.");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean hasSupportedAvatarExtension(File file) {
+        String fileName = file.getName().toLowerCase(Locale.ROOT);
+        return fileName.endsWith(".png") || fileName.endsWith(".jpg") || fileName.endsWith(".jpeg");
     }
 
     /**

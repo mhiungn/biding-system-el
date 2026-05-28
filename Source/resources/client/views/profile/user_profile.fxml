@@ -11,6 +11,7 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
 <VBox prefHeight="580.0" prefWidth="480.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.features.profile.UserProfileController">
@@ -51,8 +52,15 @@
 
             <!-- ─── Avatar + Identity ─── -->
             <VBox alignment="CENTER" prefWidth="384.0" spacing="10" styleClass="identity-section">
+                <StackPane styleClass="avatar-area">
+                    <StackPane fx:id="avatarPlaceholder" styleClass="avatar-placeholder">
+                        <Label styleClass="avatar-placeholder-initial" text="U" />
+                    </StackPane>
+                    <ImageView fx:id="avatarImageView" fitHeight="88.0" fitWidth="88.0" managed="false" pickOnBounds="true" preserveRatio="false" visible="false" />
+                </StackPane>
                 <!-- Username -->
                 <Label fx:id="lblUsername" styleClass="profile-username" text="Loading..." />
+                <Button onAction="#handleChangePhoto" styleClass="change-photo-button" text="CHANGE PHOTO" />
                 <!-- Member since -->
                 <Label fx:id="lblMemberSince" styleClass="profile-meta" text="" />
                 <!-- Status badge -->
