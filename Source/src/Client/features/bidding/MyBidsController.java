@@ -5,6 +5,7 @@ import Client.components.AppHeader;
 import Client.components.LoadingOverlay;
 import Client.core.ui.FxDebouncer;
 import Client.core.ui.ItemImageUrl;
+import Client.core.ui.RefreshablePage;
 import Client.features.auth.SessionManager;
 import CommonClasses.dto.AuctionUpdatePushDTO;
 import CommonClasses.dto.DashboardAuctionRow;
@@ -42,7 +43,7 @@ import java.util.Optional;
  * Replaces all hardcoded placeholder items.
  * </p>
  */
-public class MyBidsController extends NavigationController {
+public class MyBidsController extends NavigationController implements RefreshablePage {
 
     // ========================== FXML Fields ==========================
 
@@ -97,6 +98,13 @@ public class MyBidsController extends NavigationController {
         }
         registerForPushUpdates();
         Platform.runLater(() -> loadMyBidsData(user.getUsername()));
+    }
+
+    @Override
+    public void onPageShown() {
+        if (appHeader != null) {
+            appHeader.refreshDynamicUserInfo();
+        }
     }
 
     // ========================== Data Loading ==========================

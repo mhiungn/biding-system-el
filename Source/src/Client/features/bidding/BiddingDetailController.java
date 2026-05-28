@@ -5,6 +5,7 @@ import Client.components.AppHeader;
 import Client.components.LoadingOverlay;
 import Client.core.ui.FxDebouncer;
 import Client.core.ui.ItemImageUrl;
+import Client.core.ui.RefreshablePage;
 import Client.features.auth.SessionManager;
 import CommonClasses.Bid;
 import CommonClasses.dto.AuctionUpdatePushDTO;
@@ -44,7 +45,7 @@ import java.util.TimerTask;
  * this controller stays the same.
  * </p>
  */
-public class BiddingDetailController extends NavigationController {
+public class BiddingDetailController extends NavigationController implements RefreshablePage {
 
     // ========================== FXML Fields ==========================
 
@@ -126,6 +127,13 @@ public class BiddingDetailController extends NavigationController {
     public void setAuctionId(int auctionId) {
         this.currentAuctionId = auctionId;
         loadAuctionData(auctionId);
+    }
+
+    @Override
+    public void onPageShown() {
+        if (appHeader != null) {
+            appHeader.refreshDynamicUserInfo();
+        }
     }
 
     // ========================== Data Loading ==========================

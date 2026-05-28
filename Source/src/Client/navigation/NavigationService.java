@@ -3,6 +3,7 @@ package Client.navigation;
 import Client.core.network.NetworkRequestClient;
 import Client.core.network.NetworkPushManager;
 import Client.core.ui.BaseController;
+import Client.core.ui.RefreshablePage;
 import Client.features.auth.SessionManager;
 import Client.features.bidding.BiddingDetailController;
 import javafx.application.Platform;
@@ -181,6 +182,9 @@ public class NavigationService {
     private void notifyAfterShow(LoadedView loadedView) {
         if (loadedView.controller instanceof BaseController) {
             ((BaseController) loadedView.controller).afterExternalNavigation();
+        }
+        if (loadedView.controller instanceof RefreshablePage) {
+            ((RefreshablePage) loadedView.controller).onPageShown();
         }
     }
 

@@ -10,6 +10,7 @@ import CommonClasses.User;
 import CommonClasses.dto.NotificationDTO;
 import CommonClasses.dto.WalletDTO;
 import Server.service.NotificationApplicationService;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -54,8 +55,6 @@ public class AppHeader extends HBox {
             wireActions();
             configured = true;
         }
-        refreshWalletQuickInfo();
-        refreshNotificationBadge();
     }
 
     public void setActivePage(String activePage) {
@@ -76,18 +75,90 @@ public class AppHeader extends HBox {
 
         try {
             WalletDTO wallet = profileService.getWallet(currentUser.getUsername());
-            NumberFormat format = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
-            currentUserQuickInfoLabel.setText(currentUser.getUsername()
-                    + " | Available: " + format.format(wallet.getAvailableBalance()));
+            currentUserQuickInfoLabel.setText(formatWalletQuickInfo(currentUser.getUsername(), wallet));
         } catch (Exception e) {
             currentUserQuickInfoLabel.setText(currentUser.getUsername());
         }
     }
 
+    public void refreshDynamicUserInfo() {
+        User currentUser = SessionManager.getCurrentUser();
+        if (currentUser == null) {
+            currentUserQuickInfoLabel.setText("Guest");
+            applyNotificationCount(0);
+            return;
+        }
+
+        String username = currentUser.getUsername();
+        currentUserQuickInfoLabel.setText(username);
+
+        Task<HeaderDynamicData> task = new Task<>() {
+            @Override
+            protected HeaderDynamicData call() {
+                WalletDTO wallet = null;
+                int unread = 0;
+
+                try {
+                    wallet = profileService.getWallet(username);
+                } catch (Exception e) {
+                    wallet = null;
+                }
+
+                try {
+                    unread = notificationClientService.countUnread(username);
+                } catch (Exception e) {
+                    unread = 0;
+                }
+
+                return new HeaderDynamicData(username, wallet, unread);
+            }
+        };
+
+        task.setOnSucceeded(event -> applyHeaderDynamicData(task.getValue()));
+        task.setOnFailed(event -> {
+            User latestUser = SessionManager.getCurrentUser();
+            currentUserQuickInfoLabel.setText(latestUser == null ? "Guest" : latestUser.getUsername());
+            if (latestUser == null) {
+                applyNotificationCount(0);
+            }
+        });
+
+        Thread thread = new Thread(task, "app-header-dynamic-refresh");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
     public void refreshNotificationBadge() {
-        Label badge = ensureNotificationBadge();
         User currentUser = SessionManager.getCurrentUser();
         int unread = currentUser == null ? 0 : notificationClientService.countUnread(currentUser.getUsername());
+        applyNotificationCount(unread);
+    }
+
+    private void applyHeaderDynamicData(HeaderDynamicData data) {
+        if (data == null) {
+            return;
+        }
+
+        User latestUser = SessionManager.getCurrentUser();
+        if (latestUser == null || !data.username.equals(latestUser.getUsername())) {
+            return;
+        }
+
+        currentUserQuickInfoLabel.setText(formatWalletQuickInfo(data.username, data.wallet));
+        applyNotificationCount(data.unreadCount);
+    }
+
+    private String formatWalletQuickInfo(String username, WalletDTO wallet) {
+        if (wallet == null || !wallet.isSuccess()) {
+            return username;
+        }
+
+        NumberFormat format = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
+        return username + " | Available: " + format.format(wallet.getAvailableBalance());
+    }
+
+    private void applyNotificationCount(int unread) {
+        Label badge = ensureNotificationBadge();
         badge.setVisible(unread > 0);
         badge.setManaged(unread > 0);
         badge.setText(unread > 9 ? "9+" : String.valueOf(unread));
@@ -248,5 +319,17 @@ public class AppHeader extends HBox {
     @FunctionalInterface
     private interface NavigationAction {
         void run() throws IOException;
+    }
+
+    private static final class HeaderDynamicData {
+        private final String username;
+        private final WalletDTO wallet;
+        private final int unreadCount;
+
+        private HeaderDynamicData(String username, WalletDTO wallet, int unreadCount) {
+            this.username = username;
+            this.wallet = wallet;
+            this.unreadCount = unreadCount;
+        }
     }
 }

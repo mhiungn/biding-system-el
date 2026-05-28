@@ -212,12 +212,13 @@ public class ProfileService {
 
     public User updateEmail(String username, String email) {
         try {
-            if (email == null || email.isBlank() || !email.contains("@")) {
+            String normalizedEmail = email == null ? null : email.trim();
+            if (normalizedEmail == null || normalizedEmail.isBlank() || !normalizedEmail.contains("@")) {
                 return null;
             }
 
             UserDAO userDAO = UserDAO.getInstance();
-            User existingWithEmail = userDAO.findByEmail(email);
+            User existingWithEmail = userDAO.findByEmail(normalizedEmail);
             if (existingWithEmail != null && !existingWithEmail.getUsername().equals(username)) {
                 return null;
             }
@@ -227,8 +228,8 @@ public class ProfileService {
                 return null;
             }
 
-            User updated = new User(username, current.getPassword(), email.trim(), current.getRole());
-            return userDAO.update(username, updated) ? updated : null;
+            User updated = new User(username, current.getPassword(), normalizedEmail, current.getRole());
+            return userDAO.update(username, updated) ? userDAO.findById(username) : null;
         } catch (Exception e) {
             System.err.println("[ProfileService] Error updating email: " + e.getMessage());
             return null;
@@ -248,7 +249,7 @@ public class ProfileService {
             }
 
             User updated = new User(username, password, current.getEmail(), current.getRole());
-            return userDAO.update(username, updated) ? updated : null;
+            return userDAO.update(username, updated) ? userDAO.findById(username) : null;
         } catch (Exception e) {
             System.err.println("[ProfileService] Error updating password: " + e.getMessage());
             return null;

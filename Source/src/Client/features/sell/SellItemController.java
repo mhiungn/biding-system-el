@@ -3,6 +3,7 @@ package Client.features.sell;
 import Client.core.ui.NavigationController;
 import Client.components.AppHeader;
 import Client.components.LoadingOverlay;
+import Client.core.ui.RefreshablePage;
 import Client.features.auth.SessionManager;
 import CommonClasses.User;
 import javafx.concurrent.Task;
@@ -40,7 +41,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-public class SellItemController extends NavigationController {
+public class SellItemController extends NavigationController implements RefreshablePage {
     private static final int MAX_DESCRIPTION_LENGTH = 500;
     private static final int MAX_GALLERY_IMAGES = 3;
 
@@ -496,6 +497,13 @@ public class SellItemController extends NavigationController {
     @Override
     protected void onAfterShow() {
         clearForm();
+    }
+
+    @Override
+    public void onPageShown() {
+        if (appHeader != null) {
+            appHeader.refreshDynamicUserInfo();
+        }
     }
 
     private void showError(String title, String message) {

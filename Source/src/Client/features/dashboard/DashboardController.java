@@ -5,6 +5,7 @@ import Client.components.AppHeader;
 import Client.components.LoadingOverlay;
 import Client.core.ui.FxDebouncer;
 import Client.core.ui.ItemImageUrl;
+import Client.core.ui.RefreshablePage;
 import CommonClasses.dto.AuctionUpdatePushDTO;
 import CommonClasses.dto.DashboardAuctionRow;
 import CommonClasses.dto.DashboardPageResult;
@@ -32,7 +33,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-public class DashboardController extends NavigationController {
+public class DashboardController extends NavigationController implements RefreshablePage {
 
     @FXML private GridPane auctionCardsGrid;
     @FXML private Button btnPrevPage;
@@ -83,6 +84,13 @@ public class DashboardController extends NavigationController {
             refreshStats();
             showPage(currentPage);
         });
+    }
+
+    @Override
+    public void onPageShown() {
+        if (appHeader != null) {
+            appHeader.refreshDynamicUserInfo();
+        }
     }
 
     private void reloadFromFilters() {
