@@ -11,11 +11,19 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.StackPane;
+import javafx.scene.shape.Circle;
+import javafx.stage.FileChooser;
+import javafx.stage.Window;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.NumberFormat;
@@ -51,6 +59,8 @@ public class UserProfileController extends NavigationController {
     @FXML private Label lblWalletBalance;
     @FXML private Label lblWalletAvailable;
     @FXML private TextField depositAmountField;
+    @FXML private StackPane avatarPlaceholder;
+    @FXML private ImageView avatarImageView;
 
     // ========================== Service & State ==========================
 
@@ -58,11 +68,14 @@ public class UserProfileController extends NavigationController {
     private final NumberFormat currencyFormat = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
     private final DateFormat dateFormat = DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.US);
     private final LoadingOverlay loadingOverlay = new LoadingOverlay();
+    private static final long MAX_AVATAR_BYTES = 5L * 1024L * 1024L;
 
     // ========================== Initialization ==========================
 
     @FXML
     public void initialize() {
+        configureAvatar();
+
         User user = SessionManager.getCurrentUser();
         if (user == null) {
             clearProfile();
@@ -103,6 +116,166 @@ public class UserProfileController extends NavigationController {
         if (lblLocation != null) {
             lblLocation.setText(displayProfileValue(user.getLocation()));
         }
+
+        renderProfileImage(user.getProfileImageUrl());
+    }
+
+    private void configureAvatar() {
+        if (avatarImageView == null) {
+            return;
+        }
+
+        avatarImageView.setClip(new Circle(44, 44, 44));
+        if (avatarImageView.getImage() == null) {
+            showAvatarPlaceholder();
+            return;
+        }
+
+        showAvatarImage(avatarImageView.getImage());
+    }
+
+    private void showAvatarPlaceholder() {
+        if (avatarImageView != null) {
+            avatarImageView.setImage(null);
+            avatarImageView.setVisible(false);
+            avatarImageView.setManaged(false);
+        }
+        if (avatarPlaceholder != null) {
+            avatarPlaceholder.setVisible(true);
+            avatarPlaceholder.setManaged(true);
+        }
+    }
+
+    private void showAvatarImage(Image image) {
+        if (avatarImageView != null) {
+            avatarImageView.setImage(image);
+            avatarImageView.setVisible(true);
+            avatarImageView.setManaged(true);
+        }
+        if (avatarPlaceholder != null) {
+            avatarPlaceholder.setVisible(false);
+            avatarPlaceholder.setManaged(false);
+        }
+    }
+
+    private void renderProfileImage(String profileImageUrl) {
+        if (profileImageUrl == null || profileImageUrl.isBlank()) {
+            showAvatarPlaceholder();
+            return;
+        }
+
+        Image image = new Image(profileImageUrl, 88, 88, false, true, true);
+        image.errorProperty().addListener((observable, wasError, isError) -> {
+            if (isError && avatarImageView != null && avatarImageView.getImage() == image) {
+                showAvatarPlaceholder();
+            }
+        });
+        if (image.isError()) {
+            showAvatarPlaceholder();
+            return;
+        }
+        showAvatarImage(image);
+    }
+
+    @FXML
+    public void handleChangePhoto(ActionEvent event) {
+        User currentUser = SessionManager.getCurrentUser();
+        if (currentUser == null) {
+            showMessage(Alert.AlertType.ERROR, "Please log in before changing your profile photo.");
+            return;
+        }
+
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Choose Profile Photo");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
+                "Image files (*.png, *.jpg, *.jpeg)",
+                "*.png",
+                "*.jpg",
+                "*.jpeg"
+        ));
+
+        File selectedFile = chooser.showOpenDialog(resolveWindow(event));
+        if (selectedFile == null) {
+            return;
+        }
+
+        if (!isValidAvatarFile(selectedFile)) {
+            return;
+        }
+
+        Task<User> task = new Task<>() {
+            @Override
+            protected User call() {
+                return profileService.updateProfileImage(currentUser.getUsername(), selectedFile);
+            }
+        };
+        task.setOnSucceeded(taskEvent -> {
+            loadingOverlay.hide();
+            User updated = task.getValue();
+            if (updated == null) {
+                renderProfileImage(currentUser.getProfileImageUrl());
+                showMessage(Alert.AlertType.ERROR, "Could not upload or save the selected profile photo.");
+                return;
+            }
+
+            SessionManager.setCurrentUser(updated);
+            populateProfile(updated);
+            showMessage(Alert.AlertType.INFORMATION, "Profile photo updated.");
+        });
+        task.setOnFailed(taskEvent -> {
+            loadingOverlay.hide();
+            renderProfileImage(currentUser.getProfileImageUrl());
+            showMessage(Alert.AlertType.ERROR, "Could not upload or save the selected profile photo.");
+        });
+
+        loadingOverlay.show(lblUsername, "Saving photo...");
+        Thread thread = new Thread(task, "profile-photo-upload");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private boolean canLoadAvatarFile(File file) {
+        try {
+            Image selectedImage = new Image(file.toURI().toString(), 88, 88, false, true, false);
+            if (selectedImage.isError() || selectedImage.getWidth() <= 0 || selectedImage.getHeight() <= 0) {
+                return false;
+            }
+            return true;
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    private Window resolveWindow(ActionEvent event) {
+        if (event != null && event.getSource() instanceof Node node && node.getScene() != null) {
+            return node.getScene().getWindow();
+        }
+        return null;
+    }
+
+    private boolean isValidAvatarFile(File file) {
+        if (file == null || !file.exists() || !file.isFile()) {
+            showMessage(Alert.AlertType.ERROR, "Selected file does not exist.");
+            return false;
+        }
+        if (file.length() > MAX_AVATAR_BYTES) {
+            showMessage(Alert.AlertType.ERROR, "Profile photo must be 5 MB or smaller.");
+            return false;
+        }
+        if (!hasSupportedAvatarExtension(file)) {
+            showMessage(Alert.AlertType.ERROR, "Choose a PNG, JPG, or JPEG image.");
+            return false;
+        }
+        if (!canLoadAvatarFile(file)) {
+            showMessage(Alert.AlertType.ERROR, "Could not load the selected image.");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean hasSupportedAvatarExtension(File file) {
+        String fileName = file.getName().toLowerCase(Locale.ROOT);
+        return fileName.endsWith(".png") || fileName.endsWith(".jpg") || fileName.endsWith(".jpeg");
     }
 
     /**
@@ -189,6 +362,7 @@ public class UserProfileController extends NavigationController {
         if (lblTotalSpent != null) lblTotalSpent.setText("0");
         if (lblWalletBalance != null) lblWalletBalance.setText("0");
         if (lblWalletAvailable != null) lblWalletAvailable.setText("0");
+        showAvatarPlaceholder();
     }
 
     // ========================== Actions ==========================

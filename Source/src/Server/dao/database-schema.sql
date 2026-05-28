@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(100) NOT NULL UNIQUE COMMENT 'Địa chỉ email duy nhất',
     phone VARCHAR(30) NULL COMMENT 'User phone number',
     location VARCHAR(255) NULL COMMENT 'User location',
+    profile_image_url VARCHAR(1024) NULL COMMENT 'Public profile image URL or path',
     role VARCHAR(20) NOT NULL COMMENT 'Vai trò: BIDDER, SELLER, ADMIN',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Thời điểm tạo tài khoản',
     
