@@ -8,8 +8,10 @@ import Packets.MessageType;
 import Packets.PacketMessage;
 import Server.dao.AuctionDAO;
 import Server.dao.UserDAO;
+import Server.service.ImageStorageService;
 import Server.service.WalletApplicationService;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 
@@ -284,6 +286,27 @@ public class ProfileService {
                     ? userDAO.findById(username) : null;
         } catch (Exception e) {
             System.err.println("[ProfileService] Error updating location: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public User updateProfileImage(String username, File imageFile) {
+        try {
+            if (username == null || username.isBlank()) {
+                return null;
+            }
+
+            UserDAO userDAO = UserDAO.getInstance();
+            User current = userDAO.findById(username);
+            if (current == null) {
+                return null;
+            }
+
+            String profileImageUrl = ImageStorageService.getInstance().saveProfileImage(username, imageFile);
+            return userDAO.updateProfileImageUrl(username, profileImageUrl)
+                    ? userDAO.findById(username) : null;
+        } catch (Exception e) {
+            System.err.println("[ProfileService] Error updating profile image: " + e.getMessage());
             return null;
         }
     }

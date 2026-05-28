@@ -8,12 +8,18 @@ public class User extends Entity {
     protected String role;
     protected String phone;
     protected String location;
+    protected String profileImageUrl;
 
     public User(String username, String password, String email, String role) {
-        this(username, password, email, role, null, null);
+        this(username, password, email, role, null, null, null);
     }
 
     public User(String username, String password, String email, String role, String phone, String location) {
+        this(username, password, email, role, phone, location, null);
+    }
+
+    public User(String username, String password, String email, String role,
+                String phone, String location, String profileImageUrl) {
         super();
         this.username = username;
         this.password = password;
@@ -21,6 +27,7 @@ public class User extends Entity {
         this.role = role;
         this.phone = phone;
         this.location = location;
+        this.profileImageUrl = profileImageUrl;
     }
     public String getUsername() {
     	return username; 
@@ -39,6 +46,9 @@ public class User extends Entity {
     }
     public String getLocation() {
         return location;
+    }
+    public String getProfileImageUrl() {
+        return profileImageUrl;
     }
 
     @Override

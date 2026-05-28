@@ -82,6 +82,30 @@ public class ImageStorageService {
         }
     }
 
+    public String saveProfileImage(String username, File source) {
+        if (username == null || username.trim().isEmpty()) {
+            throw new IllegalArgumentException("Username is required for profile image upload.");
+        }
+        validateImageFile(source);
+        try {
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(
+                    source,
+                    ObjectUtils.asMap(
+                            "folder", "user-profiles/" + safeCloudinaryFolderName(username),
+                            "resource_type", "image"
+                    )
+            );
+            String url = (String) uploadResult.get("secure_url");
+            if (url == null || url.isBlank()) {
+                throw new RuntimeException("Cloudinary khong tra ve URL hop le sau khi upload.");
+            }
+            System.out.println("[ImageStorageService] Da upload anh profile len Cloudinary: " + url);
+            return url;
+        } catch (IOException e) {
+            throw new RuntimeException("Khong the upload anh profile len Cloudinary: " + e.getMessage(), e);
+        }
+    }
+
     /**
      * Kiểm tra tính hợp lệ của file ảnh trước khi upload.
      *
@@ -99,6 +123,11 @@ public class ImageStorageService {
         if (file.length() > MAX_IMAGE_BYTES) {
             throw new IllegalArgumentException("Each picture must be 5 MB or smaller.");
         }
+    }
+
+    private String safeCloudinaryFolderName(String value) {
+        String safe = value.trim().replaceAll("[^a-zA-Z0-9._-]", "_");
+        return safe.isEmpty() ? "unknown-user" : safe;
     }
 
     // ========================== Private ==========================

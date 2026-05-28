@@ -68,6 +68,7 @@ public class UserDAOTest {
         assertEquals("pass123", found.getPassword());
         assertEquals("john@mail.com", found.getEmail());
         assertEquals("USER", found.getRole());
+        assertNull(found.getProfileImageUrl());
     }
 
     @Test
@@ -188,6 +189,8 @@ public class UserDAOTest {
     @DisplayName("update() - Cập nhật password và email thành công")
     void testUpdateSuccess() {
         userDAO.save("john", standardUser("john", "oldpass", "old@mail.com"));
+        String profileImageUrl = "https://res.cloudinary.com/demo/image/upload/user-profiles/john/avatar.png";
+        assertTrue(userDAO.updateProfileImageUrl("john", profileImageUrl));
 
         User updated = standardUser("john", "newpass", "new@mail.com");
         boolean result = userDAO.update("john", updated);
@@ -197,6 +200,7 @@ public class UserDAOTest {
         User found = userDAO.findById("john");
         assertEquals("newpass", found.getPassword());
         assertEquals("new@mail.com", found.getEmail());
+        assertEquals(profileImageUrl, found.getProfileImageUrl());
     }
 
     @Test
@@ -213,6 +217,8 @@ public class UserDAOTest {
     @DisplayName("updateContactInfo() - updates phone and location")
     void testUpdateContactInfoSuccess() {
         userDAO.save("john", standardUser("john", "pass", "john@mail.com"));
+        String profileImageUrl = "https://res.cloudinary.com/demo/image/upload/user-profiles/john/avatar.png";
+        assertTrue(userDAO.updateProfileImageUrl("john", profileImageUrl));
 
         boolean result = userDAO.updateContactInfo("john", "+84 123 456 789", "Hanoi");
 
@@ -220,6 +226,32 @@ public class UserDAOTest {
         User found = userDAO.findById("john");
         assertEquals("+84 123 456 789", found.getPhone());
         assertEquals("Hanoi", found.getLocation());
+        assertEquals(profileImageUrl, found.getProfileImageUrl());
+    }
+
+    @Test
+    @Order(33)
+    @DisplayName("updateProfileImageUrl() - persists profile image URL")
+    void testUpdateProfileImageUrlSuccess() {
+        userDAO.save("john", standardUser("john", "pass", "john@mail.com"));
+        String profileImageUrl = "https://res.cloudinary.com/demo/image/upload/user-profiles/john/avatar.png";
+
+        boolean result = userDAO.updateProfileImageUrl("john", profileImageUrl);
+
+        assertTrue(result);
+        User found = userDAO.findById("john");
+        assertEquals(profileImageUrl, found.getProfileImageUrl());
+    }
+
+    @Test
+    @Order(34)
+    @DisplayName("updateProfileImageUrl() - returns false when user does not exist")
+    void testUpdateProfileImageUrlNotFound() {
+        boolean result = userDAO.updateProfileImageUrl(
+                "ghost",
+                "https://res.cloudinary.com/demo/image/upload/user-profiles/ghost/avatar.png");
+
+        assertFalse(result);
     }
 
     // ========================== Test delete() ==========================

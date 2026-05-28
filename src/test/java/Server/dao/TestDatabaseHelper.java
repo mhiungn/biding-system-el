@@ -53,6 +53,7 @@ public class TestDatabaseHelper {
                     + "email     VARCHAR(100) NOT NULL UNIQUE, "
                     + "phone     VARCHAR(30)  NULL, "
                     + "location  VARCHAR(255) NULL, "
+                    + "profile_image_url VARCHAR(1024) NULL, "
                     + "role      VARCHAR(20)  NOT NULL, "
                     + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
                     + ")");

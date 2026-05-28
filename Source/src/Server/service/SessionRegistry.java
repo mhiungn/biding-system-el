@@ -47,6 +47,7 @@ public class SessionRegistry {
                 user.getUsername(),
                 user.getEmail(),
                 user.getRole(),
+                user.getProfileImageUrl(),
                 expiresAt);
         sessions.put(token, session);
         return session;
@@ -93,13 +94,16 @@ public class SessionRegistry {
         private final String username;
         private final String email;
         private final String role;
+        private final String profileImageUrl;
         private final Date expiresAt;
 
-        private AuthenticatedSession(String token, String username, String email, String role, Date expiresAt) {
+        private AuthenticatedSession(String token, String username, String email, String role,
+                                     String profileImageUrl, Date expiresAt) {
             this.token = token;
             this.username = username;
             this.email = email;
             this.role = role;
+            this.profileImageUrl = profileImageUrl;
             this.expiresAt = new Date(expiresAt.getTime());
         }
 
@@ -119,6 +123,10 @@ public class SessionRegistry {
             return role;
         }
 
+        public String getProfileImageUrl() {
+            return profileImageUrl;
+        }
+
         public Date getExpiresAt() {
             return new Date(expiresAt.getTime());
         }
@@ -128,7 +136,7 @@ public class SessionRegistry {
         }
 
         public User toSafeUser() {
-            return new User(username, null, email, role);
+            return new User(username, null, email, role, null, null, profileImageUrl);
         }
     }
 }

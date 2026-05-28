@@ -24,6 +24,7 @@ import java.util.*;
  *       username  VARCHAR(50)  PRIMARY KEY,
  *       password  VARCHAR(255) NOT NULL,
  *       email     VARCHAR(100) NOT NULL UNIQUE,
+ *       profile_image_url VARCHAR(1024) NULL,
  *       role      VARCHAR(20)  NOT NULL   -- BIDDER / SELLER / ADMIN
  *   )
  * </pre>
@@ -97,6 +98,7 @@ public class UserDAO implements GenericDAO<String, User> {
                 + "email     VARCHAR(100) NOT NULL UNIQUE, "
                 + "phone     VARCHAR(30)  NULL, "
                 + "location  VARCHAR(255) NULL, "
+                + "profile_image_url VARCHAR(1024) NULL, "
                 + "role      VARCHAR(20)  NOT NULL, "
                 + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
                 + ")";
@@ -107,6 +109,7 @@ public class UserDAO implements GenericDAO<String, User> {
             addColumnIfMissing(conn, "users", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
             addColumnIfMissing(conn, "users", "phone", "VARCHAR(30) NULL");
             addColumnIfMissing(conn, "users", "location", "VARCHAR(255) NULL");
+            addColumnIfMissing(conn, "users", "profile_image_url", "VARCHAR(1024) NULL");
         } catch (SQLException e) {
             throw new RuntimeException("[UserDAO] Không thể tạo bảng users", e);
         }
@@ -153,7 +156,8 @@ public class UserDAO implements GenericDAO<String, User> {
             return;
         }
 
-        String sql = "INSERT INTO users (username, password, email, phone, location, role) VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO users (username, password, email, phone, location, profile_image_url, role) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -162,7 +166,8 @@ public class UserDAO implements GenericDAO<String, User> {
             ps.setString(3, user.getEmail());
             ps.setString(4, user.getPhone());
             ps.setString(5, user.getLocation());
-            ps.setString(6, user.getRole());
+            ps.setString(6, user.getProfileImageUrl());
+            ps.setString(7, user.getRole());
             ps.executeUpdate();
             System.out.println("[UserDAO] Đã lưu user: " + username + " (vai trò: " + user.getRole() + ")");
         } catch (SQLException e) {
@@ -267,6 +272,19 @@ public class UserDAO implements GenericDAO<String, User> {
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new RuntimeException("[UserDAO] Error updating contact info for user: " + username, e);
+        }
+    }
+
+    public boolean updateProfileImageUrl(String username, String profileImageUrl) {
+        String sql = "UPDATE users SET profile_image_url = ? WHERE username = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, profileImageUrl);
+            ps.setString(2, username);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("[UserDAO] Error updating profile image for user: " + username, e);
         }
     }
 
@@ -458,11 +476,12 @@ public class UserDAO implements GenericDAO<String, User> {
         String email = rs.getString("email");
         String phone = rs.getString("phone");
         String location = rs.getString("location");
+        String profileImageUrl = rs.getString("profile_image_url");
         String role = rs.getString("role");
 
         // Chuẩn hóa vai trò về USER hoặc ADMIN
         String normalizedRole = "ADMIN".equalsIgnoreCase(role) ? "ADMIN" : "USER";
 
-        return new User(username, password, email, normalizedRole, phone, location);
+        return new User(username, password, email, normalizedRole, phone, location, profileImageUrl);
     }
 }

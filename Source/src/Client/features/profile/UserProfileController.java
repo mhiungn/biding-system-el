@@ -116,6 +116,8 @@ public class UserProfileController extends NavigationController {
         if (lblLocation != null) {
             lblLocation.setText(displayProfileValue(user.getLocation()));
         }
+
+        renderProfileImage(user.getProfileImageUrl());
     }
 
     private void configureAvatar() {
@@ -156,8 +158,33 @@ public class UserProfileController extends NavigationController {
         }
     }
 
+    private void renderProfileImage(String profileImageUrl) {
+        if (profileImageUrl == null || profileImageUrl.isBlank()) {
+            showAvatarPlaceholder();
+            return;
+        }
+
+        Image image = new Image(profileImageUrl, 88, 88, false, true, true);
+        image.errorProperty().addListener((observable, wasError, isError) -> {
+            if (isError && avatarImageView != null && avatarImageView.getImage() == image) {
+                showAvatarPlaceholder();
+            }
+        });
+        if (image.isError()) {
+            showAvatarPlaceholder();
+            return;
+        }
+        showAvatarImage(image);
+    }
+
     @FXML
     public void handleChangePhoto(ActionEvent event) {
+        User currentUser = SessionManager.getCurrentUser();
+        if (currentUser == null) {
+            showMessage(Alert.AlertType.ERROR, "Please log in before changing your profile photo.");
+            return;
+        }
+
         FileChooser chooser = new FileChooser();
         chooser.setTitle("Choose Profile Photo");
         chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
@@ -173,22 +200,49 @@ public class UserProfileController extends NavigationController {
         }
 
         if (!isValidAvatarFile(selectedFile)) {
-            showAvatarPlaceholder();
             return;
         }
 
-        try {
-            Image selectedImage = new Image(selectedFile.toURI().toString(), 88, 88, false, true, false);
-            if (selectedImage.isError() || selectedImage.getWidth() <= 0 || selectedImage.getHeight() <= 0) {
-                showAvatarPlaceholder();
-                showMessage(Alert.AlertType.ERROR, "Could not load the selected image.");
+        Task<User> task = new Task<>() {
+            @Override
+            protected User call() {
+                return profileService.updateProfileImage(currentUser.getUsername(), selectedFile);
+            }
+        };
+        task.setOnSucceeded(taskEvent -> {
+            loadingOverlay.hide();
+            User updated = task.getValue();
+            if (updated == null) {
+                renderProfileImage(currentUser.getProfileImageUrl());
+                showMessage(Alert.AlertType.ERROR, "Could not upload or save the selected profile photo.");
                 return;
             }
 
-            showAvatarImage(selectedImage);
+            SessionManager.setCurrentUser(updated);
+            populateProfile(updated);
+            showMessage(Alert.AlertType.INFORMATION, "Profile photo updated.");
+        });
+        task.setOnFailed(taskEvent -> {
+            loadingOverlay.hide();
+            renderProfileImage(currentUser.getProfileImageUrl());
+            showMessage(Alert.AlertType.ERROR, "Could not upload or save the selected profile photo.");
+        });
+
+        loadingOverlay.show(lblUsername, "Saving photo...");
+        Thread thread = new Thread(task, "profile-photo-upload");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private boolean canLoadAvatarFile(File file) {
+        try {
+            Image selectedImage = new Image(file.toURI().toString(), 88, 88, false, true, false);
+            if (selectedImage.isError() || selectedImage.getWidth() <= 0 || selectedImage.getHeight() <= 0) {
+                return false;
+            }
+            return true;
         } catch (RuntimeException e) {
-            showAvatarPlaceholder();
-            showMessage(Alert.AlertType.ERROR, "Could not load the selected image.");
+            return false;
         }
     }
 
@@ -210,6 +264,10 @@ public class UserProfileController extends NavigationController {
         }
         if (!hasSupportedAvatarExtension(file)) {
             showMessage(Alert.AlertType.ERROR, "Choose a PNG, JPG, or JPEG image.");
+            return false;
+        }
+        if (!canLoadAvatarFile(file)) {
+            showMessage(Alert.AlertType.ERROR, "Could not load the selected image.");
             return false;
         }
         return true;
@@ -304,6 +362,7 @@ public class UserProfileController extends NavigationController {
         if (lblTotalSpent != null) lblTotalSpent.setText("0");
         if (lblWalletBalance != null) lblWalletBalance.setText("0");
         if (lblWalletAvailable != null) lblWalletAvailable.setText("0");
+        showAvatarPlaceholder();
     }
 
     // ========================== Actions ==========================
