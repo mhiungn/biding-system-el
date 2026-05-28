@@ -29,13 +29,6 @@ public class RunApplication {
                 BidTransactionDAO.getInstance(); // Tạo bảng bid_transactions
                 System.out.println("Database tables initialized successfully!");
                 System.out.flush();
-
-                // Tự động di chuyển (migrate) ảnh cũ từ local lên Cloudinary
-                try {
-                    Server.service.ImageMigrationUtil.runMigration();
-                } catch (Exception ex) {
-                    System.err.println("Warning: Cloudinary migration failed: " + ex.getMessage());
-                }
             }
         } catch (SQLException e) {
             System.err.println("CONNECT FAILED! CHECK YOUR INTERNET or User/Pass.");
