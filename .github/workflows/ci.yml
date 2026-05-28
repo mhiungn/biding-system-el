@@ -34,7 +34,7 @@ jobs:
 
       # 4. Compile the project
       - name: Compile
-        run: ./mvnw compile -B
+        run: ./mvnw compile -B        
       # 4.5. Tự động tạo file cấu hình từ GitHub Secrets bảo mật
       - name: Create Cloudinary Properties File
         run: |
