@@ -95,6 +95,8 @@ public class UserDAO implements GenericDAO<String, User> {
                 + "username  VARCHAR(50)  PRIMARY KEY, "
                 + "password  VARCHAR(255) NOT NULL, "
                 + "email     VARCHAR(100) NOT NULL UNIQUE, "
+                + "phone     VARCHAR(30)  NULL, "
+                + "location  VARCHAR(255) NULL, "
                 + "role      VARCHAR(20)  NOT NULL, "
                 + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
                 + ")";
@@ -103,6 +105,8 @@ public class UserDAO implements GenericDAO<String, User> {
              Statement stmt = conn.createStatement()) {
             stmt.execute(sql);
             addColumnIfMissing(conn, "users", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+            addColumnIfMissing(conn, "users", "phone", "VARCHAR(30) NULL");
+            addColumnIfMissing(conn, "users", "location", "VARCHAR(255) NULL");
         } catch (SQLException e) {
             throw new RuntimeException("[UserDAO] Không thể tạo bảng users", e);
         }
@@ -149,14 +153,16 @@ public class UserDAO implements GenericDAO<String, User> {
             return;
         }
 
-        String sql = "INSERT INTO users (username, password, email, role) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO users (username, password, email, phone, location, role) VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
             ps.setString(2, user.getPassword());
             ps.setString(3, user.getEmail());
-            ps.setString(4, user.getRole());
+            ps.setString(4, user.getPhone());
+            ps.setString(5, user.getLocation());
+            ps.setString(6, user.getRole());
             ps.executeUpdate();
             System.out.println("[UserDAO] Đã lưu user: " + username + " (vai trò: " + user.getRole() + ")");
         } catch (SQLException e) {
@@ -223,14 +229,16 @@ public class UserDAO implements GenericDAO<String, User> {
      */
     @Override
     public boolean update(String username, User user) {
-        String sql = "UPDATE users SET password = ?, email = ?, role = ? WHERE username = ?";
+        String sql = "UPDATE users SET password = ?, email = ?, phone = ?, location = ?, role = ? WHERE username = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, user.getPassword());
             ps.setString(2, user.getEmail());
-            ps.setString(3, user.getRole());
-            ps.setString(4, username);
+            ps.setString(3, user.getPhone());
+            ps.setString(4, user.getLocation());
+            ps.setString(5, user.getRole());
+            ps.setString(6, username);
             int rows = ps.executeUpdate();
             if (rows > 0) {
                 System.out.println("[UserDAO] Đã cập nhật user: " + username);
@@ -248,6 +256,20 @@ public class UserDAO implements GenericDAO<String, User> {
      * @param username tên đăng nhập của user cần xóa
      * @return {@code true} nếu tìm thấy và xóa thành công, {@code false} nếu không
      */
+    public boolean updateContactInfo(String username, String phone, String location) {
+        String sql = "UPDATE users SET phone = ?, location = ? WHERE username = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, phone);
+            ps.setString(2, location);
+            ps.setString(3, username);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("[UserDAO] Error updating contact info for user: " + username, e);
+        }
+    }
+
     @Override
     public boolean delete(String username) {
         String sql = "DELETE FROM users WHERE username = ?";
@@ -434,11 +456,13 @@ public class UserDAO implements GenericDAO<String, User> {
         String username = rs.getString("username");
         String password = rs.getString("password");
         String email = rs.getString("email");
+        String phone = rs.getString("phone");
+        String location = rs.getString("location");
         String role = rs.getString("role");
 
         // Chuẩn hóa vai trò về USER hoặc ADMIN
         String normalizedRole = "ADMIN".equalsIgnoreCase(role) ? "ADMIN" : "USER";
 
-        return new User(username, password, email, normalizedRole);
+        return new User(username, password, email, normalizedRole, phone, location);
     }
 }

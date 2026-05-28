@@ -228,7 +228,8 @@ public class ProfileService {
                 return null;
             }
 
-            User updated = new User(username, current.getPassword(), normalizedEmail, current.getRole());
+            User updated = new User(username, current.getPassword(), normalizedEmail, current.getRole(),
+                    current.getPhone(), current.getLocation());
             return userDAO.update(username, updated) ? userDAO.findById(username) : null;
         } catch (Exception e) {
             System.err.println("[ProfileService] Error updating email: " + e.getMessage());
@@ -248,10 +249,41 @@ public class ProfileService {
                 return null;
             }
 
-            User updated = new User(username, password, current.getEmail(), current.getRole());
+            User updated = new User(username, password, current.getEmail(), current.getRole(),
+                    current.getPhone(), current.getLocation());
             return userDAO.update(username, updated) ? userDAO.findById(username) : null;
         } catch (Exception e) {
             System.err.println("[ProfileService] Error updating password: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public User updatePhone(String username, String phone) {
+        try {
+            UserDAO userDAO = UserDAO.getInstance();
+            User current = userDAO.findById(username);
+            if (current == null) {
+                return null;
+            }
+            return userDAO.updateContactInfo(username, phone, current.getLocation())
+                    ? userDAO.findById(username) : null;
+        } catch (Exception e) {
+            System.err.println("[ProfileService] Error updating phone: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public User updateLocation(String username, String location) {
+        try {
+            UserDAO userDAO = UserDAO.getInstance();
+            User current = userDAO.findById(username);
+            if (current == null) {
+                return null;
+            }
+            return userDAO.updateContactInfo(username, current.getPhone(), location)
+                    ? userDAO.findById(username) : null;
+        } catch (Exception e) {
+            System.err.println("[ProfileService] Error updating location: " + e.getMessage());
             return null;
         }
     }

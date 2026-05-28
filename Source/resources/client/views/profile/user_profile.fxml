@@ -157,7 +157,7 @@
                         <Label styleClass="info-label" text="Phone" />
                         <Label fx:id="lblPhone" styleClass="info-value" text="Not set" />
                     </VBox>
-                    <Button onAction="#handleUnavailableProfileField" styleClass="info-edit-btn" text="Edit" />
+                    <Button onAction="#handleEditPhone" styleClass="info-edit-btn" text="Edit" />
                 </HBox>
 
                 <Separator styleClass="row-divider" />
@@ -172,7 +172,7 @@
                         <Label styleClass="info-label" text="Location" />
                         <Label fx:id="lblLocation" styleClass="info-value" text="Not set" />
                     </VBox>
-                    <Button onAction="#handleUnavailableProfileField" styleClass="info-edit-btn" text="Edit" />
+                    <Button onAction="#handleEditLocation" styleClass="info-edit-btn" text="Edit" />
                 </HBox>
 
                 <Separator styleClass="row-divider" />

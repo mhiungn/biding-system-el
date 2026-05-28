@@ -51,6 +51,8 @@ public class TestDatabaseHelper {
                     + "username  VARCHAR(50)  PRIMARY KEY, "
                     + "password  VARCHAR(255) NOT NULL, "
                     + "email     VARCHAR(100) NOT NULL UNIQUE, "
+                    + "phone     VARCHAR(30)  NULL, "
+                    + "location  VARCHAR(255) NULL, "
                     + "role      VARCHAR(20)  NOT NULL, "
                     + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
                     + ")");

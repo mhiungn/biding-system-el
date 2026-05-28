@@ -97,12 +97,11 @@ public class UserProfileController extends NavigationController {
             lblRoleStatus.setText("ADMIN".equalsIgnoreCase(user.getRole()) ? "Active Admin" : "Active User");
         }
 
-        // Phone and Location are not in the DB schema yet
         if (lblPhone != null) {
-            lblPhone.setText("Not set");
+            lblPhone.setText(displayProfileValue(user.getPhone()));
         }
         if (lblLocation != null) {
-            lblLocation.setText("Not set");
+            lblLocation.setText(displayProfileValue(user.getLocation()));
         }
     }
 
@@ -308,8 +307,94 @@ public class UserProfileController extends NavigationController {
     }
 
     @FXML
+    public void handleEditPhone(ActionEvent event) {
+        User user = SessionManager.getCurrentUser();
+        if (user == null) {
+            return;
+        }
+
+        TextInputDialog dialog = new TextInputDialog(blankIfNull(user.getPhone()));
+        dialog.setTitle("Update Phone");
+        dialog.setHeaderText(null);
+        dialog.setContentText("Phone");
+        Optional<String> result = dialog.showAndWait();
+        if (result.isEmpty()) {
+            return;
+        }
+
+        String phone = normalizeProfileText(result.get());
+        if (phone != null && !isValidPhone(phone)) {
+            showMessage(Alert.AlertType.ERROR, "Phone must be 7-30 characters and use only digits, spaces, +, -, (, ).");
+            return;
+        }
+
+        User updated = profileService.updatePhone(user.getUsername(), phone);
+        if (updated == null) {
+            showMessage(Alert.AlertType.ERROR, "Could not update phone.");
+            return;
+        }
+
+        SessionManager.setCurrentUser(updated);
+        populateProfile(updated);
+        showMessage(Alert.AlertType.INFORMATION, "Phone updated.");
+    }
+
+    @FXML
+    public void handleEditLocation(ActionEvent event) {
+        User user = SessionManager.getCurrentUser();
+        if (user == null) {
+            return;
+        }
+
+        TextInputDialog dialog = new TextInputDialog(blankIfNull(user.getLocation()));
+        dialog.setTitle("Update Location");
+        dialog.setHeaderText(null);
+        dialog.setContentText("Location");
+        Optional<String> result = dialog.showAndWait();
+        if (result.isEmpty()) {
+            return;
+        }
+
+        String location = normalizeProfileText(result.get());
+        if (location != null && location.length() > 255) {
+            showMessage(Alert.AlertType.ERROR, "Location must be 255 characters or fewer.");
+            return;
+        }
+
+        User updated = profileService.updateLocation(user.getUsername(), location);
+        if (updated == null) {
+            showMessage(Alert.AlertType.ERROR, "Could not update location.");
+            return;
+        }
+
+        SessionManager.setCurrentUser(updated);
+        populateProfile(updated);
+        showMessage(Alert.AlertType.INFORMATION, "Location updated.");
+    }
+
+    @FXML
     public void handleUnavailableProfileField(ActionEvent event) {
         showMessage(Alert.AlertType.INFORMATION, "This profile field is not stored in the current database schema.");
+    }
+
+    private String displayProfileValue(String value) {
+        return value == null || value.isBlank() ? "Not set" : value;
+    }
+
+    private String blankIfNull(String value) {
+        return value == null ? "" : value;
+    }
+
+    private String normalizeProfileText(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private boolean isValidPhone(String phone) {
+        return phone.matches("[0-9+()\\-\\s]{7,30}") && phone.matches(".*\\d.*");
     }
 
     private Long parseMoney(String value) {

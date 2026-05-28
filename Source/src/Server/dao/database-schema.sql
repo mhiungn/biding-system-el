@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(50) PRIMARY KEY COMMENT 'Tên đăng nhập duy nhất',
     password VARCHAR(255) NOT NULL COMMENT 'Mật khẩu ',
     email VARCHAR(100) NOT NULL UNIQUE COMMENT 'Địa chỉ email duy nhất',
+    phone VARCHAR(30) NULL COMMENT 'User phone number',
+    location VARCHAR(255) NULL COMMENT 'User location',
     role VARCHAR(20) NOT NULL COMMENT 'Vai trò: BIDDER, SELLER, ADMIN',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Thời điểm tạo tài khoản',
     

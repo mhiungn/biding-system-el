@@ -208,6 +208,20 @@ public class UserDAOTest {
         assertFalse(result, "update phải trả về false khi user không tồn tại");
     }
 
+    @Test
+    @Order(32)
+    @DisplayName("updateContactInfo() - updates phone and location")
+    void testUpdateContactInfoSuccess() {
+        userDAO.save("john", standardUser("john", "pass", "john@mail.com"));
+
+        boolean result = userDAO.updateContactInfo("john", "+84 123 456 789", "Hanoi");
+
+        assertTrue(result);
+        User found = userDAO.findById("john");
+        assertEquals("+84 123 456 789", found.getPhone());
+        assertEquals("Hanoi", found.getLocation());
+    }
+
     // ========================== Test delete() ==========================
 
     @Test
