@@ -493,6 +493,11 @@ public class SellItemController extends NavigationController {
         updateAutoExtendButton();
     }
 
+    @Override
+    protected void onAfterShow() {
+        clearForm();
+    }
+
     private void showError(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR, message, ButtonType.OK);
         alert.setTitle(title);

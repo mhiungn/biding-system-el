@@ -5,6 +5,7 @@ import CommonClasses.Items.*;
 import java.sql.*;
 import java.util.*;
 import java.util.Date;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Lớp DAO quản lý việc lưu trữ dữ liệu {@link Item} (sản phẩm đấu giá) trên
@@ -55,6 +56,8 @@ import java.util.Date;
  * @see DatabaseConnection
  */
 public class ItemDAO implements GenericDAO<String, Item> {
+    private static final long IMAGE_CACHE_TTL_MILLIS = 30_000L;
+    private static final Map<String, CachedImages> ITEM_IMAGE_CACHE = new ConcurrentHashMap<>();
 
     // ========================== Singleton ==========================
 
@@ -261,6 +264,7 @@ public class ItemDAO implements GenericDAO<String, Item> {
             ps.setString(10, itemId);
             int rows = ps.executeUpdate();
             if (rows > 0) {
+                invalidateItemImageCache(itemId);
                 System.out.println("[ItemDAO] Update sp: " + itemId + " (" + item.getName() + ")");
                 return true;
             }
@@ -283,6 +287,7 @@ public class ItemDAO implements GenericDAO<String, Item> {
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, itemId);
+            invalidateItemImageCache(itemId);
             int rows = ps.executeUpdate();
             if (rows > 0) {
                 System.out.println("[ItemDAO] Đã xóa sản phẩm: " + itemId);
@@ -599,6 +604,7 @@ public class ItemDAO implements GenericDAO<String, Item> {
             ps.setString(3, imagePath);
             ps.setBoolean(4, isPrimary);
             ps.executeUpdate();
+            invalidateItemImageCache(itemId);
         } catch (SQLException e) {
             throw new RuntimeException("[ItemDAO] Lỗi khi lưu ảnh sản phẩm: " + itemId, e);
         }
@@ -611,6 +617,16 @@ public class ItemDAO implements GenericDAO<String, Item> {
      * @return Danh sách các đường dẫn ảnh
      */
     public List<String> getItemImages(String itemId) {
+        if (itemId == null || itemId.isBlank()) {
+            return new ArrayList<>();
+        }
+
+        long now = System.currentTimeMillis();
+        CachedImages cached = ITEM_IMAGE_CACHE.get(itemId);
+        if (cached != null && !cached.isExpired(now)) {
+            return cached.copy();
+        }
+
         List<String> images = new ArrayList<>();
         String sql = "SELECT image_path FROM item_images WHERE item_id = ? ORDER BY is_primary DESC, created_at ASC";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -621,10 +637,11 @@ public class ItemDAO implements GenericDAO<String, Item> {
                     images.add(rs.getString("image_path"));
                 }
             }
+            ITEM_IMAGE_CACHE.put(itemId, new CachedImages(images, now));
         } catch (SQLException e) {
             throw new RuntimeException("[ItemDAO] Lỗi khi lấy ảnh sản phẩm: " + itemId, e);
         }
-        return images;
+        return new ArrayList<>(images);
     }
 
     /**
@@ -638,8 +655,37 @@ public class ItemDAO implements GenericDAO<String, Item> {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, itemId);
             ps.executeUpdate();
+            invalidateItemImageCache(itemId);
         } catch (SQLException e) {
             throw new RuntimeException("[ItemDAO] Lỗi khi xóa ảnh sản phẩm: " + itemId, e);
+        }
+    }
+
+    static void clearItemImageCacheForTests() {
+        ITEM_IMAGE_CACHE.clear();
+    }
+
+    private void invalidateItemImageCache(String itemId) {
+        if (itemId != null) {
+            ITEM_IMAGE_CACHE.remove(itemId);
+        }
+    }
+
+    private static final class CachedImages {
+        private final List<String> imagePaths;
+        private final long cachedAtMillis;
+
+        private CachedImages(List<String> imagePaths, long cachedAtMillis) {
+            this.imagePaths = imagePaths == null ? List.of() : List.copyOf(imagePaths);
+            this.cachedAtMillis = cachedAtMillis;
+        }
+
+        private boolean isExpired(long nowMillis) {
+            return nowMillis - cachedAtMillis >= IMAGE_CACHE_TTL_MILLIS;
+        }
+
+        private List<String> copy() {
+            return new ArrayList<>(imagePaths);
         }
     }
 }

@@ -25,6 +25,15 @@ public class LoginController extends NavigationController {
         errorLabel.setVisible(false);
     }
 
+    @Override
+    protected void onAfterShow() {
+        usernameField.clear();
+        hiddenPasswordField.clear();
+        showPasswordCheckBox.setSelected(false);
+        showPasswordField();
+        clearError();
+    }
+
     @FXML
     private void togglePasswordVisibility() {
         if (visiblePasswordField.isVisible()) {

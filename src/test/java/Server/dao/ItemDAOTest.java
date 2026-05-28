@@ -39,6 +39,7 @@ public class ItemDAOTest {
     @BeforeEach
     void clearData() throws SQLException {
         TestDatabaseHelper.clearAllTables();
+        ItemDAO.clearItemImageCacheForTests();
     }
 
     // ========================== Test save() ==========================
@@ -395,5 +396,48 @@ public class ItemDAOTest {
         assertEquals(2, map.size());
         assertTrue(map.containsKey("i1"));
         assertTrue(map.containsKey("i2"));
+    }
+
+    @Test
+    @Order(120)
+    @DisplayName("getItemImages() - cache invalidates when new image is saved")
+    void testItemImageCacheInvalidatesOnSave() {
+        itemDAO.save("item-images", new Electronics(100f, "Camera", "d1"));
+
+        assertTrue(itemDAO.getItemImages("item-images").isEmpty());
+
+        itemDAO.saveItemImage("item-images", "https://res.cloudinary.com/demo/image/upload/main.jpg", true);
+
+        assertEquals(
+                List.of("https://res.cloudinary.com/demo/image/upload/main.jpg"),
+                itemDAO.getItemImages("item-images"));
+    }
+
+    @Test
+    @Order(121)
+    @DisplayName("getItemImages() - returned cached lists are defensive copies")
+    void testItemImageCacheReturnsDefensiveCopies() {
+        itemDAO.save("item-images", new Electronics(100f, "Camera", "d1"));
+        itemDAO.saveItemImage("item-images", "https://res.cloudinary.com/demo/image/upload/main.jpg", true);
+
+        List<String> firstRead = itemDAO.getItemImages("item-images");
+        firstRead.clear();
+
+        assertEquals(
+                List.of("https://res.cloudinary.com/demo/image/upload/main.jpg"),
+                itemDAO.getItemImages("item-images"));
+    }
+
+    @Test
+    @Order(122)
+    @DisplayName("deleteItemImages() - cache invalidates after image delete")
+    void testItemImageCacheInvalidatesOnDelete() {
+        itemDAO.save("item-images", new Electronics(100f, "Camera", "d1"));
+        itemDAO.saveItemImage("item-images", "https://res.cloudinary.com/demo/image/upload/main.jpg", true);
+        assertEquals(1, itemDAO.getItemImages("item-images").size());
+
+        itemDAO.deleteItemImages("item-images");
+
+        assertTrue(itemDAO.getItemImages("item-images").isEmpty());
     }
 }
