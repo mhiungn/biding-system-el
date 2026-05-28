@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.net.URL?>
 <?import Client.components.AppHeader?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
@@ -13,7 +14,11 @@
 <?import javafx.geometry.Insets?>
 <?import java.lang.String?>
 <?import javafx.scene.image.Image?>
-<VBox maxHeight="576.0" maxWidth="977.0" minHeight="576.0" minWidth="977.0" prefHeight="576.0" prefWidth="977.0" styleClass="root" stylesheets="@/client/views/bidding/mybids.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.features.bidding.MyBidsController">
+<VBox maxHeight="576.0" maxWidth="977.0" minHeight="576.0" minWidth="977.0" prefHeight="576.0" prefWidth="977.0" styleClass="root" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.features.bidding.MyBidsController">
+    <stylesheets>
+        <URL value="@/client/views/common/scrollbar.css" />
+        <URL value="@/client/views/bidding/mybids.css" />
+    </stylesheets>
 
     <!-- ═══════════════════════════════════════════════════════════
          CUSTOM TITLE BAR (same as login)

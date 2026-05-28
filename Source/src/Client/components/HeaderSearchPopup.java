@@ -27,6 +27,8 @@ import java.util.function.Consumer;
 
 public class HeaderSearchPopup {
     private static final int RESULT_LIMIT = 8;
+    private static final String GLOBAL_STYLESHEET = "/client/views/common/scrollbar.css";
+    private static final String COMPONENT_STYLESHEET = "/client/views/components/components.css";
 
     private final SearchService searchService;
     private final Consumer<DashboardAuctionRow> onResultSelected;
@@ -65,16 +67,16 @@ public class HeaderSearchPopup {
         popup.setAutoHide(true);
 
         VBox root = new VBox(10);
+        root.getStyleClass().add("auction-search-panel");
+        root.getStylesheets().add(HeaderSearchPopup.class.getResource(GLOBAL_STYLESHEET).toExternalForm());
+        root.getStylesheets().add(HeaderSearchPopup.class.getResource(COMPONENT_STYLESHEET).toExternalForm());
         root.setPrefWidth(360);
         root.setMaxHeight(420);
         root.setPadding(new Insets(14));
-        root.setStyle("-fx-background-color: #181818; -fx-background-radius: 8; "
-                + "-fx-border-color: #333333; -fx-border-radius: 8; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 18, 0, 0, 8);");
 
         searchField = new TextField();
+        searchField.getStyleClass().add("auction-search-field");
         searchField.setPromptText("Search auctions");
-        searchField.setStyle("-fx-background-color: #242424; -fx-text-fill: white; -fx-prompt-text-fill: #8d8d8d; "
-                + "-fx-background-radius: 6; -fx-border-color: #3a3a3a; -fx-border-radius: 6; -fx-padding: 9 10;");
         searchField.setOnAction(event -> runSearch());
         searchField.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ESCAPE) {
@@ -88,6 +90,7 @@ public class HeaderSearchPopup {
         });
 
         progressIndicator = new ProgressIndicator();
+        progressIndicator.getStyleClass().add("auction-search-progress");
         progressIndicator.setMaxSize(22, 22);
         progressIndicator.setVisible(false);
         progressIndicator.setManaged(false);
@@ -97,12 +100,12 @@ public class HeaderSearchPopup {
         HBox.setHgrow(searchField, Priority.ALWAYS);
 
         resultsBox = new VBox(6);
+        resultsBox.getStyleClass().add("auction-search-results");
         ScrollPane scrollPane = new ScrollPane(resultsBox);
+        scrollPane.getStyleClass().add("auction-search-results-scroll");
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setPrefHeight(320);
-        scrollPane.setStyle("-fx-background-color: transparent;");
-        scrollPane.getStyleClass().add("search-results-scroll");
 
         root.getChildren().addAll(topRow, scrollPane);
         popup.getContent().add(root);
@@ -155,9 +158,9 @@ public class HeaderSearchPopup {
 
     private HBox createResultRow(DashboardAuctionRow row) {
         HBox container = new HBox(10);
+        container.getStyleClass().add("auction-search-result-card");
         container.setAlignment(Pos.CENTER_LEFT);
         container.setPadding(new Insets(10));
-        container.setStyle("-fx-background-color: #222222; -fx-background-radius: 6; -fx-cursor: hand;");
 
         VBox text = new VBox(4);
         HBox.setHgrow(text, Priority.ALWAYS);
@@ -165,11 +168,11 @@ public class HeaderSearchPopup {
         Item item = row.getItem();
         Label title = new Label(item == null ? "Unknown auction" : item.getName());
         title.setMaxWidth(Double.MAX_VALUE);
-        title.setStyle("-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: 700;");
+        title.getStyleClass().add("auction-search-result-title");
 
         String priceText = item == null ? "" : currencyFormat.format((long) item.getCurrentHighestPrice()) + " VND";
         Label meta = new Label(priceText + " | " + row.getBidCount() + " bids | " + formatTime(row));
-        meta.setStyle("-fx-text-fill: #b3b3b3; -fx-font-size: 10px;");
+        meta.getStyleClass().add("auction-search-result-meta");
 
         text.getChildren().addAll(title, meta);
         container.getChildren().add(text);
@@ -183,8 +186,8 @@ public class HeaderSearchPopup {
     private void renderMessage(String message) {
         resultsBox.getChildren().clear();
         Label label = new Label(message);
+        label.getStyleClass().add("auction-search-empty");
         label.setPadding(new Insets(12));
-        label.setStyle("-fx-text-fill: #b3b3b3; -fx-font-size: 11px;");
         resultsBox.getChildren().add(label);
     }
 

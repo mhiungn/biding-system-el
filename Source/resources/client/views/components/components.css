@@ -1,0 +1,107 @@
+.notification-panel,
+.auction-search-panel {
+    -fx-background-color: #181818;
+    -fx-background-radius: 8px;
+    -fx-border-color: #333333;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 18, 0, 0, 8);
+}
+
+.notification-panel {
+    -fx-background-color: #1f1f1f;
+}
+
+.notification-title {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 15px;
+    -fx-font-weight: 700;
+}
+
+.notification-mark-all {
+    -fx-background-color: transparent;
+    -fx-text-fill: #1ed760;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-cursor: hand;
+    -fx-padding: 4 8 4 8;
+}
+
+.notification-mark-all:hover {
+    -fx-text-fill: #1fdf64;
+}
+
+.notification-list,
+.auction-search-results {
+    -fx-background-color: transparent;
+}
+
+.notification-card,
+.auction-search-result-card {
+    -fx-background-radius: 6px;
+    -fx-cursor: hand;
+}
+
+.notification-card-read {
+    -fx-background-color: #242424;
+}
+
+.notification-card-unread {
+    -fx-background-color: #173522;
+}
+
+.notification-card:hover,
+.auction-search-result-card:hover {
+    -fx-background-color: #252525;
+}
+
+.notification-card-title,
+.auction-search-result-title {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}
+
+.notification-card-message {
+    -fx-text-fill: #d0d0d0;
+    -fx-font-size: 11px;
+}
+
+.notification-card-time {
+    -fx-text-fill: #8a8a8a;
+    -fx-font-size: 10px;
+}
+
+.notification-empty,
+.auction-search-empty {
+    -fx-text-fill: #b3b3b3;
+    -fx-font-size: 11px;
+}
+
+.auction-search-field {
+    -fx-background-color: #1f1f1f;
+    -fx-text-fill: #ffffff;
+    -fx-prompt-text-fill: #b3b3b3;
+    -fx-border-color: #4d4d4d;
+    -fx-border-width: 1px;
+    -fx-border-radius: 9999px;
+    -fx-background-radius: 9999px;
+    -fx-padding: 9 14 9 14;
+}
+
+.auction-search-field:focused {
+    -fx-border-color: #7c7c7c;
+}
+
+.auction-search-progress {
+    -fx-progress-color: #1ed760;
+}
+
+.auction-search-result-card {
+    -fx-background-color: #1f1f1f;
+}
+
+.auction-search-result-meta {
+    -fx-text-fill: #b3b3b3;
+    -fx-font-size: 10px;
+}

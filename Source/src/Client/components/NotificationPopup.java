@@ -20,6 +20,9 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class NotificationPopup implements PushEventListener {
+    private static final String GLOBAL_STYLESHEET = "/client/views/common/scrollbar.css";
+    private static final String COMPONENT_STYLESHEET = "/client/views/components/components.css";
+
     private final NotificationClientService service;
     private final String username;
     private final Consumer<NotificationDTO> notificationAction;
@@ -56,18 +59,20 @@ public class NotificationPopup implements PushEventListener {
 
     private VBox createContent() {
         VBox root = new VBox(10);
+        root.getStyleClass().add("notification-panel");
+        root.getStylesheets().add(NotificationPopup.class.getResource(GLOBAL_STYLESHEET).toExternalForm());
+        root.getStylesheets().add(NotificationPopup.class.getResource(COMPONENT_STYLESHEET).toExternalForm());
         root.setPadding(new Insets(12));
         root.setPrefWidth(340);
         root.setMaxHeight(420);
-        root.setStyle("-fx-background-color: #1f1f1f; -fx-border-color: #333333; "
-                + "-fx-border-width: 1; -fx-background-radius: 8; -fx-border-radius: 8;");
 
         HBox header = new HBox(8);
+        header.getStyleClass().add("notification-header");
         header.setAlignment(Pos.CENTER_LEFT);
         Label title = new Label("Notifications");
-        title.setStyle("-fx-text-fill: white; -fx-font-size: 15px; -fx-font-weight: 700;");
+        title.getStyleClass().add("notification-title");
         Button markAll = new Button("Mark all read");
-        markAll.setStyle("-fx-background-color: transparent; -fx-text-fill: #1ed760; -fx-cursor: hand;");
+        markAll.getStyleClass().add("notification-mark-all");
         markAll.setOnAction(event -> {
             service.markAllRead(username);
             reload();
@@ -77,9 +82,10 @@ public class NotificationPopup implements PushEventListener {
         header.getChildren().addAll(title, markAll);
 
         ScrollPane scroll = new ScrollPane(list);
+        scroll.getStyleClass().add("notification-scroll");
+        list.getStyleClass().add("notification-list");
         scroll.setFitToWidth(true);
         scroll.setPrefHeight(330);
-        scroll.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
 
         root.getChildren().addAll(header, scroll);
         return root;
@@ -90,7 +96,7 @@ public class NotificationPopup implements PushEventListener {
         List<NotificationDTO> notifications = service.listNotifications(username);
         if (notifications.isEmpty()) {
             Label empty = new Label("No notifications");
-            empty.setStyle("-fx-text-fill: #b3b3b3; -fx-padding: 16;");
+            empty.getStyleClass().add("notification-empty");
             list.getChildren().add(empty);
             return;
         }
@@ -102,21 +108,20 @@ public class NotificationPopup implements PushEventListener {
 
     private VBox createRow(NotificationDTO notification) {
         VBox row = new VBox(4);
+        row.getStyleClass().add("notification-card");
+        row.getStyleClass().add(notification.isRead() ? "notification-card-read" : "notification-card-unread");
         row.setPadding(new Insets(10));
-        row.setStyle(notification.isRead()
-                ? "-fx-background-color: #242424; -fx-background-radius: 6; -fx-cursor: hand;"
-                : "-fx-background-color: #173522; -fx-background-radius: 6; -fx-cursor: hand;");
 
         Label title = new Label(notification.getTitle());
-        title.setStyle("-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: 700;");
+        title.getStyleClass().add("notification-card-title");
         title.setWrapText(true);
 
         Label message = new Label(notification.getMessage());
-        message.setStyle("-fx-text-fill: #d0d0d0; -fx-font-size: 11px;");
+        message.getStyleClass().add("notification-card-message");
         message.setWrapText(true);
 
         Label time = new Label(notification.getCreatedAt() == null ? "" : timeFormat.format(notification.getCreatedAt()));
-        time.setStyle("-fx-text-fill: #8a8a8a; -fx-font-size: 10px;");
+        time.getStyleClass().add("notification-card-time");
 
         row.getChildren().addAll(title, message, time);
         row.setOnMouseClicked(event -> {

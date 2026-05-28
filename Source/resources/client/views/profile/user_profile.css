@@ -61,32 +61,6 @@
     -fx-background-color: #121212;
 }
 
-.profile-scroll .scroll-bar:vertical {
-    -fx-background-color: #121212;
-    -fx-pref-width: 8px;
-}
-
-.profile-scroll .scroll-bar:vertical .thumb {
-    -fx-background-color: #4d4d4d;
-    -fx-background-radius: 4px;
-}
-
-.profile-scroll .scroll-bar:vertical .thumb:hover {
-    -fx-background-color: #7c7c7c;
-}
-
-.profile-scroll .scroll-bar:vertical .track {
-    -fx-background-color: transparent;
-}
-
-.profile-scroll .scroll-bar:vertical .increment-button,
-.profile-scroll .scroll-bar:vertical .decrement-button {
-    -fx-background-color: transparent;
-    -fx-padding: 0;
-    -fx-pref-height: 0;
-    -fx-min-height: 0;
-}
-
 /* ── Profile Content Wrapper ────────────────────────── */
 .profile-content {
     -fx-background-color: #121212;
@@ -217,6 +191,22 @@
     -fx-background-radius: 3px;
     -fx-min-width: 16;
     -fx-min-height: 16;
+}
+
+.deposit-input {
+    -fx-background-color: #1f1f1f;
+    -fx-text-fill: #ffffff;
+    -fx-prompt-text-fill: #b3b3b3;
+    -fx-border-color: #4d4d4d;
+    -fx-border-width: 1px;
+    -fx-border-radius: 9999px;
+    -fx-background-radius: 9999px;
+    -fx-padding: 8 16 8 16;
+    -fx-font-size: 12px;
+}
+
+.deposit-input:focused {
+    -fx-border-color: #7c7c7c;
 }
 
 /* ── Edit / View buttons inside rows ────────────────── */
