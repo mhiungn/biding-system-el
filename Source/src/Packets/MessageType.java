@@ -68,5 +68,25 @@ public enum MessageType {
     CANCEL_AUCTION,
     JOIN_AUCTION,
     LEAVE_AUCTION,
-    LIST_AUCTIONS
+    LIST_AUCTIONS,
+
+    // ========================== Auto-Bid ==========================
+
+    /** Client → Server: Đăng ký cấu hình auto-bid (payload: Map{auctionId, maxBid, increment}). */
+    AUTO_BID_REGISTER_REQUEST,
+    /** Server → Client: Phản hồi đăng ký auto-bid (payload: Boolean hoặc AutoBidConfig). */
+    AUTO_BID_REGISTER_RESPONSE,
+
+    /** Client → Server: Hủy cấu hình auto-bid (payload: auctionId). */
+    AUTO_BID_CANCEL_REQUEST,
+    /** Server → Client: Phản hồi hủy auto-bid (payload: Boolean). */
+    AUTO_BID_CANCEL_RESPONSE,
+
+    /** Client → Server: Xem trạng thái auto-bid hiện tại (payload: auctionId). */
+    AUTO_BID_STATUS_REQUEST,
+    /** Server → Client: Trả về cấu hình auto-bid (payload: AutoBidConfig hoặc null). */
+    AUTO_BID_STATUS_RESPONSE,
+
+    /** Server → Client (Push): Thông báo sự kiện auto-bid (payload: AutoBidNotificationDTO). */
+    AUTO_BID_NOTIFICATION
 }

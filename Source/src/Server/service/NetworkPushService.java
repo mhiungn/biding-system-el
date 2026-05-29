@@ -1,6 +1,7 @@
 package Server.service;
 
 import CommonClasses.dto.AuctionUpdatePushDTO;
+import CommonClasses.dto.AutoBidNotificationDTO;
 import CommonClasses.dto.DashboardAuctionRow;
 import CommonClasses.dto.NotificationPushDTO;
 import CommonClasses.dto.WalletUpdatePushDTO;
@@ -119,5 +120,32 @@ public class NetworkPushService {
 
     public void clearDeliveryOverrideForTests() {
         this.deliveryOverride = null;
+    }
+
+    /**
+     * Gửi thông báo sự kiện Auto-Bid cho một user cụ thể qua Socket push.
+     * <p>
+     * Được gọi bởi {@link AutoBidManager} khi:
+     * <ul>
+     *   <li>{@code AUTO_BID_PLACED} — hệ thống đã tự động đặt giá thay user</li>
+     *   <li>{@code AUTO_BID_LIMIT_REACHED} — giá vượt quá maxBid, auto-bid dừng lại</li>
+     * </ul>
+     * </p>
+     *
+     * @param username  username nhận thông báo
+     * @param auctionId ID phiên đấu giá
+     * @param type      loại sự kiện (AUTO_BID_PLACED, AUTO_BID_LIMIT_REACHED, etc.)
+     * @param bidAmount số tiền liên quan
+     * @param maxBid    giới hạn maxBid của cấu hình auto-bid
+     * @param message   thông điệp mô tả chi tiết
+     */
+    public void pushAutoBidNotification(String username, int auctionId, String type,
+                                        float bidAmount, float maxBid, String message) {
+        if (username == null || username.isBlank()) {
+            return;
+        }
+        AutoBidNotificationDTO payload = new AutoBidNotificationDTO(
+                username, auctionId, type, bidAmount, maxBid, message);
+        sendToUser(username, new PacketMessage(MessageType.AUTO_BID_NOTIFICATION, payload));
     }
 }

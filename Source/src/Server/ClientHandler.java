@@ -1,6 +1,7 @@
 package Server;
 
 import CommonClasses.Auction;
+import CommonClasses.AutoBidConfig;
 import CommonClasses.Bid;
 import CommonClasses.User;
 import CommonClasses.dto.AuthResponse;
@@ -17,6 +18,7 @@ import Server.dao.AuctionDAO;
 import Server.dao.UserDAO;
 import Server.service.AuthenticationService;
 import Server.service.AuctionFinalizationService;
+import Server.service.AutoBidManager;
 import Server.service.BiddingApplicationService;
 import Server.service.NotificationApplicationService;
 import Server.service.ProfileApplicationService;
@@ -182,6 +184,12 @@ public class ClientHandler implements Runnable {
                 handleDatabasePlaceBid(request, requireLogin(request));
             } else if (type == MessageType.CANCEL_AUCTION) {
                 handleCancelAuction(request, requireLogin(request));
+            } else if (type == MessageType.AUTO_BID_REGISTER_REQUEST) {
+                handleAutoBidRegister(request, requireLogin(request));
+            } else if (type == MessageType.AUTO_BID_CANCEL_REQUEST) {
+                handleAutoBidCancel(request, requireLogin(request));
+            } else if (type == MessageType.AUTO_BID_STATUS_REQUEST) {
+                handleAutoBidStatus(request, requireLogin(request));
             } else {
                 sendErrorResponse("UNSUPPORTED_MESSAGE", "Unsupported message type: " + type, type);
             }
@@ -452,6 +460,72 @@ public class ClientHandler implements Runnable {
 
         boolean accepted = BiddingApplicationService.getInstance().placeBid(session.getUsername(), auctionId, bidAmount);
         sendPacket(new PacketMessage(MessageType.PLACE_BID, accepted));
+    }
+
+    // ========================== Auto-Bid Handlers ==========================
+
+    /**
+     * Xử lý yêu cầu đăng ký Auto-Bid từ client.
+     * <p>
+     * Payload: Map{"auctionId": int, "maxBid": float, "increment": float}
+     * </p>
+     *
+     * @param request gói tin từ client
+     * @param session phiên đăng nhập đã xác thực
+     */
+    private void handleAutoBidRegister(PacketMessage request, SessionRegistry.AuthenticatedSession session)
+            throws IOException {
+        Map<?, ?> payload = requireMapPayload(request);
+        int auctionId = readInt(payload, "auctionId", -1);
+        float maxBid = readFloat(payload, "maxBid", 0);
+        float increment = readFloat(payload, "increment", 0);
+
+        if (auctionId <= 0 || maxBid <= 0 || increment <= 0) {
+            sendPacket(new PacketMessage(MessageType.AUTO_BID_REGISTER_RESPONSE, false));
+            return;
+        }
+
+        try {
+            AutoBidConfig config = AutoBidManager.getInstance().registerAutoBid(
+                    session.getUsername(), auctionId, maxBid, increment);
+            sendPacket(new PacketMessage(MessageType.AUTO_BID_REGISTER_RESPONSE, config));
+        } catch (IllegalArgumentException e) {
+            sendErrorResponse("AUTO_BID_INVALID", e.getMessage(), MessageType.AUTO_BID_REGISTER_REQUEST);
+        }
+    }
+
+    /**
+     * Xử lý yêu cầu hủy Auto-Bid từ client.
+     * <p>
+     * Payload: auctionId (Number)
+     * </p>
+     *
+     * @param request gói tin từ client
+     * @param session phiên đăng nhập đã xác thực
+     */
+    private void handleAutoBidCancel(PacketMessage request, SessionRegistry.AuthenticatedSession session)
+            throws IOException {
+        int auctionId = readAuctionIdFromMapOrNumber(request.getPayload());
+        boolean cancelled = AutoBidManager.getInstance().cancelAutoBid(
+                session.getUsername(), auctionId);
+        sendPacket(new PacketMessage(MessageType.AUTO_BID_CANCEL_RESPONSE, cancelled));
+    }
+
+    /**
+     * Xử lý yêu cầu xem trạng thái Auto-Bid hiện tại từ client.
+     * <p>
+     * Payload: auctionId (Number)
+     * </p>
+     *
+     * @param request gói tin từ client
+     * @param session phiên đăng nhập đã xác thực
+     */
+    private void handleAutoBidStatus(PacketMessage request, SessionRegistry.AuthenticatedSession session)
+            throws IOException {
+        int auctionId = readAuctionIdFromMapOrNumber(request.getPayload());
+        AutoBidConfig config = AutoBidManager.getInstance().getAutoBidConfig(
+                session.getUsername(), auctionId);
+        sendPacket(new PacketMessage(MessageType.AUTO_BID_STATUS_RESPONSE, (Serializable) config));
     }
 
     private void handleCancelAuction(PacketMessage request, SessionRegistry.AuthenticatedSession session)

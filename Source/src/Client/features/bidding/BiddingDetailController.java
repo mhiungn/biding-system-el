@@ -8,8 +8,10 @@ import Client.core.ui.FxDebouncer;
 import Client.core.ui.ItemImageUrl;
 import Client.core.ui.RefreshablePage;
 import Client.features.auth.SessionManager;
+import CommonClasses.AutoBidConfig;
 import CommonClasses.Bid;
 import CommonClasses.dto.AuctionUpdatePushDTO;
+import CommonClasses.dto.AutoBidNotificationDTO;
 import CommonClasses.dto.DashboardAuctionRow;
 import CommonClasses.User;
 import CommonClasses.dto.NotificationPushDTO;
@@ -54,39 +56,78 @@ public class BiddingDetailController extends NavigationController implements Ref
     // ========================== FXML Fields ==========================
 
     // Item info
-    @FXML private Label lblItemTitle;
-    @FXML private Label lblDescription;
-    @FXML private Label lblCondition;
-    @FXML private Label lblCategory;
-    @FXML private Label lblLocation;
-    @FXML private Label lblItemId;
+    @FXML
+    private Label lblItemTitle;
+    @FXML
+    private Label lblDescription;
+    @FXML
+    private Label lblCondition;
+    @FXML
+    private Label lblCategory;
+    @FXML
+    private Label lblLocation;
+    @FXML
+    private Label lblItemId;
 
     // Timer
-    @FXML private Label lblTimerValue;
-    @FXML private Label lblHours;
-    @FXML private Label lblMinutes;
-    @FXML private Label lblSeconds;
+    @FXML
+    private Label lblTimerValue;
+    @FXML
+    private Label lblHours;
+    @FXML
+    private Label lblMinutes;
+    @FXML
+    private Label lblSeconds;
 
     // Bid info
-    @FXML private Label lblCurrentBid;
-    @FXML private Label lblBidCount;
-    @FXML private Label lblWatcherCount;
-    @FXML private Label lblMinBid;
-    @FXML private TextField txtBidAmount;
-    @FXML private Button btnPlaceBid;
-    @FXML private AppHeader appHeader;
-    @FXML private Region mainImage;
-    @FXML private Region thumbnail1;
-    @FXML private Region thumbnail2;
-    @FXML private Region thumbnail3;
-    @FXML private Region thumbnail4;
+    @FXML
+    private Label lblCurrentBid;
+    @FXML
+    private Label lblBidCount;
+    @FXML
+    private Label lblWatcherCount;
+    @FXML
+    private Label lblMinBid;
+    @FXML
+    private TextField txtBidAmount;
+    @FXML
+    private Button btnPlaceBid;
+    @FXML
+    private AppHeader appHeader;
+
+    // Auto-Bid FXML fields
+    @FXML
+    private VBox autoBidBox;
+    @FXML
+    private Label lblAutoBidStatus;
+    @FXML
+    private TextField txtAutoMaxBid;
+    @FXML
+    private TextField txtAutoIncrement;
+    @FXML
+    private Button btnSetAutoBid;
+    @FXML
+    private Button btnCancelAutoBid;
+    @FXML
+    private Region mainImage;
+    @FXML
+    private Region thumbnail1;
+    @FXML
+    private Region thumbnail2;
+    @FXML
+    private Region thumbnail3;
+    @FXML
+    private Region thumbnail4;
 
     // Seller
-    @FXML private Label lblSellerName;
-    @FXML private ImageView sellerAvatarImageView;
+    @FXML
+    private Label lblSellerName;
+    @FXML
+    private ImageView sellerAvatarImageView;
 
     // Bid history container
-    @FXML private VBox bidHistoryList;
+    @FXML
+    private VBox bidHistoryList;
 
     // ========================== Service & State ==========================
 
@@ -103,6 +144,7 @@ public class BiddingDetailController extends NavigationController implements Ref
     private String auctionOwner;
     private String auctionOwnerProfileImageUrl;
     private List<Bid> bidHistory = List.of();
+    private AutoBidConfig autoBidConfig;
     private Timer countdownTimer;
 
     // ========================== Initialization ==========================
@@ -155,18 +197,20 @@ public class BiddingDetailController extends NavigationController implements Ref
             protected AuctionDetailLoad call() {
                 DashboardAuctionRow detail = service.loadAuctionDetail(auctionId);
                 if (detail == null) {
-                    return new AuctionDetailLoad(null, 0, null, null, List.of());
+                    return new AuctionDetailLoad(null, 0, null, null, List.of(), null);
                 }
                 String owner = detail.getOwnerUsername();
                 if (owner == null || owner.isBlank()) {
                     owner = service.getAuctionOwner(auctionId);
                 }
+                AutoBidConfig config = service.getAutoBidStatus(auctionId);
                 return new AuctionDetailLoad(
                         detail,
                         service.getParticipantCount(auctionId),
                         owner,
                         detail.getOwnerProfileImageUrl(),
-                        service.loadBidHistory(auctionId));
+                        service.loadBidHistory(auctionId),
+                        config);
             }
         };
         task.setOnSucceeded(event -> {
@@ -177,6 +221,7 @@ public class BiddingDetailController extends NavigationController implements Ref
             auctionOwner = loaded.owner;
             auctionOwnerProfileImageUrl = loaded.ownerProfileImageUrl;
             bidHistory = loaded.bids;
+            autoBidConfig = loaded.autoBidConfig;
             if (auctionDetail == null) {
                 showError("Auction not found");
                 return;
@@ -187,6 +232,7 @@ public class BiddingDetailController extends NavigationController implements Ref
             populateSellerInfo();
             renderItemImages();
             populateBidHistory();
+            updateAutoBidUI();
             startCountdown();
         });
         task.setOnFailed(event -> {
@@ -204,7 +250,8 @@ public class BiddingDetailController extends NavigationController implements Ref
      * Populates item title, description, category, and specifications.
      */
     private void populateItemInfo() {
-        if (auctionDetail.getItem() == null) return;
+        if (auctionDetail.getItem() == null)
+            return;
 
         var item = auctionDetail.getItem();
         lblItemTitle.setText(item.getName());
@@ -218,9 +265,11 @@ public class BiddingDetailController extends NavigationController implements Ref
         lblItemId.setText("AUC-" + auctionDetail.getAuctionId());
 
         lblCondition.setText(item.getItemCondition() != null && !item.getItemCondition().isBlank()
-                ? item.getItemCondition() : "-");
+                ? item.getItemCondition()
+                : "-");
         lblLocation.setText(item.getLocation() != null && !item.getLocation().isBlank()
-                ? item.getLocation() : "-");
+                ? item.getLocation()
+                : "-");
     }
 
     /**
@@ -495,7 +544,7 @@ public class BiddingDetailController extends NavigationController implements Ref
         List<String> images = auctionDetail == null ? List.of() : auctionDetail.getImagePaths();
         applyImageBackground(mainImage, images.isEmpty() ? null : images.get(0), false);
 
-        Region[] thumbnails = {thumbnail1, thumbnail2, thumbnail3, thumbnail4};
+        Region[] thumbnails = { thumbnail1, thumbnail2, thumbnail3, thumbnail4 };
         for (int i = 0; i < thumbnails.length; i++) {
             Region thumbnail = thumbnails[i];
             if (thumbnail == null) {
@@ -524,24 +573,27 @@ public class BiddingDetailController extends NavigationController implements Ref
         region.setStyle(
                 "-fx-background-image: url('" + imageUrl + "'); " +
                         "-fx-background-size: cover; " +
-                        "-fx-background-position: center;"
-        );
+                        "-fx-background-position: center;");
     }
 
     /**
      * Formats a Date as a relative "time ago" string.
      */
     private String formatTimeAgo(Date date) {
-        if (date == null) return "-";
+        if (date == null)
+            return "-";
 
         long diff = System.currentTimeMillis() - date.getTime();
         long minutes = diff / 60_000;
         long hours = diff / 3_600_000;
         long days = diff / 86_400_000;
 
-        if (minutes < 1) return "Just now";
-        if (minutes < 60) return minutes + " min" + (minutes != 1 ? "s" : "") + " ago";
-        if (hours < 24) return hours + " hour" + (hours != 1 ? "s" : "") + " ago";
+        if (minutes < 1)
+            return "Just now";
+        if (minutes < 60)
+            return minutes + " min" + (minutes != 1 ? "s" : "") + " ago";
+        if (hours < 24)
+            return hours + " hour" + (hours != 1 ? "s" : "") + " ago";
         return days + " day" + (days != 1 ? "s" : "") + " ago";
     }
 
@@ -568,6 +620,137 @@ public class BiddingDetailController extends NavigationController implements Ref
         appHeader.refreshWalletQuickInfo();
     }
 
+    @FXML
+    private void handleSetAutoBid() {
+        if (isAuctionEnded()) {
+            showError("Cannot set auto-bid on ended auction.");
+            return;
+        }
+
+        String maxBidStr = txtAutoMaxBid.getText().trim();
+        String incrementStr = txtAutoIncrement.getText().trim();
+
+        if (maxBidStr.isEmpty() || incrementStr.isEmpty()) {
+            showError("Please enter both Max Bid and Increment values.");
+            return;
+        }
+
+        float maxBid;
+        float increment;
+        try {
+            maxBid = Float.parseFloat(maxBidStr);
+            increment = Float.parseFloat(incrementStr);
+        } catch (NumberFormatException e) {
+            showError("Please enter valid numeric values.");
+            return;
+        }
+
+        if (maxBid <= 0 || increment <= 0) {
+            showError("Values must be greater than zero.");
+            return;
+        }
+
+        float currentHighest = auctionDetail.getItem().getCurrentHighestPrice();
+        if (maxBid <= currentHighest) {
+            showError("Max bid must be greater than the current highest price (" + currencyFormat.format(currentHighest) + " VND).");
+            return;
+        }
+
+        loadingOverlay.show(autoBidBox, "Activating Auto-Bid...");
+        Task<Boolean> task = new Task<>() {
+            @Override
+            protected Boolean call() {
+                return service.registerAutoBid(currentAuctionId, maxBid, increment);
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            loadingOverlay.hide();
+            if (task.getValue()) {
+                loadAuctionData(currentAuctionId);
+            } else {
+                showError("Failed to register Auto-Bid. Please check your wallet balance or rules.");
+            }
+        });
+
+        task.setOnFailed(event -> {
+            loadingOverlay.hide();
+            showError("An error occurred while registering Auto-Bid.");
+        });
+
+        new Thread(task).start();
+    }
+
+    @FXML
+    private void handleCancelAutoBid() {
+        loadingOverlay.show(autoBidBox, "Canceling Auto-Bid...");
+        Task<Boolean> task = new Task<>() {
+            @Override
+            protected Boolean call() {
+                return service.cancelAutoBid(currentAuctionId);
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            loadingOverlay.hide();
+            if (task.getValue()) {
+                loadAuctionData(currentAuctionId);
+            } else {
+                showError("Failed to cancel Auto-Bid.");
+            }
+        });
+
+        task.setOnFailed(event -> {
+            loadingOverlay.hide();
+            showError("An error occurred while canceling Auto-Bid.");
+        });
+
+        new Thread(task).start();
+    }
+
+    private void updateAutoBidUI() {
+        if (autoBidConfig != null && autoBidConfig.isActive()) {
+            lblAutoBidStatus.setText(String.format("Status: Active (Max: %s, Inc: %s)",
+                    currencyFormat.format(autoBidConfig.getMaxBid()),
+                    currencyFormat.format(autoBidConfig.getIncrement())));
+            lblAutoBidStatus.setStyle("-fx-text-fill: #1ed760;");
+            txtAutoMaxBid.setText(String.valueOf(autoBidConfig.getMaxBid()));
+            txtAutoIncrement.setText(String.valueOf(autoBidConfig.getIncrement()));
+            txtAutoMaxBid.setDisable(true);
+            txtAutoIncrement.setDisable(true);
+            btnSetAutoBid.setDisable(true);
+            btnCancelAutoBid.setDisable(isAuctionEnded());
+        } else {
+            lblAutoBidStatus.setText("Status: Not Active");
+            lblAutoBidStatus.setStyle("-fx-text-fill: #b3b3b3;");
+            if (!isAuctionEnded()) {
+                txtAutoMaxBid.setDisable(false);
+                txtAutoIncrement.setDisable(false);
+                btnSetAutoBid.setDisable(false);
+            } else {
+                txtAutoMaxBid.setDisable(true);
+                txtAutoIncrement.setDisable(true);
+                btnSetAutoBid.setDisable(true);
+            }
+            btnCancelAutoBid.setDisable(true);
+        }
+    }
+
+    @Override
+    public void onAutoBidNotificationPush(AutoBidNotificationDTO payload) {
+        if (payload != null && payload.getAuctionId() == currentAuctionId) {
+            Platform.runLater(() -> {
+                loadAuctionData(currentAuctionId);
+
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Auto-Bidding");
+                alert.setHeaderText(null);
+                alert.setContentText(payload.getMessage());
+                alert.show();
+            });
+        }
+    }
+
     /**
      * Shows an error message in the item title.
      */
@@ -585,14 +768,16 @@ public class BiddingDetailController extends NavigationController implements Ref
         private final String owner;
         private final String ownerProfileImageUrl;
         private final List<Bid> bids;
+        private final AutoBidConfig autoBidConfig;
 
         private AuctionDetailLoad(DashboardAuctionRow detail, int participantCount, String owner,
-                                  String ownerProfileImageUrl, List<Bid> bids) {
+                String ownerProfileImageUrl, List<Bid> bids, AutoBidConfig autoBidConfig) {
             this.detail = detail;
             this.participantCount = participantCount;
             this.owner = owner;
             this.ownerProfileImageUrl = ownerProfileImageUrl;
             this.bids = bids == null ? List.of() : bids;
+            this.autoBidConfig = autoBidConfig;
         }
     }
 

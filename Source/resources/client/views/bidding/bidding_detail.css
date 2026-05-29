@@ -152,7 +152,7 @@
 }
 
 .search-icon,
-.notification-icon{
+.notification-icon {
     -fx-min-width: 24;
     -fx-min-height: 24;
     -fx-pref-width: 24;
@@ -252,7 +252,7 @@
     -fx-border-radius: 8;
     -fx-background-radius: 8;
     -fx-spacing: 12;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 8);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 8, 0, 0, 8);
 }
 
 .description-scroll {
@@ -279,7 +279,7 @@
     -fx-border-radius: 8;
     -fx-background-radius: 8;
     -fx-spacing: 15;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 8);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 8, 0, 0, 8);
 }
 
 .section-title {
@@ -325,7 +325,7 @@
     -fx-border-radius: 8;
     -fx-background-radius: 8;
     -fx-spacing: 15;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 8);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 8, 0, 0, 8);
 }
 
 .timer-label {
@@ -394,7 +394,7 @@
     -fx-border-radius: 8;
     -fx-background-radius: 8;
     -fx-spacing: 10;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 8);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 8, 0, 0, 8);
 }
 
 .bid-label {
@@ -437,7 +437,7 @@
     -fx-border-radius: 8;
     -fx-background-radius: 8;
     -fx-spacing: 12;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 8);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 8, 0, 0, 8);
 }
 
 .place-bid-label {
@@ -483,7 +483,7 @@
 
 .place-bid-button:hover {
     -fx-background-color: #1fdf64;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 8, 0, 0, 4);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 8, 0, 0, 4);
 }
 
 .place-bid-button:pressed {
@@ -499,7 +499,7 @@
     -fx-border-radius: 8;
     -fx-background-radius: 8;
     -fx-spacing: 12;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 8);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 8, 0, 0, 8);
 }
 
 .seller-label {
@@ -538,7 +538,7 @@
     -fx-background-radius: 8;
     -fx-spacing: 12;
     -fx-min-height: 250;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 8);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 8, 0, 0, 8);
 }
 
 .bid-history-label {
@@ -582,4 +582,48 @@
     -fx-font-size: 13px;
     -fx-font-weight: bold;
     -fx-text-fill: #1ed760;
+}
+
+/* ===== AUTO-BID BOX ===== */
+.auto-bid-box {
+    -fx-background-color: #181818;
+    -fx-padding: 20;
+    -fx-border-color: #1ed760;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-spacing: 12;
+    -fx-effect: dropshadow(gaussian, rgba(30,215,96,0.15), 12, 0, 0, 4);
+}
+
+.auto-bid-status {
+    -fx-font-size: 11px;
+    -fx-text-fill: #b3b3b3;
+    -fx-font-weight: bold;
+}
+
+.auto-bid-cancel-button {
+    -fx-background-color: #ff4444;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-cursor: hand;
+    -fx-padding: 14 20;
+    -fx-background-radius: 9999;
+    -fx-letter-spacing: 1;
+    -fx-alignment: center;
+}
+
+.auto-bid-cancel-button:hover {
+    -fx-background-color: #ff6666;
+    -fx-effect: dropshadow(gaussian, rgba(255,68,68,0.4), 8, 0, 0, 4);
+}
+
+.auto-bid-cancel-button:pressed {
+    -fx-background-color: #cc3333;
+}
+
+.auto-bid-cancel-button:disabled {
+    -fx-opacity: 0.4;
+    -fx-cursor: default;
 }

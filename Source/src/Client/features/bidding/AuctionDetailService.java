@@ -1,12 +1,15 @@
 package Client.features.bidding;
 
 import Client.core.network.NetworkRequestClient;
+import Client.features.auth.SessionManager;
+import CommonClasses.AutoBidConfig;
 import CommonClasses.Bid;
 import CommonClasses.dto.DashboardAuctionRow;
 import Packets.MessageType;
 import Packets.PacketMessage;
 import Server.dao.AuctionDAO;
 import Server.service.AuctionFinalizationService;
+import Server.service.AutoBidManager;
 import Server.service.BiddingApplicationService;
 
 import java.io.IOException;
@@ -20,7 +23,8 @@ import java.util.Map;
  * Service layer for the Bidding Detail screen.
  * <p>
  * Currently uses direct DAO access. When NetworkClient integration is complete,
- * this class will be refactored to send requests via the network socket instead.
+ * this class will be refactored to send requests via the network socket
+ * instead.
  * </p>
  */
 public class AuctionDetailService {
@@ -205,6 +209,108 @@ public class AuctionDetailService {
         } catch (Exception e) {
             System.err.println("[AuctionDetailService] Error placing bid: " + e.getMessage());
             return false;
+        }
+    }
+
+    // ========================== Auto-Bid Methods ==========================
+
+    /**
+     * Đăng ký cấu hình Đấu giá tự động cho phiên đấu giá.
+     *
+     * @param auctionId ID phiên đấu giá
+     * @param maxBid    giá tối đa sẵn sàng trả
+     * @param increment bước giá tự động cộng thêm
+     * @return true nếu đăng ký thành công
+     */
+    public boolean registerAutoBid(int auctionId, float maxBid, float increment) {
+        if (NetworkRequestClient.isEnabled()) {
+            try {
+                Map<String, Object> payload = new HashMap<>();
+                payload.put("auctionId", auctionId);
+                payload.put("maxBid", maxBid);
+                payload.put("increment", increment);
+                PacketMessage response = NetworkRequestClient.request(
+                        MessageType.AUTO_BID_REGISTER_REQUEST,
+                        (HashMap<String, Object>) payload,
+                        MessageType.AUTO_BID_REGISTER_RESPONSE);
+                return response.getPayload() != null;
+            } catch (IOException e) {
+                System.err.println("[AuctionDetailService] Auto-Bid registration failed: " + e.getMessage());
+                return false;
+            }
+        }
+
+        try {
+            String username = SessionManager.getCurrentUser().getUsername();
+            AutoBidManager.getInstance().registerAutoBid(username, auctionId, maxBid, increment);
+            return true;
+        } catch (Exception e) {
+            System.err.println("[AuctionDetailService] Error registering auto-bid: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Hủy cấu hình Auto-Bid hiện tại của người dùng trên phiên đấu giá.
+     *
+     * @param auctionId ID phiên đấu giá
+     * @return true nếu hủy thành công
+     */
+    public boolean cancelAutoBid(int auctionId) {
+        if (NetworkRequestClient.isEnabled()) {
+            try {
+                PacketMessage response = NetworkRequestClient.request(
+                        MessageType.AUTO_BID_CANCEL_REQUEST,
+                        auctionId,
+                        MessageType.AUTO_BID_CANCEL_RESPONSE);
+                if (response.getPayload() instanceof Boolean) {
+                    return (Boolean) response.getPayload();
+                }
+                return false;
+            } catch (IOException e) {
+                System.err.println("[AuctionDetailService] Auto-Bid cancellation failed: " + e.getMessage());
+                return false;
+            }
+        }
+
+        try {
+            String username = SessionManager.getCurrentUser().getUsername();
+            return AutoBidManager.getInstance().cancelAutoBid(username, auctionId);
+        } catch (Exception e) {
+            System.err.println("[AuctionDetailService] Error canceling auto-bid: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Lấy trạng thái cấu hình Auto-Bid hiện tại của người dùng.
+     *
+     * @param auctionId ID phiên đấu giá
+     * @return AutoBidConfig nếu có, null nếu chưa đăng ký
+     */
+    public AutoBidConfig getAutoBidStatus(int auctionId) {
+        if (NetworkRequestClient.isEnabled()) {
+            try {
+                PacketMessage response = NetworkRequestClient.request(
+                        MessageType.AUTO_BID_STATUS_REQUEST,
+                        auctionId,
+                        MessageType.AUTO_BID_STATUS_RESPONSE);
+                if (response.getPayload() instanceof AutoBidConfig) {
+                    return (AutoBidConfig) response.getPayload();
+                }
+                return null;
+            } catch (IOException e) {
+                System.err.println("[AuctionDetailService] Auto-Bid status query failed: " + e.getMessage());
+                return null;
+            }
+        }
+
+        try {
+            String username = SessionManager.getCurrentUser().getUsername();
+            return AutoBidManager.getInstance().getAutoBidConfig(username, auctionId);
+        } catch (Exception e) {
+            System.err.println("[AuctionDetailService] Error getting auto-bid status: " + e.getMessage());
+            return null;
         }
     }
 

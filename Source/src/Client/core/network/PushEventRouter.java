@@ -1,6 +1,7 @@
 package Client.core.network;
 
 import CommonClasses.dto.AuctionUpdatePushDTO;
+import CommonClasses.dto.AutoBidNotificationDTO;
 import CommonClasses.dto.NotificationPushDTO;
 import CommonClasses.dto.WalletUpdatePushDTO;
 import Packets.MessageType;
@@ -49,6 +50,14 @@ public class PushEventRouter {
                 && packet.getPayload() instanceof WalletUpdatePushDTO) {
             WalletUpdatePushDTO payload = (WalletUpdatePushDTO) packet.getPayload();
             executor.accept(() -> listeners.forEach(listener -> listener.onWalletUpdatePush(payload)));
+            return;
+        }
+
+        if (packet.getMessageType() == MessageType.AUTO_BID_NOTIFICATION
+                && packet.getPayload() instanceof AutoBidNotificationDTO) {
+            AutoBidNotificationDTO payload = (AutoBidNotificationDTO) packet.getPayload();
+            executor.accept(() -> listeners.forEach(listener -> listener.onAutoBidNotificationPush(payload)));
         }
     }
 }
+

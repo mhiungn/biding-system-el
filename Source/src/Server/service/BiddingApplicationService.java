@@ -32,7 +32,38 @@ public class BiddingApplicationService {
         this.notificationService = NotificationApplicationService.getInstance();
     }
 
+    /**
+     * Đặt giá thủ công (manual bid). Sau khi thành công sẽ tự động
+     * kích hoạt chuỗi Auto-Bid nếu có cấu hình auto-bid trên phiên này.
+     *
+     * @param username  username người đặt giá
+     * @param auctionId ID phiên đấu giá
+     * @param amount    số tiền đặt giá
+     * @return {@code true} nếu đặt giá thành công
+     */
     public boolean placeBid(String username, int auctionId, float amount) {
+        return placeBid(username, auctionId, amount, false);
+    }
+
+    /**
+     * Đặt giá với cờ phân biệt manual/auto bid.
+     * <p>
+     * Khi {@code isAutoBid = false} (bid thủ công từ client), sau khi commit
+     * thành công sẽ gọi {@link AutoBidManager#processAutoBids} để kích hoạt
+     * chuỗi đấu giá tự động.
+     * </p>
+     * <p>
+     * Khi {@code isAutoBid = true} (bid từ AutoBidManager), KHÔNG gọi lại
+     * processAutoBids vì AutoBidManager đã xử lý iterative loop nội bộ.
+     * </p>
+     *
+     * @param username  username người đặt giá
+     * @param auctionId ID phiên đấu giá
+     * @param amount    số tiền đặt giá
+     * @param isAutoBid {@code true} nếu đây là lượt đặt giá từ AutoBidManager
+     * @return {@code true} nếu đặt giá thành công
+     */
+    public boolean placeBid(String username, int auctionId, float amount, boolean isAutoBid) {
         if (username == null || username.isBlank()) {
             return false;
         }
@@ -88,6 +119,12 @@ public class BiddingApplicationService {
             applyAutoExtendIfNeeded(conn, auction);
             conn.commit();
             publishBidPushQuietly(auctionId, username, previousHighestBidder, auction.getOwnerUsername());
+
+            // === AUTO-BID TRIGGER (chỉ khi bid thủ công, post-commit) ===
+            if (!isAutoBid) {
+                triggerAutoBidsQuietly(auctionId, username, amount);
+            }
+
             return true;
         } catch (SQLException | RuntimeException e) {
             rollbackQuietly(conn);
@@ -108,6 +145,30 @@ public class BiddingApplicationService {
                     sellerUsername);
         } catch (RuntimeException e) {
             System.err.println("[BiddingApplicationService] Bid accepted but push update failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Kích hoạt chuỗi Auto-Bid sau khi một lượt bid thủ công commit thành công.
+     * <p>
+     * Được gọi NGOÀI transaction (post-commit) để đảm bảo:
+     * <ul>
+     *   <li>Bid thủ công đã hoàn tất và dữ liệu đã persist</li>
+     *   <li>Auto-bid mỗi lượt là một transaction riêng biệt</li>
+     *   <li>Lỗi auto-bid không ảnh hưởng đến bid thủ công đã commit</li>
+     * </ul>
+     * </p>
+     *
+     * @param auctionId       ID phiên đấu giá
+     * @param triggerUsername  username người vừa đặt giá thủ công
+     * @param currentPrice    giá hiện tại sau lượt đặt giá
+     */
+    private void triggerAutoBidsQuietly(int auctionId, String triggerUsername, float currentPrice) {
+        try {
+            AutoBidManager.getInstance().processAutoBids(auctionId, triggerUsername, currentPrice);
+        } catch (RuntimeException e) {
+            System.err.println("[BiddingApplicationService] Auto-bid processing failed (bid was accepted): "
+                    + e.getMessage());
         }
     }
 

@@ -186,6 +186,18 @@
                         <Button fx:id="btnPlaceBid" maxWidth="Infinity" styleClass="place-bid-button" text="PLACE BID" />
                     </VBox>
 
+                    <!-- AUTO-BID CONFIGURATION BOX -->
+                    <VBox fx:id="autoBidBox" styleClass="auto-bid-box">
+                        <Label styleClass="place-bid-label" text="AUTO-BIDDING" />
+                        <Label fx:id="lblAutoBidStatus" styleClass="auto-bid-status" text="Status: Not Active" />
+                        <TextField fx:id="txtAutoMaxBid" promptText="Max bid amount (VND)" styleClass="bid-input" />
+                        <TextField fx:id="txtAutoIncrement" promptText="Bid increment (VND)" styleClass="bid-input" />
+                        <HBox spacing="10" alignment="CENTER">
+                            <Button fx:id="btnSetAutoBid" HBox.hgrow="ALWAYS" maxWidth="Infinity" onAction="#handleSetAutoBid" styleClass="place-bid-button" text="ACTIVATE AUTO-BID" />
+                            <Button fx:id="btnCancelAutoBid" onAction="#handleCancelAutoBid" styleClass="auto-bid-cancel-button" text="CANCEL" />
+                        </HBox>
+                    </VBox>
+
                     <!-- SELLER INFORMATION BOX -->
                     <VBox styleClass="seller-box">
                         <Label styleClass="seller-label" text="SELLER INFORMATION" />
