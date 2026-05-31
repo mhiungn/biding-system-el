@@ -137,6 +137,7 @@ java -jar HeThongDauGia.jar
 
 
 ## 6. Tài Liệu Báo Cáo & Demo
-https://drive.google.com/drive/folders/1rVJaz_ckjVl6QHuLGfmdurtdF0gGEz2d?usp=sharing
+[![Report and Video Demo](https://img.shields.io/badge/Report%20and%20Video%20Demo-1DB954?style=for-the-badge&logo=googledrive&logoColor=191414&labelColor=1DB954&color=1DB954)](https://drive.google.com/drive/folders/1rVJaz_ckjVl6QHuLGfmdurtdF0gGEz2d?usp=sharing)
+REPORT AND VIDEO DEMO
 
 
