@@ -25,13 +25,13 @@ public class NavigationService {
     private static final String CONTROLLER_KEY = "client.controller";
     private static final Map<String, LoadedView> VIEW_CACHE = new HashMap<>();
 
-    private static final String DASHBOARD = "/client/views/dashboard/dashboard.fxml";
-    private static final String BIDDING_DETAIL = "/client/views/bidding/bidding_detail.fxml";
-    private static final String MY_BIDS = "/client/views/bidding/mybids.fxml";
-    private static final String SIGNUP = "/client/views/auth/signup.fxml";
-    private static final String LOGIN = "/client/views/auth/login.fxml";
-    private static final String USER_PROFILE = "/client/views/profile/user_profile.fxml";
-    private static final String SELL_ITEM = "/client/views/sell/sell_item.fxml";
+    private static final String DASHBOARD = "/Client/views/dashboard/dashboard.fxml";
+    private static final String BIDDING_DETAIL = "/Client/views/bidding/bidding_detail.fxml";
+    private static final String MY_BIDS = "/Client/views/bidding/mybids.fxml";
+    private static final String SIGNUP = "/Client/views/auth/signup.fxml";
+    private static final String LOGIN = "/Client/views/auth/login.fxml";
+    private static final String USER_PROFILE = "/Client/views/profile/user_profile.fxml";
+    private static final String SELL_ITEM = "/Client/views/sell/sell_item.fxml";
 
     public void openDashboard(ActionEvent event) throws IOException {
         switchScene(event, DASHBOARD);

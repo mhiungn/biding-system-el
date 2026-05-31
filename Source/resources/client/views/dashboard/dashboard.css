@@ -1,9 +1,9 @@
 @font-face {
-    src: url('/client/fonts/SVN-Canopee.otf');
+    src: url('/Client/fonts/SVN-Canopee.otf');
 }
 
 @font-face {
-    src: url('/client/fonts/SpaceMono-Regular.ttf');
+    src: url('/Client/fonts/SpaceMono-Regular.ttf');
 }
 
 /* =============================================
@@ -107,7 +107,7 @@
 }
 
 .logo {
-    -fx-background-image: url('/client/images/logo.png');
+    -fx-background-image: url('/Client/images/logo.png');
     -fx-background-size: contain;
     -fx-background-position: center;
     -fx-background-repeat: no-repeat;
@@ -355,7 +355,7 @@
     -fx-min-height: 14;
     -fx-pref-width: 14;
     -fx-pref-height: 14;
-    -fx-background-image: url('/client/images/clock.png');
+    -fx-background-image: url('/Client/images/clock.png');
     -fx-background-size: contain;
     -fx-background-position: center;
     -fx-background-repeat: no-repeat;

@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class NotificationPopup implements PushEventListener {
-    private static final String GLOBAL_STYLESHEET = "/client/views/common/scrollbar.css";
-    private static final String COMPONENT_STYLESHEET = "/client/views/components/components.css";
+    private static final String GLOBAL_STYLESHEET = "/Client/views/common/scrollbar.css";
+    private static final String COMPONENT_STYLESHEET = "/Client/views/components/components.css";
 
     private final NotificationClientService service;
     private final String username;

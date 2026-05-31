@@ -20,7 +20,7 @@
 
 <VBox maxHeight="576.0" maxWidth="977.0" minHeight="576.0" minWidth="977.0" prefHeight="576.0" prefWidth="977.0" styleClass="root" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.features.sell.SellItemController">
     <stylesheets>
-        <URL value="@/client/views/common/scrollbar.css" />
+        <URL value="@/Client/views/common/scrollbar.css" />
         <URL value="@sell_item.css" />
     </stylesheets>
 
@@ -247,10 +247,14 @@
 
                         <Label styleClass="section-title" text="AUCTION SETTINGS" />
 
-                        <!-- End Date (Full Row) -->
+                        <!-- End Date & Time -->
                         <VBox spacing="6" styleClass="form-field">
-                            <Label styleClass="field-label" text="End Date" />
-                            <DatePicker fx:id="dpEndDate" maxWidth="Infinity" styleClass="form-datepicker" />
+                            <Label styleClass="field-label" text="End Date &amp; Time" />
+                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                <DatePicker fx:id="dpEndDate" HBox.hgrow="ALWAYS" maxWidth="Infinity" styleClass="form-datepicker" />
+                                <ComboBox fx:id="cmbEndHour" prefWidth="90.0" promptText="Hour" styleClass="form-combo" />
+                                <ComboBox fx:id="cmbEndMinute" prefWidth="90.0" promptText="Minute" styleClass="form-combo" />
+                            </HBox>
                         </VBox>
 
                         <!-- Min Bid Increment -->

@@ -88,6 +88,13 @@ public class AuctionFinalizationService {
         if (winner != null && !winner.isBlank() && !walletService.hasSpentForAuction(winner, auctionId)) {
             walletService.finalizeWinningPayment(winner, auctionId, finalAmount);
         }
+
+        String seller = snapshot.getClientOwner();
+        if (seller != null && !seller.isBlank() && !walletService.hasEarnedForAuction(seller, auctionId)) {
+            walletService.creditSellerPayout(seller, auctionId, finalAmount);
+            pushWalletUpdateQuietly(seller, "AUCTION_FINALIZED");
+        }
+
         notifySoldAuction(snapshot, winner, finalAmount);
         pushAuctionUpdateQuietly(auctionId, "AUCTION_FINALIZED");
         if (winner != null && !winner.isBlank()) {

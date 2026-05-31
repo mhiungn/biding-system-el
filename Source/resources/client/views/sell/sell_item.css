@@ -1,9 +1,9 @@
 @font-face {
-    src: url('/client/fonts/SVN-Canopee.otf');
+    src: url('/Client/fonts/SVN-Canopee.otf');
 }
 
 @font-face {
-    src: url('/client/fonts/SpaceMono-Regular.ttf');
+    src: url('/Client/fonts/SpaceMono-Regular.ttf');
 }
 
 /* =============================================
@@ -98,7 +98,7 @@
 }
 
 .logo {
-    -fx-background-image: url('/client/images/logo.png');
+    -fx-background-image: url('/Client/images/logo.png');
     -fx-background-size: contain;
     -fx-background-position: center;
     -fx-background-repeat: no-repeat;

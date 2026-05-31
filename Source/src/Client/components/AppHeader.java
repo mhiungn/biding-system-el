@@ -216,9 +216,9 @@ public class AppHeader extends HBox {
         actions.setAlignment(Pos.CENTER_RIGHT);
         currentUserQuickInfoLabel.getStyleClass().add("auth-footer-muted");
         searchButton.getStyleClass().add("icon-button");
-        searchButton.setGraphic(imageIcon("/client/images/search.png"));
+        searchButton.setGraphic(imageIcon("/Client/images/search.png"));
         notificationsButton.getStyleClass().add("icon-button-badge");
-        notificationsButton.setGraphic(imageIcon("/client/images/notification.png"));
+        notificationsButton.setGraphic(imageIcon("/Client/images/notification.png"));
         profileButton.getStyleClass().add("icon-button");
         profileButton.setGraphic(profileAvatarView);
         refreshProfileAvatar();
