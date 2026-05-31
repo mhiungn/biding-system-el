@@ -18,7 +18,7 @@ Bidify là ứng dụng desktop đấu giá trực tuyến được xây dựng 
 ### Yêu cầu cài đặt (Requirements)
 - **JDK**: Phiên bản Java 25 (Khuyên dùng OpenJDK hoặc Oracle JDK 25).
 - **Internet**: Cần thiết để ứng dụng kết nối tới Database online Clever Cloud và upload ảnh sản phẩm lên Cloudinary Cloud.
-- **Cấu hình Database & Cloudinary**: Dự án yêu cầu 2 file cấu hình trong thư mục `Source/resources/` (đã được cấu hình sẵn cục bộ và đưa vào `.gitignore` để bảo mật):
+- **Cấu hình Database & Cloudinary**: Dự án yêu cầu 2 file cấu hình trong thư mục `Source/resources/` (đã được cấu hình sẵn và đẩy trực tiếp lên GitHub để chương trình chạy được ngay lập tức):
   - **`Source/resources/db.properties`**:
     ```properties
     db.url=jdbc:mysql://bnivgjhov6apvpsej5ym-mysql.services.clever-cloud.com:20985/bnivgjhov6apvpsej5ym
@@ -34,27 +34,61 @@ Bidify là ứng dụng desktop đấu giá trực tuyến được xây dựng 
 
 ---
 
-## 2. Cấu Trúc Thư Mục & Module (Directory & Module Structure)
+## 2. Cấu Trúc Thư Mục & Bản Đồ Lớp (Directory & Detailed Class Map)
+
+Dưới đây là cấu trúc thư mục chi tiết, bao gồm toàn bộ các class và tệp tin mã nguồn trong dự án để phục vụ việc chấm điểm:
 
 ```text
 ├── .github/workflows/ci.yml         # Pipeline CI/CD tự động biên dịch và chạy test trên GitHub
-├── pom.xml                         # File cấu hình Maven, quản lý các dependencies & đóng gói Shade JAR
+├── pom.xml                         # Cấu hình Maven, Shade build & dependencies
+├── HeThongDauGia.jar               # File JAR thực thi đóng gói hoàn chỉnh (Chạy trực tiếp ở thư mục gốc)
 ├── Source/
 │   ├── src/
-│   │   ├── Client/                 # Phân hệ Client
-│   │   │   ├── app/                # Điểm khởi chạy JavaFX Application
-│   │   │   ├── components/         # Các thành phần UI dùng chung (Header, LoadingOverlay, Notifications)
-│   │   │   ├── core/               # Thư viện điều hướng màn hình và Client Sockets
-│   │   │   └── features/           # Các Controllers & Services cho từng tính năng (Auth, Bidding, Profile, Dashboard)
-│   │   ├── CommonClasses/          # Các đối tượng Domain (Auction, User, Bid) & DTOs dùng chung
-│   │   ├── Packets/                # Giao thức truyền tin, cấu hình mạng & MessageType
-│   │   └── Server/                 # Phân hệ Server
-│   │       ├── dao/                # Tầng truy xuất dữ liệu MySQL (JDBC DAOs, H2 Helpers & SQL Scripts)
-│   │       └── service/            # Tầng xử lý logic nghiệp vụ phía Server (Auth, Bidding, Wallet, Expire Scheduler)
-│   └── resources/                  # Tài nguyên tĩnh
-│       ├── client/views/           # File giao diện FXML & CSS (thiết kế theo phong cách Spotify Dark Theme)
-│       ├── client/images/          # Các file Icon, Logo, Hình ảnh dạng PNG/JPG
-│       └── client/fonts/           # Font chữ thiết kế (Gotham Black, SVN-Canopee, SpaceMono)
+│   │   ├── RunApplication.java     # Hàm main kiểm tra DB & phân luồng khởi chạy Server/Client
+│   │   ├── Client/                 # Phân hệ Client (JavaFX Application & MVC Controllers)
+│   │   │   ├── app/
+│   │   │   │   └── ClientApp.java  # Lớp khởi chạy chính của Client App
+│   │   │   ├── components/         # Các component UI tái sử dụng
+│   │   │   │   ├── AppHeader.java            # Thanh Header chính (Navigation, Số dư, Avatar)
+│   │   │   │   ├── HeaderSearchPopup.java    # Thanh tìm kiếm nhanh thời gian thực ở Header
+│   │   │   │   ├── LoadingOverlay.java       # Màn hình chờ khóa giao diện khi xử lý tác vụ
+│   │   │   │   └── NotificationPopup.java    # Khung thông báo đẩy tức thời cho người dùng
+│   │   │   ├── core/               # Phần lõi điều hướng & kết nối Sockets của Client
+│   │   │   │   ├── network/        # Client Sockets & xử lý bất đồng bộ Push events
+│   │   │   │   │   ├── NetworkClient.java, NetworkRequestClient.java, NetworkPushManager.java, PushEventListener.java, PushEventRouter.java
+│   │   │   │   └── ui/             # Tiện ích giao diện & dịch vụ quản lý avatar
+│   │   │   │       ├── AvatarService.java, BaseController.java, FxDebouncer.java, ItemImageUrl.java, NavigationController.java, RefreshablePage.java
+│   │   │   ├── features/           # Các luồng nghiệp vụ & Controllers màn hình
+│   │   │   │   ├── auth/           # Đăng nhập & Đăng ký: AuthService.java, LoginController.java, SessionManager.java, SignupController.java
+│   │   │   │   ├── bidding/        # Chi tiết đấu giá & Lịch sử: AuctionDetailService.java, BiddingDetailController.java, MyBidsController.java, MyBidsService.java
+│   │   │   │   ├── dashboard/      # Màn hình chính danh sách phiên: DashboardController.java, DashboardService.java
+│   │   │   │   ├── notifications/  # Nhận thông báo: NotificationClientService.java
+│   │   │   │   ├── profile/        # Quản lý cá nhân & Nạp tiền: ProfileService.java, UserProfileController.java
+│   │   │   │   ├── search/         # Dịch vụ tìm kiếm: SearchService.java
+│   │   │   │   └── sell/           # Đăng bán sản phẩm: SellItemController.java, SellItemRequest.java, SellItemResult.java, SellItemService.java
+│   │   │   └── navigation/         # Dịch vụ chuyển trang và lưu cache View
+│   │   │   │   └── NavigationService.java
+│   │   ├── CommonClasses/          # Các đối tượng nghiệp vụ Domain & DTOs chia sẻ giữa Client-Server
+│   │   │   ├── dto/                # WalletDTO.java, NotificationDTO.java, DashboardAuctionRow.java, vv.
+│   │   │   ├── Exceptions/         # Các ngoại lệ tuỳ chỉnh (LowBidException, NotOwnerException, vv.)
+│   │   │   ├── Items/              # Các loại mặt hàng đấu giá thừa kế từ Item (Art, Vehicle, RealEstate, Fashion, Collectibles, Electronics)
+│   │   │   ├── Auction.java, User.java, Bid.java, BidObserver.java, BidTransaction.java, Entity.java
+│   │   ├── Packets/                # Định nghĩa giao thức mạng gói tin
+│   │   │   ├── MessageType.java, NetworkConfig.java, NetworkErrorPayload.java, PacketFactory.java, PacketMessage.java
+│   │   └── Server/                 # Phân hệ Server (Socket Server, Threading & Tầng DAO)
+│   │       ├── Server.java         # Điểm khởi chạy Multi-client Socket Server trên cổng 12345
+│   │       ├── ClientHandler.java, Client.java # Luồng xử lý giao tiếp socket của từng client kết nối
+│   │       ├── AuctionCountdownTask.java, AuctionTerminateTask.java # Bộ lập lịch quét phiên đấu giá hết hạn
+│   │       ├── dao/                # Tầng truy xuất CSDL MySQL (JDBC DAOs)
+│   │       │   ├── DatabaseConnection.java, database-schema.sql, UserDAO.java, ItemDAO.java, AuctionDAO.java, NotificationDAO.java, WalletDAO.java, BidTransactionDAO.java
+│   │       └── service/            # Tầng xử lý logic nghiệp vụ Socket phía Server
+│   │           ├── AuctionService.java, AuthenticationService.java, BiddingApplicationService.java, BidService.java, ImageStorageService.java, NetworkPushService.java, WalletApplicationService.java
+│   └── resources/                  # Tài nguyên tĩnh được đóng gói vào classpath
+│       ├── Client/views/           # File giao diện FXML & CSS (thiết kế Spotify Dark Theme)
+│       ├── Client/images/          # Các Icon, Logo, Hình ảnh dạng PNG/JPG
+│       ├── Client/fonts/           # Font chữ thiết kế (Gotham, SVN-Canopee, SpaceMono)
+│       ├── db.properties           # Tệp cấu hình cơ sở dữ liệu MySQL online
+│       └── cloudinary.properties   # Tệp cấu hình API lưu trữ ảnh Cloudinary online
 └── src/test/java                   # Hơn 220 unit tests chạy tự động bằng JUnit 5
 ```
 
