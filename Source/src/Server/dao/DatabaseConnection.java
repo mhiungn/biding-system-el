@@ -97,6 +97,14 @@ public class DatabaseConnection {
         config.setMaxLifetime(MAX_LIFETIME_MS);
         config.setPoolName("AuctionDatabasePool");
 
+        if (URL != null && URL.contains("mysql")) {
+            int offsetMillis = java.util.TimeZone.getDefault().getOffset(System.currentTimeMillis());
+            int hours = offsetMillis / (1000 * 60 * 60);
+            int minutes = Math.abs((offsetMillis / (1000 * 60)) % 60);
+            String timeZoneStr = String.format("%+02d:%02d", hours, minutes);
+            config.setConnectionInitSql("SET time_zone = '" + timeZoneStr + "'");
+        }
+
         try {
             return new HikariDataSource(config);
         } catch (RuntimeException e) {

@@ -433,4 +433,22 @@ public class WalletDAO {
             throw new RuntimeException("[WalletDAO] Cannot read total spent", e);
         }
     }
+
+    public void creditSellerPayout(String seller, int auctionId, long amount) {
+        createWalletIfMissing(seller);
+        if (hasTransaction(seller, "REVENUE", auctionId)) {
+            return;
+        }
+        String sql = "UPDATE user_wallets SET balance = balance + ?, updated_at = ? WHERE username = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, amount);
+            ps.setTimestamp(2, new java.sql.Timestamp(System.currentTimeMillis()));
+            ps.setString(3, seller);
+            ps.executeUpdate();
+            addTransaction(seller, "REVENUE", amount, auctionId, null, "Revenue from auction finalized");
+        } catch (SQLException e) {
+            throw new RuntimeException("[WalletDAO] Cannot credit seller payout", e);
+        }
+    }
 }

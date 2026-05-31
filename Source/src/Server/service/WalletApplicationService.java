@@ -95,4 +95,12 @@ public class WalletApplicationService {
     public boolean hasSpentForAuction(String username, int auctionId) {
         return walletDAO.hasTransaction(username, "SPENT", auctionId);
     }
+
+    public void creditSellerPayout(String seller, int auctionId, long amount) {
+        walletDAO.creditSellerPayout(seller, auctionId, amount);
+    }
+
+    public boolean hasEarnedForAuction(String username, int auctionId) {
+        return walletDAO.hasTransaction(username, "REVENUE", auctionId);
+    }
 }
