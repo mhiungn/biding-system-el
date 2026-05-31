@@ -129,11 +129,11 @@ java -jar HeThongDauGia.jar
 -  **Cập nhật realtime**: Đồng bộ trạng thái đấu giá, số dư khả dụng và thông báo tức thời thông qua TCP Pushes.
 -  **Kết thúc tự động**: Server chạy Scheduler ngầm để kết thúc phiên đấu giá đúng giờ, trích ví người thắng và chuyển khoản cho người bán.
 -  **Xử lý đồng thời (Concurrency)**: Sử dụng **Pessimistic Row Lock (`SELECT ... FOR UPDATE`)** để loại bỏ hoàn toàn lỗi tranh chấp số dư ví hoặc đặt giá đồng thời (Race Condition).
-- [x] **Kiểm thử tự động**: Tích hợp **220 Unit Tests** chạy trên H2 Database độc lập.
-- [x] **CI/CD Pipeline**: Đồng bộ hóa tự động hóa build và test với GitHub Actions.
+-  **Kiểm thử tự động**: Tích hợp **220 Unit Tests** chạy trên H2 Database độc lập.
+-  **CI/CD Pipeline**: Đồng bộ hóa tự động hóa build và test với GitHub Actions.
 
 ### Chức năng nâng cao (Optional Feature)
-- [x] **Anti-Sniping (Gia hạn thời gian tự động)**: Nếu có lượt đặt giá mới xuất hiện trong vòng **2 phút cuối cùng** trước khi hết hạn, hệ thống sẽ tự động gia hạn thêm **5 phút** cho phiên đấu giá để đảm bảo tính công bằng và tối đa hóa lợi nhuận cho người bán.
+-  **Anti-Sniping (Gia hạn thời gian tự động)**: Nếu có lượt đặt giá mới xuất hiện trong vòng **2 phút cuối cùng** trước khi hết hạn, hệ thống sẽ tự động gia hạn thêm **5 phút** cho phiên đấu giá để đảm bảo tính công bằng và tối đa hóa lợi nhuận cho người bán.
 
 
 ## 6. Tài Liệu Báo Cáo & Demo
