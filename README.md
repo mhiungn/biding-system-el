@@ -77,21 +77,21 @@ Lệnh này sẽ tự động chạy toàn bộ 220 bài kiểm thử đơn vị
 
 ## 4. Hướng Dẫn Chạy Chương Trình (Running Instructions)
 
-Để tạo điều kiện chấm bài thuận tiện nhất, ứng dụng được tích hợp **chế độ chạy kép (Dual-Mode Bootstrapper)** trong một file JAR duy nhất.
+Ứng dụng chạy theo mô hình Client-Server. Để khởi chạy hệ thống, bạn cần thực hiện theo đúng 2 bước sau trên các cửa sổ dòng lệnh riêng biệt:
 
-### Bước 1: Khởi chạy Server (Start the Server)
-Mở cửa sổ terminal thứ nhất tại thư mục gốc và chạy lệnh để mở Socket Server:
-```powershell
+### Bước 1: Khởi chạy Server trước (Start the Server first)
+Mở một cửa sổ Terminal (Git Bash, PowerShell hoặc CMD) tại thư mục gốc của dự án và chạy lệnh:
+```bash
 java -jar HeThongDauGia.jar server
 ```
-*Hệ thống sẽ hiển thị log thông báo: `Server Đấu Giá đã khởi động tại cổng: 12345` và bắt đầu tiến trình quét tự động các phiên hết hạn.*
+*Hệ thống sẽ kết nối Database và hiển thị thông báo: `Server Đấu Giá đã khởi động tại cổng: 12345`.*
 
-### Bước 2: Khởi chạy nhiều Client (Start Multiple Clients)
-Mở các cửa sổ terminal mới độc lập (mỗi cửa sổ ứng với một người dùng Client khác nhau) và chạy lệnh:
-```powershell
+### Bước 2: Khởi chạy các Client sau (Start the Clients second)
+Sau khi Server đã hoạt động, mở thêm một hoặc nhiều cửa sổ Terminal mới độc lập và chạy lệnh:
+```bash
 java -jar HeThongDauGia.jar
 ```
-*Giao diện JavaFX Dark Theme sang trọng sẽ xuất hiện. Bạn có thể đăng ký tài khoản mới, nạp tiền vào ví, đăng bán sản phẩm kèm hình ảnh, và tiến hành đấu giá trực tiếp lẫn nhau giữa các client.*
+*Giao diện đăng nhập Dark Theme sẽ xuất hiện, tự động kết nối tới Server đang chạy ở Bước 1. Bạn có thể mở nhiều Client đồng thời để thực hiện đấu giá trực tiếp.*
 
 ---
 
