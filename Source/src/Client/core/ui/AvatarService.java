@@ -9,7 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public final class AvatarService {
-    private static final String DEFAULT_AVATAR_RESOURCE = "/client/images/user.png";
+    private static final String DEFAULT_AVATAR_RESOURCE = "/Client/images/user.png";
     private static final String ERROR_LISTENER_IMAGE_KEY = "client.avatar.errorListenerImage";
     private static final int AVATAR_MAX_WIDTH = 128;
     private static final int MAX_CACHE_SIZE = 64;

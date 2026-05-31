@@ -27,8 +27,8 @@ import java.util.function.Consumer;
 
 public class HeaderSearchPopup {
     private static final int RESULT_LIMIT = 8;
-    private static final String GLOBAL_STYLESHEET = "/client/views/common/scrollbar.css";
-    private static final String COMPONENT_STYLESHEET = "/client/views/components/components.css";
+    private static final String GLOBAL_STYLESHEET = "/Client/views/common/scrollbar.css";
+    private static final String COMPONENT_STYLESHEET = "/Client/views/components/components.css";
 
     private final SearchService searchService;
     private final Consumer<DashboardAuctionRow> onResultSelected;

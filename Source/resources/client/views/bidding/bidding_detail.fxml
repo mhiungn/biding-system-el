@@ -21,8 +21,8 @@
 <?import javafx.scene.image.Image?>
 <VBox maxHeight="576.0" maxWidth="977.0" minHeight="576.0" minWidth="977.0" prefHeight="576.0" prefWidth="977.0" styleClass="root" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.features.bidding.BiddingDetailController">
     <stylesheets>
-        <URL value="@/client/views/common/scrollbar.css" />
-        <URL value="@/client/views/bidding/bidding_detail.css" />
+        <URL value="@/Client/views/common/scrollbar.css" />
+        <URL value="@/Client/views/bidding/bidding_detail.css" />
     </stylesheets>
 
     <!-- ═══════════════════════════════════════════════════════════

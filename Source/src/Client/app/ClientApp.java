@@ -11,7 +11,7 @@ import javafx.stage.StageStyle;
 
 public class ClientApp extends Application {
 
-    private static final String LOGIN_FXML = "/client/views/auth/login.fxml";
+    private static final String LOGIN_FXML = "/Client/views/auth/login.fxml";
 
     public static void main(String[] args) {
         launch(args);
@@ -20,9 +20,9 @@ public class ClientApp extends Application {
     @Override
     public void start(Stage stage) {
         try {
-            Font.loadFont(getClass().getResourceAsStream("/client/fonts/SVN-Canopee.otf"), 10);
-            Font.loadFont(getClass().getResourceAsStream("/client/fonts/SpaceMono-Regular.ttf"), 10);
-            Font.loadFont(getClass().getResourceAsStream("/client/fonts/Gotham-Black.otf"), 10);
+            Font.loadFont(getClass().getResourceAsStream("/Client/fonts/SVN-Canopee.otf"), 10);
+            Font.loadFont(getClass().getResourceAsStream("/Client/fonts/SpaceMono-Regular.ttf"), 10);
+            Font.loadFont(getClass().getResourceAsStream("/Client/fonts/Gotham-Black.otf"), 10);
 
             stage.initStyle(StageStyle.UNDECORATED);
 
@@ -30,7 +30,7 @@ public class ClientApp extends Application {
             Scene scene = new Scene(root);
 
             stage.setResizable(false);
-            Image icon = new Image("/client/images/logo.png");
+            Image icon = new Image("/Client/images/logo.png");
             stage.getIcons().add(icon);
             stage.setTitle("Bidify Online Auction");
 

@@ -15,13 +15,13 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox prefHeight="456.0" prefWidth="396.0" stylesheets="@/client/views/auth/auth.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.features.auth.SignupController">
+<VBox prefHeight="456.0" prefWidth="396.0" stylesheets="@/Client/views/auth/auth.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.features.auth.SignupController">
 
    <HBox fx:id="titleBar" alignment="CENTER_LEFT" onMouseDragged="#onTitleBarDragged" onMousePressed="#onTitleBarPressed" styleClass="title-bar">
 
       <ImageView fitHeight="16" fitWidth="16" preserveRatio="true">
          <image>
-            <Image url="@/client/images/logo.png" />
+            <Image url="@/Client/images/logo.png" />
          </image>
       </ImageView>
 
