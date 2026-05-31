@@ -60,6 +60,8 @@ public class SellItemController extends NavigationController implements Refresha
     @FXML private TextArea txtDescription;
     @FXML private TextField txtLocation;
     @FXML private DatePicker dpEndDate;
+    @FXML private ComboBox<String> cmbEndHour;
+    @FXML private ComboBox<String> cmbEndMinute;
     @FXML private TextField txtBidIncrement;
     @FXML private Button btnAutoExtend;
     @FXML private Button btnReset;
@@ -78,6 +80,21 @@ public class SellItemController extends NavigationController implements Refresha
         appHeader.configure(this);
 
         cmbCategory.getItems().setAll("ELECTRONICS", "ART", "VEHICLE", "REAL_ESTATE", "FASHION", "COLLECTIBLES");
+        
+        List<String> hours = new java.util.ArrayList<>();
+        for (int i = 0; i < 24; i++) {
+            hours.add(String.format("%02d", i));
+        }
+        cmbEndHour.getItems().setAll(hours);
+        cmbEndHour.setValue("23");
+
+        List<String> minutes = new java.util.ArrayList<>();
+        for (int i = 0; i < 60; i++) {
+            minutes.add(String.format("%02d", i));
+        }
+        cmbEndMinute.getItems().setAll(minutes);
+        cmbEndMinute.setValue("59");
+
         thumbnailSlots.clear();
         thumbnailSlots.addAll(Arrays.asList(thumb1, thumb2, thumb3));
 
@@ -228,10 +245,15 @@ public class SellItemController extends NavigationController implements Refresha
         if (date == null) {
             throw new IllegalArgumentException("End date is required.");
         }
-        LocalDateTime endOfDay = LocalDateTime.of(date, LocalTime.of(23, 59, 59));
+        String hourStr = cmbEndHour.getValue();
+        String minuteStr = cmbEndMinute.getValue();
+        int hour = hourStr == null ? 23 : Integer.parseInt(hourStr);
+        int minute = minuteStr == null ? 59 : Integer.parseInt(minuteStr);
+
+        LocalDateTime endOfDay = LocalDateTime.of(date, LocalTime.of(hour, minute, 0));
         Date endDate = Date.from(endOfDay.atZone(ZoneId.systemDefault()).toInstant());
         if (!endDate.after(new Date())) {
-            throw new IllegalArgumentException("End date must be in the future.");
+            throw new IllegalArgumentException("End date & time must be in the future.");
         }
         return endDate;
     }
@@ -485,6 +507,8 @@ public class SellItemController extends NavigationController implements Refresha
         txtDescription.clear();
         txtLocation.clear();
         dpEndDate.setValue(null);
+        cmbEndHour.setValue("23");
+        cmbEndMinute.setValue("59");
         txtBidIncrement.clear();
         mainImage = null;
         galleryImages.clear();
